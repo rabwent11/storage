@@ -2,11 +2,14 @@ name: $(Date:yyyyMMdd)$(Rev:rr)
 resources:
 - repo: self
 
+trigger:
+  batch: 'true'
+  branches:
+    include:
+    - master
+
 pool:
   vmImage: 'VS2017-Win2016'
-
-variables:
-    configuration: release
 
 steps:
   - task: PowerShell@2
