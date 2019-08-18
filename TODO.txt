@@ -1,0 +1,23 @@
+
+12-Aug-2019
+- Set up project structure
+- Set up cake build script
+- Set up Azure pipelines
+- Complete CmdtyStorage class and builder
+
+Later
+- Sort out build coverage
+- Creation of NuGet package
+
+By End of Thursday 15-Aug-2019
+- Intrinsic storage valuation
+- Good code coverage
+- Tidy up to do list
+- NuGet package published
+- PyPI package published
+
+- Use parallel loop in backward induction
+- Explicit in pricer whether end has to be empty or has value
+- Ability to have more than 3 decision?
+
+- Valuation results include trigger prices for inject and withdraw?

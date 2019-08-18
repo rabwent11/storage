@@ -1,0 +1,27 @@
+name: $(Date:yyyyMMdd)$(Rev:rr)
+resources:
+- repo: self
+
+pool:
+  vmImage: 'VS2017-Win2016'
+
+variables:
+    configuration: release
+
+steps:
+  - task: PowerShell@2
+    displayName: 'Run Cake PowerShell Bootstrapper'
+    inputs:
+      filePath: 'build.ps1'
+      arguments: '-Verbosity Diagnostic -Target CI -BuildNumber=$(Build.BuildNumber)'
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+  - task: PublishTestResults@2
+    displayName: 'Publish .NET test results'
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'VSTest'
+      testResultsFiles: '**/*.trx'
+      mergeTestResults: true
+      testRunTitle: 'C# Unit Tests'
