@@ -25,6 +25,34 @@ if (HasArgument("PythonVersion"))
     msBuildSettings.WithProperty("PythonVersion", Argument<string>("PythonVersion"));
 }
 
+Task("Add-NuGetSource")
+    .Does(() =>
+    {
+		if (isRunningOnBuildServer)
+		{
+			// Get the access token
+			string accessToken = EnvironmentVariable("SYSTEM_ACCESSTOKEN");
+			if (string.IsNullOrEmpty(accessToken))
+			{
+				throw new InvalidOperationException("Could not resolve SYSTEM_ACCESSTOKEN.");
+			}
+
+			// Add the authenticated feed source
+			NuGetAddSource(
+				"Cmdty",
+				"https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json",
+				new NuGetSourcesSettings
+				{
+					UserName = "VSTS",
+					Password = accessToken
+				});
+		}
+		else
+		{
+			Information("Not running on build so no need to add Cmdty NuGet source");
+		}
+    });
+
 Task("Clean-Artifacts")
     .Does(() =>
 {
@@ -32,6 +60,7 @@ Task("Clean-Artifacts")
 });
 
 Task("Build")
+	.IsDependentOn("Add-NuGetSource")
     .Does(() =>
 {
     var dotNetCoreSettings = new DotNetCoreBuildSettings()
