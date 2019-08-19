@@ -22,7 +22,6 @@ Essential
 - Update grid spacing to be function of CmdtyStorage and inventory constraints
 - Valuation result contains decisions grid
 	- Methods for outputting these as CSV files
-- Value on end date + unit test
 - Value on day before end date + unit test (storage has inventory some inventory which gets withdrawn)
 - Check that inventory is within constraints and throw if not + unit test
 	- Define custom exception

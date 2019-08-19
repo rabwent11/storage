@@ -210,12 +210,70 @@ namespace Cmdty.Storage.Core.Test
             Assert.True(valuationResults.DecisionProfile.IsEmpty);
         }
 
-        // TODO unit test storage with terminal value
+        private static IntrinsicStorageValuationResults<Day> 
+            GenerateValuationResults_CurrentPeriodEqualToStorageEndStorageInventoryHasTerminalValue(double startingInventory, 
+                                                                                                    double forwardPrice)
+        {
+            var storageStart = new Day(2019, 9, 1);
+            var storageEnd = new Day(2019, 9, 30);
+
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                .WithActiveTimePeriod(storageStart, storageEnd)
+                .WithConstantInjectWithdrawRange(-45.5, 56.6)
+                .WithConstantMaxInventory(1000.0)
+                .WithConstantMinInventory(0.0)
+                .WithPerUnitInjectionCost(0.8)
+                .WithPerUnitWithdrawalCost(1.2)
+                .WithTerminalStorageValue((cmdtyPrice, terminalInventory) => cmdtyPrice * terminalInventory - 999.0)
+                .Build();
+
+            var forwardCurve = new TimeSeries<Day, double>.Builder(1)
+                            {
+                                {storageEnd, forwardPrice }
+                            }.Build();
+
+            IntrinsicStorageValuationResults<Day> valuationResults = new IntrinsicStorageValuation<Day>()
+                .ForStorage(storage)
+                .WithStartingInventory(startingInventory)
+                .ForCurrentPeriod(storageEnd)
+                .WithForwardCurve(forwardCurve)
+                .WithDiscountFactorFunc(day => 1.0)
+                .WithGridSpacing(10.0)
+                .Calculate();
+
+            return valuationResults;
+        }
+        
+        [Fact]
+        public void Calculate_CurrentPeriodEqualToStorageEndStorageInventoryHasTerminalValue_ResultWithNetPresentValueEqualToTerminalValue()
+        {
+            const double terminalInventory = 120.1;
+            const double forwardPriceForEndDate = 45.67;
+
+            IntrinsicStorageValuationResults<Day> valuationResults = 
+                GenerateValuationResults_CurrentPeriodEqualToStorageEndStorageInventoryHasTerminalValue(terminalInventory, forwardPriceForEndDate);
+
+            double expectedNpv = terminalInventory * forwardPriceForEndDate - 999.0; // Arbitrary terminal function defined for storage
+
+            Assert.Equal(expectedNpv, valuationResults.NetPresentValue);
+        }
+
+        [Fact]
+        public void Calculate_CurrentPeriodEqualToStorageEndStorageInventoryHasTerminalValue_ResultWithEmptyDecisionProfile()
+        {
+            const double terminalInventory = 120.1;
+            const double forwardPriceForEndDate = 45.67;
+
+            IntrinsicStorageValuationResults<Day> valuationResults =
+                GenerateValuationResults_CurrentPeriodEqualToStorageEndStorageInventoryHasTerminalValue(terminalInventory, forwardPriceForEndDate);
+
+            Assert.True(valuationResults.DecisionProfile.IsEmpty);
+        }
+
 
         // TODO test cases:
         // Empty + spread more than inject + withdraw cost = value is spread minus costs, profile has inject withdraw
         // Inventory + curve backwardated: value is highest part of curve * volume - withdraw cost, profile is in highest part of curve
-        // Expired: zero value and zero length profile
         // Inventory + spread less than inject + withdraw cost + terminal value = terminal value and zero profile (discounted?)
         // Single period with high forward price: npv and profile all in this part
         // Decision profile * forward curve discounted = NPV
