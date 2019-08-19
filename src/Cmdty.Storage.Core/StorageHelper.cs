@@ -83,7 +83,7 @@ namespace Cmdty.Storage.Core
                 backwardCalcMinInventory[i] = storage.InventorySpaceLowerBound(periodBackLoop, backwardCalcMinInventory[i + 1]);
             }
 
-            // Calculate overall inventory space
+            // Calculate overall inventory space and check for consistency
 
             var inventoryRanges = new InventoryRange[numPeriods];
 
@@ -91,6 +91,8 @@ namespace Cmdty.Storage.Core
             {
                 double inventorySpaceMax = Math.Min(forwardCalcMaxInventory[i], backwardCalcMaxInventory[i]);
                 double inventorySpaceMin = Math.Max(forwardCalcMinInventory[i], backwardCalcMinInventory[i]);
+                if (inventorySpaceMin > inventorySpaceMax)
+                    throw new InventoryConstraintsCannotBeFulfilledException();
                 inventoryRanges[i] = new InventoryRange(inventorySpaceMin, inventorySpaceMax);
             }
 

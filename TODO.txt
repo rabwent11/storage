@@ -23,8 +23,7 @@ Essential
 - Valuation result contains decisions grid
 	- Methods for outputting these as CSV files
 - Value on day before end date + unit test (storage has inventory some inventory which gets withdrawn)
-- Check that inventory is within constraints and throw if not + unit test
-	- Define custom exception
+- Unit test inventory checking
 	- Do checks on expiry date too
 - Unit test decision generation when min and max inject/withdraw constraints are equal
 

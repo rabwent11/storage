@@ -111,23 +111,37 @@ namespace Cmdty.Storage.Core
         {
             // TODO validate inputs
 
-            if (currentPeriod.CompareTo(storage.EndPeriod) > 0) // TODO check inventory
+            if (currentPeriod.CompareTo(storage.EndPeriod) > 0)
                 return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty);
 
             if (currentPeriod.Equals(storage.EndPeriod))
             {
                 // TODO check inventory
+
+
                 if (storage.MustBeEmptyAtEnd)
                 {
+                    if (startingInventory > 0) // TODO allow some tolerance for floating point numerical error?
+                        throw new InventoryConstraintsCannotBeFulfilledException("Storage must be empty at end, but inventory is greater than zero.");
                     return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty);
                 }
+
+                double terminalMinInventory = storage.MinInventory(storage.EndPeriod);
+                double terminalMaxInventory = storage.MaxInventory(storage.EndPeriod);
+
+                if (startingInventory < terminalMinInventory)
+                    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is lower than the minimum allowed in the end period.");
+
+                if (startingInventory > terminalMaxInventory)
+                    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is greater than the maximum allowed in the end period.");
+
                 double cmdtyPrice = forwardCurve[storage.EndPeriod];
                 double npv = storage.TerminalStorageValue(cmdtyPrice, startingInventory); // TODO discounting?
                 return new IntrinsicStorageValuationResults<T>(npv, DoubleTimeSeries<T>.Empty);
             }
 
             TimeSeries<T, InventoryRange> inventorySpace = StorageHelper.CalculateInventorySpace(storage, startingInventory, currentPeriod);
-
+            
             // Perform backward induction
             var storageValueByInventory = new Func<double, double>[inventorySpace.Count];
 
@@ -165,7 +179,7 @@ namespace Cmdty.Storage.Core
             double storageNpv = 0.0;
 
             var decisionProfileBuilder = new DoubleTimeSeries<T>.Builder(inventorySpace.Count);
-            // TODO remove duplicate evaluation of decision at first step?
+
             double inventoryLoop = startingInventory;
             for (int i = 0; i < inventorySpace.Count; i++)
             {
