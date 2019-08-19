@@ -32,7 +32,7 @@ namespace Cmdty.Storage.Core.Test
     {
 
         [Fact]
-        public void MaxInventory_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryPlusMaxWithdrawalRate()
+        public void InventorySpaceUpperBound_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryPlusMaxWithdrawalRate()
         {
             const double maxInjectionRate = 56.8;
             const double maxWithdrawalRate = 47.12;
@@ -62,7 +62,7 @@ namespace Cmdty.Storage.Core.Test
         }
 
         [Fact]
-        public void MinInventory_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryMinusMaxInjectRate()
+        public void InventorySpaceLowerBound_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryMinusMaxInjectRate()
         {
             const double maxInjectionRate = 56.8;
             const double maxWithdrawalRate = 47.12;
