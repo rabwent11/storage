@@ -188,6 +188,29 @@ namespace Cmdty.Storage.Core.Test
             Assert.True(valuationResults.DecisionProfile.IsEmpty);
         }
 
+        [Fact]
+        public void Calculate_CurrentPeriodEqualToStorageEndStorageMustBeEmptyAtEnd_ResultWithZeroNetPresentValue()
+        {
+            var currentPeriod = new Day(2019, 9, 30);
+
+            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0,
+                TimeSeries<Day, double>.Empty, currentPeriod);
+
+            Assert.Equal(0.0, valuationResults.NetPresentValue);
+        }
+
+        [Fact]
+        public void Calculate_CurrentPeriodEqualToStorageEndStorageMustBeEmptyAtEnd_ResultWithEmptyDecisionProfile()
+        {
+            var currentPeriod = new Day(2019, 9, 30);
+
+            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0,
+                TimeSeries<Day, double>.Empty, currentPeriod);
+
+            Assert.True(valuationResults.DecisionProfile.IsEmpty);
+        }
+
+        // TODO unit test storage with terminal value
 
         // TODO test cases:
         // Empty + spread more than inject + withdraw cost = value is spread minus costs, profile has inject withdraw

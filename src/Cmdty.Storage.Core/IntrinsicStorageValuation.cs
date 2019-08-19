@@ -111,10 +111,20 @@ namespace Cmdty.Storage.Core
         {
             // TODO validate inputs
 
-            if (currentPeriod.CompareTo(storage.EndPeriod) > 0)
+            if (currentPeriod.CompareTo(storage.EndPeriod) > 0) // TODO check inventory
                 return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty);
 
-            // TODO value on expiry date
+            if (currentPeriod.Equals(storage.EndPeriod))
+            {
+                // TODO check inventory
+                if (storage.MustBeEmptyAtEnd)
+                {
+                    return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty);
+                }
+                double cmdtyPrice = forwardCurve[storage.EndPeriod];
+                double npv = storage.TerminalStorageValue(cmdtyPrice, startingInventory); // TODO discounting?
+                return new IntrinsicStorageValuationResults<T>(npv, DoubleTimeSeries<T>.Empty);
+            }
 
             TimeSeries<T, InventoryRange> inventorySpace = StorageHelper.CalculateInventorySpace(storage, startingInventory, currentPeriod);
 
