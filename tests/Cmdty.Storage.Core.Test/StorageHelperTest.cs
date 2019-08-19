@@ -163,6 +163,7 @@ namespace Cmdty.Storage.Core.Test
                         .WithConstantMinInventory(minInventory)
                         .WithPerUnitInjectionCost(1.5)
                         .WithPerUnitWithdrawalCost(0.8)
+                        .WithTerminalStorageValue((cmdtyPrice, inventory) => 0.0)
                         .Build();
 
             TimeSeries<Day, InventoryRange> inventorySpace =
@@ -203,6 +204,7 @@ namespace Cmdty.Storage.Core.Test
                         .WithConstantMinInventory(minInventory)
                         .WithPerUnitInjectionCost(1.5)
                         .WithPerUnitWithdrawalCost(0.8)
+                        .WithTerminalStorageValue((cmdtyPrice, inventory) => 0.0)
                         .Build();
 
             TimeSeries<Day, InventoryRange> inventorySpace =

@@ -48,6 +48,7 @@ namespace Cmdty.Storage.Core.Test
                 .WithConstantMinInventory(0.0)
                 .WithPerUnitInjectionCost(0.8)
                 .WithPerUnitWithdrawalCost(1.2)
+                .MustBeEmptyAtEnd()
                 .Build();
 
             IntrinsicStorageValuationResults<Day> valuationResults = new IntrinsicStorageValuation<Day>()

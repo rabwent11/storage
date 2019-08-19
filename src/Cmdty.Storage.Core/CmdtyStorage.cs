@@ -41,6 +41,7 @@ namespace Cmdty.Storage.Core
         private readonly Func<T, double, double, double, double> _injectionCost;
         private readonly Func<T, double, double, double, double> _withdrawalCost;
         private readonly Func<double, double, double> _terminalStorageValue;
+        public bool MustBeEmptyAtEnd { get; }
 
         private CmdtyStorage(T startPeriod,
                             T endPeriod,
@@ -49,7 +50,8 @@ namespace Cmdty.Storage.Core
                             Func<T, double> minInventory,
                             Func<T, double, double, double, double> injectionCost,
                             Func<T, double, double, double, double> withdrawalCost,
-                            Func<double, double, double> terminalStorageValue)
+                            Func<double, double, double> terminalStorageValue,
+                            bool mustBeEmptyAtEnd)
         {
             StartPeriod = startPeriod;
             EndPeriod = endPeriod;
@@ -59,6 +61,7 @@ namespace Cmdty.Storage.Core
             _injectionCost = injectionCost;
             _withdrawalCost = withdrawalCost;
             _terminalStorageValue = terminalStorageValue;
+            MustBeEmptyAtEnd = mustBeEmptyAtEnd;
         }
 
         // TODO checks that number isn't requested for date or inventory which is out of bounds?
@@ -118,7 +121,7 @@ namespace Cmdty.Storage.Core
         public static IBuilder<T> Builder => new StorageBuilder();
 
         private sealed class StorageBuilder : IBuilder<T>, IAddInjectWithdrawConstraints, IAddMaxInventory, IAddMinInventory, IAddInjectionCost, 
-                    IAddWithdrawalCost, IAddStorageValueAtEnd
+                    IAddWithdrawalCost, IAddTerminalStorageState, IBuildCmdtyStorage
         {
             private T _startPeriod;
             private T _endPeriod;
@@ -128,10 +131,7 @@ namespace Cmdty.Storage.Core
             private Func<T, double, double, double, double> _injectionCost;
             private Func<T, double, double, double, double> _withdrawalCost;
             private Func<double, double, double> _terminalStorageValue;
-
-            public StorageBuilder()
-            {
-            }
+            private bool _mustBeEmptyAtEnd;
 
             IAddInjectWithdrawConstraints IBuilder<T>.WithActiveTimePeriod(T start, T end)
             {
@@ -233,50 +233,56 @@ namespace Cmdty.Storage.Core
                 return this;
             }
 
-            IAddStorageValueAtEnd IAddWithdrawalCost.WithPerUnitWithdrawalCost(double withdrawalCost)
+            IAddTerminalStorageState IAddWithdrawalCost.WithPerUnitWithdrawalCost(double withdrawalCost)
             {
                 // TODO check for non-negative
                 _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost * Math.Abs(withdrawnVolume);
                 return this;
             }
 
-            IAddStorageValueAtEnd IAddWithdrawalCost.WithTimeDependentWithdrawalCost(Func<T, double> withdrawalCost)
+            IAddTerminalStorageState IAddWithdrawalCost.WithTimeDependentWithdrawalCost(Func<T, double> withdrawalCost)
             {
                 if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
                 _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(date);
                 return this;
             }
 
-            IAddStorageValueAtEnd IAddWithdrawalCost.WithWithdrawnVolumeDependentWithdrawalCost(Func<double, double> withdrawalCost)
+            IAddTerminalStorageState IAddWithdrawalCost.WithWithdrawnVolumeDependentWithdrawalCost(Func<double, double> withdrawalCost)
             {
                 if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
                 _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(withdrawnVolume);
                 return this;
             }
 
-            IAddStorageValueAtEnd IAddWithdrawalCost.WithInventoryDependentWithdrawalCost(Func<double, double> withdrawalCost)
+            IAddTerminalStorageState IAddWithdrawalCost.WithInventoryDependentWithdrawalCost(Func<double, double> withdrawalCost)
             {
                 if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
                 _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(inventory);
                 return this;
             }
 
-            IAddStorageValueAtEnd IAddWithdrawalCost.WithPriceDependentWithdrawalCost(Func<double, double> withdrawalCost)
+            IAddTerminalStorageState IAddWithdrawalCost.WithPriceDependentWithdrawalCost(Func<double, double> withdrawalCost)
             {
                 if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
                 _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(cmdtyPrice);
                 return this;
             }
 
-            IAddStorageValueAtEnd IAddWithdrawalCost.WithWithdrawalCost(Func<T, double, double, double, double> withdrawalCost)
+            IAddTerminalStorageState IAddWithdrawalCost.WithWithdrawalCost(Func<T, double, double, double, double> withdrawalCost)
             {
                 _withdrawalCost = withdrawalCost ?? throw new ArgumentNullException(nameof(withdrawalCost));
                 return this;
             }
             
-            IBuildCmdtyStorage IAddStorageValueAtEnd.WithTerminalStorageValue([NotNull] Func<double, double, double> terminalStorageValueFunc)
+            IBuildCmdtyStorage IAddTerminalStorageState.WithTerminalStorageValue([NotNull] Func<double, double, double> terminalStorageValueFunc)
             {
                 _terminalStorageValue = terminalStorageValueFunc ?? throw new ArgumentNullException(nameof(terminalStorageValueFunc));
+                return this;
+            }
+
+            IBuildCmdtyStorage IAddTerminalStorageState.MustBeEmptyAtEnd()
+            {
+                _mustBeEmptyAtEnd = true;
                 return this;
             }
 
@@ -287,7 +293,7 @@ namespace Cmdty.Storage.Core
                 Func<double, double, double> terminalStorageValue =_terminalStorageValue ?? ((cmdtyPrice, finalInventory) => 0.0);
 
                 return new CmdtyStorage<T>(_startPeriod, _endPeriod, _injectWithdrawConstraints, _maxInventory, 
-                            _minInventory, _injectionCost, _withdrawalCost, terminalStorageValue);
+                            _minInventory, _injectionCost, _withdrawalCost, terminalStorageValue, _mustBeEmptyAtEnd);
             }
 
         }
@@ -328,19 +334,20 @@ namespace Cmdty.Storage.Core
         public interface IAddWithdrawalCost
         {
             // TODO method for fixed cost component for action (no matter what volume)?
-            IAddStorageValueAtEnd WithPerUnitWithdrawalCost(double withdrawalCost);
+            IAddTerminalStorageState WithPerUnitWithdrawalCost(double withdrawalCost);
             // TODO method for cost as percentage of cmdty price
-            IAddStorageValueAtEnd WithTimeDependentWithdrawalCost(Func<T, double> withdrawalCost);
-            IAddStorageValueAtEnd WithWithdrawnVolumeDependentWithdrawalCost(Func<double, double> withdrawalCost);
-            IAddStorageValueAtEnd WithInventoryDependentWithdrawalCost(Func<double, double> withdrawalCost);
-            IAddStorageValueAtEnd WithPriceDependentWithdrawalCost(Func<double, double> withdrawalCost);
+            IAddTerminalStorageState WithTimeDependentWithdrawalCost(Func<T, double> withdrawalCost);
+            IAddTerminalStorageState WithWithdrawnVolumeDependentWithdrawalCost(Func<double, double> withdrawalCost);
+            IAddTerminalStorageState WithInventoryDependentWithdrawalCost(Func<double, double> withdrawalCost);
+            IAddTerminalStorageState WithPriceDependentWithdrawalCost(Func<double, double> withdrawalCost);
             // TODO add other combinations?
-            IAddStorageValueAtEnd WithWithdrawalCost(Func<T, double, double, double, double> withdrawalCost);
+            IAddTerminalStorageState WithWithdrawalCost(Func<T, double, double, double, double> withdrawalCost);
         }
 
-        public interface IAddStorageValueAtEnd : IBuildCmdtyStorage
+        public interface IAddTerminalStorageState
         {
             IBuildCmdtyStorage WithTerminalStorageValue(Func<double, double, double> terminalStorageValueFunc);
+            IBuildCmdtyStorage MustBeEmptyAtEnd();
         }
 
         public interface IBuildCmdtyStorage

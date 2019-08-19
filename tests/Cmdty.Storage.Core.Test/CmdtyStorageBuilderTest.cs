@@ -60,6 +60,7 @@ namespace Cmdty.Storage.Core.Test
                                 .WithConstantMinInventory(ConstantMinInventory)
                                 .WithPerUnitInjectionCost(ConstantInjectionCost)
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost)
+                                .MustBeEmptyAtEnd()
                                 .Build();
             return storage;
         }
