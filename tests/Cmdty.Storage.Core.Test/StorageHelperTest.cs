@@ -204,7 +204,7 @@ namespace Cmdty.Storage.Core.Test
                         .WithConstantMinInventory(minInventory)
                         .WithPerUnitInjectionCost(1.5)
                         .WithPerUnitWithdrawalCost(0.8)
-                        .WithTerminalStorageValue((cmdtyPrice, inventory) => 0.0)
+                        .MustBeEmptyAtEnd()
                         .Build();
 
             TimeSeries<Day, InventoryRange> inventorySpace =
@@ -218,10 +218,10 @@ namespace Cmdty.Storage.Core.Test
             AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 22)], 0.0, 23.5);
             AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 23)], 0.0, 23.5);
             AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 24)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 25)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 26)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 27)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 28)], 0.0, 23.5);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 25)], 0.0, 18.0);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 26)], 0.0, 12.0);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 27)], 0.0, 6.0);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 28)], 0.0, 0.0);
 
         }
 

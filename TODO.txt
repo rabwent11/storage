@@ -16,8 +16,21 @@ By End of Thursday 15-Aug-2019
 - NuGet package published
 - PyPI package published
 
+Essential
+- Sort out discounting
+- Unit tests for polynomial inject/withdraw constraint
+- Update grid spacing to be function of CmdtyStorage and inventory constraints
+- Valuation result contains decisions grid
+	- Methods for outputting these as CSV files
+- Expired storage value + unit tests
+- Value on end date + unit test
+- Value on day before end date + unit test
+- Check that inventory is within constraints and throw if not + unit test
+- Unit test decision generation when min and max inject/withdraw constraints are equal
+
+Nice to Have
 - Use parallel loop in backward induction
-- Explicit in pricer whether end has to be empty or has value
 - Ability to have more than 3 decision?
+- Flag for whether decision has been made in current period
 
 - Valuation results include trigger prices for inject and withdraw?

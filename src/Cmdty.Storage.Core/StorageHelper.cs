@@ -73,8 +73,8 @@ namespace Cmdty.Storage.Core
             var backwardCalcMinInventory = new double[numPeriods];
 
             T periodBackLoop = storage.EndPeriod;
-            backwardCalcMaxInventory[numPeriods - 1] = storage.MaxInventory(storage.EndPeriod);
-            backwardCalcMinInventory[numPeriods - 1] = storage.MinInventory(storage.EndPeriod);
+            backwardCalcMaxInventory[numPeriods - 1] = storage.MustBeEmptyAtEnd ? 0 : storage.MaxInventory(storage.EndPeriod);
+            backwardCalcMinInventory[numPeriods - 1] = storage.MustBeEmptyAtEnd ? 0 : storage.MinInventory(storage.EndPeriod);
 
             for (int i = numPeriods - 2; i >= 0; i--)
             {
