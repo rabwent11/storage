@@ -12,6 +12,14 @@ pool:
   vmImage: 'VS2017-Win2016'
 
 steps:
+  - task: SonarCloudPrepare@1
+    inputs:
+      SonarCloud: 'SonarCloud'
+      organization: 'cmdty'
+      scannerMode: 'MSBuild'
+      projectKey: 'storage'
+      projectName: 'storage'
+
   - task: PowerShell@2
     displayName: 'Run Cake PowerShell Bootstrapper'
     inputs:
@@ -19,6 +27,8 @@ steps:
       arguments: '-Verbosity Diagnostic -Target CI -BuildNumber=$(Build.BuildNumber)'
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+  - task: SonarCloudAnalyze@1
 
   - task: PublishTestResults@2
     displayName: 'Publish .NET test results'
