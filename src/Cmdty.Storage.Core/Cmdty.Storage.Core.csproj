@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cmdty.Curves" Version="0.1.0-alpha4" />
+    <PackageReference Include="Cmdty.Curves" Version="0.1.0-alpha2019081704" />
   </ItemGroup>
 
   <ItemGroup>

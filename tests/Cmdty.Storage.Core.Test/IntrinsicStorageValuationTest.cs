@@ -23,7 +23,6 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-using System;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using Xunit;
@@ -35,9 +34,8 @@ namespace Cmdty.Storage.Core.Test
     {
 
         private static IntrinsicStorageValuationResults<Day> GenerateValuationResults(double startingInventory, 
-                                                                        TimeSeries<Day, double> forwardCurve)
+                                                                        TimeSeries<Day, double> forwardCurve, Day currentPeriod)
         {
-            var currentPeriod = new Day(2019, 9, 15);
             var storageStart = new Day(2019, 9, 1);
             var storageEnd = new Day(2019, 9, 30);
 
@@ -90,10 +88,12 @@ namespace Cmdty.Storage.Core.Test
         [Fact]
         public void Calculate_ZeroInventoryCurveBackwardated_ResultWithZeroNetPresentValue()
         {
+            var currentPeriod = new Day(2019, 9, 15);
+
             var forwardCurve = GenerateBackwardatedCurve(new Day(2019, 9, 1), 
                                                         new Day(2019, 9, 30));
 
-            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0, forwardCurve);
+            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0, forwardCurve, currentPeriod);
 
             Assert.Equal(0.0, valuationResults.NetPresentValue);
         }
@@ -101,10 +101,12 @@ namespace Cmdty.Storage.Core.Test
         [Fact]
         public void Calculate_ZeroInventoryCurveBackwardated_ResultWithZerosDecisionProfile()
         {
+            var currentPeriod = new Day(2019, 9, 15);
+
             var forwardCurve = GenerateBackwardatedCurve(new Day(2019, 9, 1),
                                     new Day(2019, 9, 30));
 
-            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0, forwardCurve);
+            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0, forwardCurve, currentPeriod);
 
             AssertDecisionProfileAllZeros(valuationResults.DecisionProfile, 
                                 new Day(2019, 9, 15), 
@@ -133,6 +135,7 @@ namespace Cmdty.Storage.Core.Test
 
         private static IntrinsicStorageValuationResults<Day> IntrinsicValuationZeroInventoryForwardCurveWithSpread(double forwardSpread)
         {
+            var currentPeriod = new Day(2019, 9, 15);
             const double lowerForwardPrice = 56.6;
             double higherForwardPrice = lowerForwardPrice + forwardSpread;
 
@@ -149,7 +152,7 @@ namespace Cmdty.Storage.Core.Test
             }
 
             IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0,
-                                                                            forwardCurveBuilder.Build());
+                                                                            forwardCurveBuilder.Build(), currentPeriod);
             return valuationResults;
         }
 
@@ -162,6 +165,28 @@ namespace Cmdty.Storage.Core.Test
 
         //    Assert.True(valuationResults.NetPresentValue > 0);
         //}
+
+        [Fact]
+        public void Calculate_CurrentPeriodAfterStorageEnd_ResultWithZeroNetPresentValue()
+        {
+            var currentPeriod = new Day(2019, 10, 1);
+
+            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0,
+                                                                        TimeSeries<Day, double>.Empty, currentPeriod);
+
+            Assert.Equal(0.0, valuationResults.NetPresentValue);
+        }
+
+        [Fact]
+        public void Calculate_CurrentPeriodAfterStorageEnd_ResultWithEmptyDecisionProfile()
+        {
+            var currentPeriod = new Day(2019, 10, 1);
+
+            IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0,
+                                                                        TimeSeries<Day, double>.Empty, currentPeriod);
+
+            Assert.True(valuationResults.DecisionProfile.IsEmpty);
+        }
 
 
         // TODO test cases:

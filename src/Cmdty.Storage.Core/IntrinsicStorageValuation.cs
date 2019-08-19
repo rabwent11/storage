@@ -111,7 +111,10 @@ namespace Cmdty.Storage.Core
         {
             // TODO validate inputs
 
-            // TODO return empty results if expired
+            if (currentPeriod.CompareTo(storage.EndPeriod) > 0)
+                return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty);
+
+            // TODO value on expiry date
 
             TimeSeries<T, InventoryRange> inventorySpace = StorageHelper.CalculateInventorySpace(storage, startingInventory, currentPeriod);
 
