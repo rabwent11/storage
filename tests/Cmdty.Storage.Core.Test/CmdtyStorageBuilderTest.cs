@@ -23,6 +23,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
+using System.Collections.Generic;
 using Cmdty.TimePeriodValueTypes;
 using Xunit;
 
@@ -64,6 +65,66 @@ namespace Cmdty.Storage.Core.Test
                                 .Build();
             return storage;
         }
+
+        [Fact]
+        public void Build_WithTimeAndInventoryVaryingInjectWithdrawRates_TODONAME() // TODO give proper name
+        {
+            var injectWithdrawConstraints = new List<InjectWithdrawRangeByInventoryAndPeriod<Day>>
+            {
+                (period: new Day(2019, 10, 1), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                        {
+                            (inventory: 0.0, (minInjectWithdrawRate: -44.85, maxInjectWithdrawRate: 56.8)), // Inventory empty, highest injection rate
+                            (inventory: 100.0, (minInjectWithdrawRate: -45.01, maxInjectWithdrawRate: 54.5)),
+                            (inventory: 300.0, (minInjectWithdrawRate: -45.78, maxInjectWithdrawRate: 52.01)),
+                            (inventory: 600.0, (minInjectWithdrawRate: -46.17, maxInjectWithdrawRate: 51.9)),
+                            (inventory: 800.0, (minInjectWithdrawRate: -46.99, maxInjectWithdrawRate: 50.8)),
+                            (inventory: 1000.0, (minInjectWithdrawRate: -47.12, maxInjectWithdrawRate: 50.01)) // Inventory full, highest withdrawal rate
+                        }),
+                (period: new Day(2019, 10, 17), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: 0.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06)), // Inventory empty, highest injection rate
+                    (inventory: 500.0, (minInjectWithdrawRate: -150.3, maxInjectWithdrawRate: 120.05)),
+                    (inventory: 1000.0, (minInjectWithdrawRate: -170.25, maxInjectWithdrawRate: 111.56)) // Inventory full, highest withdrawal rate
+                }),
+            };
+
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                                .WithActiveTimePeriod(new Day(2019, 10, 1), new Day(2019, 11, 1))
+                                .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+                                .WithConstantMaxInventory(1000.0)
+                                .WithConstantMinInventory(0.0)
+                                .WithPerUnitInjectionCost(ConstantInjectionCost)
+                                .WithPerUnitWithdrawalCost(ConstantWithdrawalCost)
+                                .MustBeEmptyAtEnd()
+                                .Build();
+
+            // Inject/withdraw on first date
+            var injectWithdrawRangeOnFirstDate = storage.GetInjectWithdrawRange(new Day(2019, 10, 1), 100);
+            Assert.Equal(-45.01, injectWithdrawRangeOnFirstDate.MinInjectWithdrawRate, 12);
+            Assert.Equal(54.5, injectWithdrawRangeOnFirstDate.MaxInjectWithdrawRate, 12);
+
+            // Inject/withdraw between dates (same as on first date)
+            var injectWithdrawRangeBetweenDates = storage.GetInjectWithdrawRange(new Day(2019, 10, 16), 100);
+            Assert.Equal(-45.01, injectWithdrawRangeBetweenDates.MinInjectWithdrawRate, 12);
+            Assert.Equal(54.5, injectWithdrawRangeBetweenDates.MaxInjectWithdrawRate, 12);
+
+            // Inject/withdraw on second date
+            var injectWithdrawRangeOnSecondDate = storage.GetInjectWithdrawRange(new Day(2019, 10, 17), 1000);
+            Assert.Equal(-170.25, injectWithdrawRangeOnSecondDate.MinInjectWithdrawRate, 12);
+            Assert.Equal(111.56, injectWithdrawRangeOnSecondDate.MaxInjectWithdrawRate, 12);
+
+            // Inject/withdraw between second date and end
+            var injectWithdrawRangeBetweenSecondDateAndEnd = storage.GetInjectWithdrawRange(new Day(2019, 10, 29), 500);
+            Assert.Equal(-150.3, injectWithdrawRangeBetweenSecondDateAndEnd.MinInjectWithdrawRate, 12);
+            Assert.Equal(120.05, injectWithdrawRangeBetweenSecondDateAndEnd.MaxInjectWithdrawRate, 12);
+
+            // Inject/withdraw after end of storage
+            var injectWithdrawRangeAfterEnd = storage.GetInjectWithdrawRange(new Day(2019, 11, 5), 500);
+            Assert.Equal(-150.3, injectWithdrawRangeAfterEnd.MinInjectWithdrawRate, 12);
+            Assert.Equal(120.05, injectWithdrawRangeAfterEnd.MaxInjectWithdrawRate, 12);
+            
+        }
+
 
     }
 }

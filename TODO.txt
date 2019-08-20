@@ -18,6 +18,7 @@ By End of Thursday 15-Aug-2019
 
 Essential
 - Sort out discounting
+- Change order in fluent storage builder api of min and max inventory constraints
 - Update grid spacing to be function of CmdtyStorage and inventory constraints
 	- Default is evenly spaced based on global max minus min inventory
 - Valuation result contains decisions grid
@@ -30,10 +31,11 @@ Essential
 - Check that withdrawal rate doesn't decrease with inventory, and injection rate doesn't increase with inventory
 	- Just causes root finding to fail?
 - Extension methods for creating storage
-	- Inventory varying inject/withdraw constaints
 	- Time and inventory varying inject/withdraw constraints
 		- Calling code can specify piecewise table
 	- Inventory range of inject/withdraw constraints also specifies inventory constraint of storage?
+	- Time varying min and max inventory
+		- Make parameter TimeSeries type?
 
 Nice to Have
 - Use parallel loop in backward induction

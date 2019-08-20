@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Generic;
 using Cmdty.TimePeriodValueTypes;
+using Cmdty.TimeSeries;
 using JetBrains.Annotations;
 
 namespace Cmdty.Storage.Core
@@ -48,6 +49,72 @@ namespace Cmdty.Storage.Core
             if (builder == null) throw new ArgumentNullException(nameof(builder));
             var polynomialInjectWithdrawConstraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRanges);
             return builder.WithInjectWithdrawConstraint(polynomialInjectWithdrawConstraint);
+        }
+
+        public static CmdtyStorage<T>.IAddMaxInventory WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
+                    [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
+                    [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges)
+            where T : ITimePeriod<T>
+        {
+            if (builder == null) throw new ArgumentNullException(nameof(builder));
+            if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
+
+            var sortedList = new SortedList<T, PolynomialInjectWithdrawConstraint>();
+            foreach ((T period, IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRange) in injectWithdrawRanges)
+            {
+                if (period == null)
+                    throw new ArgumentException("Null Period in collection.", nameof(injectWithdrawRanges));
+                if (injectWithdrawRange == null)
+                    throw new ArgumentException("Null InjectWithdrawRanges in collection.", nameof(injectWithdrawRange));
+                var constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRange);
+                try
+                {
+                    sortedList.Add(period, constraint);
+                }
+                catch (ArgumentException) // TODO unit test
+                {
+                    throw new ArgumentException("Repeated periods found in inject/withdraw ranges", nameof(injectWithdrawRanges));
+                }
+            }
+
+            if (sortedList.Count == 0)
+                throw new ArgumentException("No inject/withdraw constrains provided.", nameof(injectWithdrawRanges));
+
+            // TODO create helper method (in Cmdty.TimeSeries) to create TimeSeries from piecewise data?
+            T firstPeriod = sortedList.Keys[0];
+            T lastPeriod = sortedList.Keys[sortedList.Count - 1];
+            int numPeriods = lastPeriod.OffsetFrom(firstPeriod) + 1;
+
+            var timeSeriesValues = new PolynomialInjectWithdrawConstraint[numPeriods];
+
+            T periodLoop = firstPeriod;
+            PolynomialInjectWithdrawConstraint constraintLoop = sortedList.Values[0];
+
+            int arrayCounter = 0;
+            int sortedListCounter = 0;
+            do
+            {
+                if (periodLoop.Equals(sortedList.Keys[sortedListCounter]))
+                {
+                    constraintLoop = sortedList.Values[sortedListCounter];
+                    sortedListCounter++;
+                }
+                timeSeriesValues[arrayCounter] = constraintLoop;
+
+                periodLoop = periodLoop.Offset(1);
+                arrayCounter++;
+            } while (periodLoop.CompareTo(lastPeriod) <= 0);
+
+            var timeSeries = new TimeSeries<T, PolynomialInjectWithdrawConstraint>(firstPeriod, timeSeriesValues);
+
+            IInjectWithdrawConstraint GetInjectWithdrawConstraint(T period)
+            {
+                if (period.CompareTo(timeSeries.End) > 0)
+                    return timeSeries[timeSeries.End];
+                return timeSeries[period];
+            }
+
+            return builder.WithInjectWithdrawConstraint(GetInjectWithdrawConstraint);
         }
 
     }
