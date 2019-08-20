@@ -45,6 +45,9 @@ namespace Cmdty.Storage.Core
             if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
 
             List<InjectWithdrawRangeByInventory> injectWithdrawRangesList = injectWithdrawRanges.ToList();
+            if (injectWithdrawRangesList.Count < 2)
+                throw new ArgumentException("At least 2 inject/withdraw constraints must be specified", nameof(injectWithdrawRanges));
+
             double[] inventories = injectWithdrawRangesList.Select(iwi => iwi.Inventory).ToArray();
             double[] maxInjectWithdrawRates = injectWithdrawRangesList.Select(iwi => iwi.InjectWithdrawRange.MaxInjectWithdrawRate).ToArray();
             double[] minInjectWithdrawRates = injectWithdrawRangesList.Select(iwi => iwi.InjectWithdrawRange.MinInjectWithdrawRate).ToArray();

@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using JetBrains.Annotations;
@@ -59,14 +60,29 @@ namespace Cmdty.Storage.Core
             if (builder == null) throw new ArgumentNullException(nameof(builder));
             if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
 
-            var sortedList = new SortedList<T, PolynomialInjectWithdrawConstraint>();
+            var sortedList = new SortedList<T, IInjectWithdrawConstraint>();
             foreach ((T period, IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRange) in injectWithdrawRanges)
             {
                 if (period == null)
                     throw new ArgumentException("Null Period in collection.", nameof(injectWithdrawRanges));
                 if (injectWithdrawRange == null)
                     throw new ArgumentException("Null InjectWithdrawRanges in collection.", nameof(injectWithdrawRange));
-                var constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRange);
+
+                var injectWithdrawRangeArray = injectWithdrawRange.ToArray();
+                if (injectWithdrawRangeArray.Length == 0)
+                    throw new ArgumentException("", nameof(injectWithdrawRanges));
+
+                IInjectWithdrawConstraint constraint;
+                if (injectWithdrawRangeArray.Length == 1)
+                {
+                    (_, (double minInjectWithdraw, double maxInjectWithdraw)) = injectWithdrawRangeArray[0];
+                    constraint = new ConstantInjectWithdrawConstraint(minInjectWithdraw, maxInjectWithdraw);
+                }
+                else
+                {
+                    constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray);
+                }
+
                 try
                 {
                     sortedList.Add(period, constraint);
@@ -85,10 +101,10 @@ namespace Cmdty.Storage.Core
             T lastPeriod = sortedList.Keys[sortedList.Count - 1];
             int numPeriods = lastPeriod.OffsetFrom(firstPeriod) + 1;
 
-            var timeSeriesValues = new PolynomialInjectWithdrawConstraint[numPeriods];
+            var timeSeriesValues = new IInjectWithdrawConstraint[numPeriods];
 
             T periodLoop = firstPeriod;
-            PolynomialInjectWithdrawConstraint constraintLoop = sortedList.Values[0];
+            IInjectWithdrawConstraint constraintLoop = sortedList.Values[0];
 
             int arrayCounter = 0;
             int sortedListCounter = 0;
@@ -105,7 +121,7 @@ namespace Cmdty.Storage.Core
                 arrayCounter++;
             } while (periodLoop.CompareTo(lastPeriod) <= 0);
 
-            var timeSeries = new TimeSeries<T, PolynomialInjectWithdrawConstraint>(firstPeriod, timeSeriesValues);
+            var timeSeries = new TimeSeries<T, IInjectWithdrawConstraint>(firstPeriod, timeSeriesValues);
 
             IInjectWithdrawConstraint GetInjectWithdrawConstraint(T period)
             {
