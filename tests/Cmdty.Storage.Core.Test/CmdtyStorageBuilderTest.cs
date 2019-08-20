@@ -67,7 +67,7 @@ namespace Cmdty.Storage.Core.Test
         }
 
         [Fact]
-        public void Build_WithTimeAndInventoryVaryingInjectWithdrawRates_TODONAME() // TODO give proper name
+        public void Build_WithTimeAndInventoryVaryingInjectWithdrawRates_InjectWithdrawRangeAsExpected()
         {
             var injectWithdrawConstraints = new List<InjectWithdrawRangeByInventoryAndPeriod<Day>>
             {
