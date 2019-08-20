@@ -18,14 +18,22 @@ By End of Thursday 15-Aug-2019
 
 Essential
 - Sort out discounting
-- Unit tests for polynomial inject/withdraw constraint
 - Update grid spacing to be function of CmdtyStorage and inventory constraints
+	- Default is evenly spaced based on global max minus min inventory
 - Valuation result contains decisions grid
 	- Methods for outputting these as CSV files
 - Value on day before end date + unit test (storage has inventory some inventory which gets withdrawn)
+	- Test with inventory varying inject/withdraw
 - Unit test inventory checking
 	- Do checks on expiry date too
 - Unit test decision generation when min and max inject/withdraw constraints are equal
+- Check that withdrawal rate doesn't decrease with inventory, and injection rate doesn't increase with inventory
+	- Just causes root finding to fail?
+- Extension methods for creating storage
+	- Inventory varying inject/withdraw constaints
+	- Time and inventory varying inject/withdraw constraints
+		- Calling code can specify piecewise table
+	- Inventory range of inject/withdraw constraints also specifies inventory constraint of storage?
 
 Nice to Have
 - Use parallel loop in backward induction
