@@ -34,7 +34,7 @@ namespace Cmdty.Storage.Core
 {
     public static class CmdtyStorageBuilderExtensions
     {
-        public static CmdtyStorage<T>.IAddMaxInventory WithConstantInjectWithdrawRange<T>([NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
+        public static CmdtyStorage<T>.IAddMinInventory WithConstantInjectWithdrawRange<T>([NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
                             double minInjectWithdrawRate, double maxInjectWithdrawRate)
             where T : ITimePeriod<T>
         {
@@ -43,7 +43,7 @@ namespace Cmdty.Storage.Core
             return builder.WithInjectWithdrawConstraint(constantInjectWithdrawConstraint);
         }
 
-        public static CmdtyStorage<T>.IAddMaxInventory WithInventoryDependentInjectWithdrawRange<T>([NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
+        public static CmdtyStorage<T>.IAddMinInventory WithInventoryDependentInjectWithdrawRange<T>([NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
                             IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRanges)
             where T : ITimePeriod<T>
         {
@@ -52,7 +52,7 @@ namespace Cmdty.Storage.Core
             return builder.WithInjectWithdrawConstraint(polynomialInjectWithdrawConstraint);
         }
 
-        public static CmdtyStorage<T>.IAddMaxInventory WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
+        public static CmdtyStorage<T>.IAddMinInventory WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
                     [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
                     [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges)
             where T : ITimePeriod<T>

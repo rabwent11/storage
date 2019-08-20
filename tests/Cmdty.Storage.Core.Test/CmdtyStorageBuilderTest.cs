@@ -57,8 +57,8 @@ namespace Cmdty.Storage.Core.Test
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                                 .WithActiveTimePeriod(new Day(2019, 10, 1), new Day(2019, 11, 1))
                                 .WithConstantInjectWithdrawRange(-ConstantMaxWithdrawRate, ConstantMaxInjectRate)
-                                .WithConstantMaxInventory(ConstantMaxInventory)
                                 .WithConstantMinInventory(ConstantMinInventory)
+                                .WithConstantMaxInventory(ConstantMaxInventory)
                                 .WithPerUnitInjectionCost(ConstantInjectionCost)
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost)
                                 .MustBeEmptyAtEnd()
@@ -83,14 +83,14 @@ namespace Cmdty.Storage.Core.Test
                 (period: new Day(2019, 10, 17), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
                 {
                     (inventory: 0.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06)) // Only a single inject/withdraw constraint, so constant constraints assumed
-                }),
+                })
             };
 
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                                 .WithActiveTimePeriod(new Day(2019, 10, 1), new Day(2019, 11, 1))
                                 .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
-                                .WithConstantMaxInventory(1000.0)
                                 .WithConstantMinInventory(0.0)
+                                .WithConstantMaxInventory(1000.0)
                                 .WithPerUnitInjectionCost(ConstantInjectionCost)
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost)
                                 .MustBeEmptyAtEnd()

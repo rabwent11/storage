@@ -42,8 +42,8 @@ namespace Cmdty.Storage.Core.Test
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                 .WithActiveTimePeriod(storageStart, storageEnd)
                 .WithConstantInjectWithdrawRange(-45.5, 56.6)
-                .WithConstantMaxInventory(1000.0)
                 .WithConstantMinInventory(0.0)
+                .WithConstantMaxInventory(1000.0)
                 .WithPerUnitInjectionCost(0.8)
                 .WithPerUnitWithdrawalCost(1.2)
                 .MustBeEmptyAtEnd()
@@ -220,8 +220,8 @@ namespace Cmdty.Storage.Core.Test
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                 .WithActiveTimePeriod(storageStart, storageEnd)
                 .WithConstantInjectWithdrawRange(-45.5, 56.6)
-                .WithConstantMaxInventory(1000.0)
                 .WithConstantMinInventory(0.0)
+                .WithConstantMaxInventory(1000.0)
                 .WithPerUnitInjectionCost(0.8)
                 .WithPerUnitWithdrawalCost(1.2)
                 .WithTerminalStorageValue((cmdtyPrice, terminalInventory) => cmdtyPrice * terminalInventory - 999.0)

@@ -18,11 +18,10 @@ By End of Thursday 15-Aug-2019
 
 Essential
 - Sort out discounting
-- Change order in fluent storage builder api of min and max inventory constraints
 - Unit tests with non-zero value
 	- Value on day before end date + unit test (storage has inventory some inventory which gets withdrawn)
 		- Test with inventory varying inject/withdraw
-
+	- Various other scenarios
 - Update grid spacing to be function of CmdtyStorage and inventory constraints
 	- Default is evenly spaced based on global max minus min inventory
 - Valuation result contains decisions grid
@@ -38,8 +37,12 @@ Essential
 	- Inventory range of inject/withdraw constraints also specifies inventory constraint of storage?
 	- Time varying min and max inventory
 		- Make parameter TimeSeries type?
+- Put classed in project folders
+- Create and publish NuGet package
 
 Nice to Have
+- Excel add-in
+- Put builder extension methods into builder class?
 - Use parallel loop in backward induction
 - Ability to have more than 3 decision?
 - Flag for whether decision has been made in current period

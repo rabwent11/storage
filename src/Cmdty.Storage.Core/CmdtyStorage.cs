@@ -32,7 +32,7 @@ namespace Cmdty.Storage.Core
     /// <summary>
     /// Represents ownership of a commodity storage facility, either virtual or physical.
     /// </summary>
-    public sealed class CmdtyStorage<T> // TODO extract interface?
+    public sealed class CmdtyStorage<T>
         where T : ITimePeriod<T>
     {
         private readonly Func<T, IInjectWithdrawConstraint> _injectWithdrawConstraints;
@@ -63,9 +63,6 @@ namespace Cmdty.Storage.Core
             _terminalStorageValue = terminalStorageValue;
             MustBeEmptyAtEnd = mustBeEmptyAtEnd;
         }
-
-        // TODO checks that number isn't requested for date or inventory which is out of bounds?
-        // TODO adjust inject and withdrawal rate doesn't make inventory in next period out of the inventory bounds?
 
         public T StartPeriod { get; }
         public T EndPeriod { get; }
@@ -140,53 +137,53 @@ namespace Cmdty.Storage.Core
                 return this;
             }
 
-            IAddMaxInventory IAddInjectWithdrawConstraints.WithTimeDependentInjectWithdrawRange(Func<T, InjectWithdrawRange> injectWithdrawRangeByPeriod)
+            IAddMinInventory IAddInjectWithdrawConstraints.WithTimeDependentInjectWithdrawRange(Func<T, InjectWithdrawRange> injectWithdrawRangeByPeriod)
             {
                 if (injectWithdrawRangeByPeriod == null) throw new ArgumentNullException(nameof(injectWithdrawRangeByPeriod));
                 _injectWithdrawConstraints = period => new ConstantInjectWithdrawConstraint(injectWithdrawRangeByPeriod(period));
                 return this;
             }
 
-            IAddMaxInventory IAddInjectWithdrawConstraints.WithInjectWithdrawConstraint(IInjectWithdrawConstraint injectWithdrawConstraint)
+            IAddMinInventory IAddInjectWithdrawConstraints.WithInjectWithdrawConstraint(IInjectWithdrawConstraint injectWithdrawConstraint)
             {
                 if (injectWithdrawConstraint == null) throw new ArgumentNullException(nameof(injectWithdrawConstraint));
                 _injectWithdrawConstraints = date => injectWithdrawConstraint;
                 return this;
             }
 
-            IAddMaxInventory IAddInjectWithdrawConstraints.WithInjectWithdrawConstraint(Func<T, IInjectWithdrawConstraint> injectWithdrawConstraintByPeriod)
+            IAddMinInventory IAddInjectWithdrawConstraints.WithInjectWithdrawConstraint(Func<T, IInjectWithdrawConstraint> injectWithdrawConstraintByPeriod)
             {
                 _injectWithdrawConstraints = injectWithdrawConstraintByPeriod ?? throw new ArgumentNullException(nameof(injectWithdrawConstraintByPeriod));
                 return this;
             }
 
-            IAddMinInventory IAddMaxInventory.WithConstantMaxInventory(double maxInventory)
+            IAddInjectionCost IAddMaxInventory.WithConstantMaxInventory(double maxInventory)
             {
                 // TODO Check not negative
                 _maxInventory = date => maxInventory;
                 return this;
             }
-            
-            IAddMinInventory IAddMaxInventory.WithMaxInventory(Func<T, double> maxInventory)
+
+            IAddInjectionCost IAddMaxInventory.WithMaxInventory(Func<T, double> maxInventory)
             {
                 _maxInventory = maxInventory ?? throw new ArgumentNullException(nameof(maxInventory));
                 return this;
             }
 
-            IAddInjectionCost IAddMinInventory.WithZeroMinInventory()
+            IAddMaxInventory IAddMinInventory.WithZeroMinInventory()
             {
                 _minInventory = date => 0.0;
                 return this;
             }
 
-            IAddInjectionCost IAddMinInventory.WithConstantMinInventory(double minInventory)
+            IAddMaxInventory IAddMinInventory.WithConstantMinInventory(double minInventory)
             {
                 // TODO check not negative
                 _minInventory = date => minInventory;
                 return this;
             }
-            
-            IAddInjectionCost IAddMinInventory.WithMinInventory(Func<T, double> minInventory)
+
+            IAddMaxInventory IAddMinInventory.WithMinInventory(Func<T, double> minInventory)
             {
                 _minInventory = minInventory ?? throw new ArgumentNullException(nameof(minInventory));
                 return this;
@@ -300,24 +297,24 @@ namespace Cmdty.Storage.Core
 
         public interface IAddInjectWithdrawConstraints
         {
-            IAddMaxInventory WithTimeDependentInjectWithdrawRange(Func<T, InjectWithdrawRange> injectWithdrawRangeByPeriod);
-            IAddMaxInventory WithInjectWithdrawConstraint(IInjectWithdrawConstraint injectWithdrawConstraint);
-            IAddMaxInventory WithInjectWithdrawConstraint(Func<T, IInjectWithdrawConstraint> injectWithdrawConstraintByPeriod);
-        }
-
-        public interface IAddMaxInventory
-        {
-            IAddMinInventory WithConstantMaxInventory(double maxInventory);
-            IAddMinInventory WithMaxInventory(Func<T, double> maxInventory);
+            IAddMinInventory WithTimeDependentInjectWithdrawRange(Func<T, InjectWithdrawRange> injectWithdrawRangeByPeriod);
+            IAddMinInventory WithInjectWithdrawConstraint(IInjectWithdrawConstraint injectWithdrawConstraint);
+            IAddMinInventory WithInjectWithdrawConstraint(Func<T, IInjectWithdrawConstraint> injectWithdrawConstraintByPeriod);
         }
 
         public interface IAddMinInventory
         {
-            IAddInjectionCost WithZeroMinInventory();
-            IAddInjectionCost WithConstantMinInventory(double minInventory);
-            IAddInjectionCost WithMinInventory(Func<T, double> minInventory);
+            IAddMaxInventory WithZeroMinInventory();
+            IAddMaxInventory WithConstantMinInventory(double minInventory);
+            IAddMaxInventory WithMinInventory(Func<T, double> minInventory);
         }
 
+        public interface IAddMaxInventory
+        {
+            IAddInjectionCost WithConstantMaxInventory(double maxInventory);
+            IAddInjectionCost WithMaxInventory(Func<T, double> maxInventory);
+        }
+        
         public interface IAddInjectionCost
         {
             // TODO method for fixed cost component for action (no matter what volume)?
