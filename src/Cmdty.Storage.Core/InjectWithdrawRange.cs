@@ -52,5 +52,8 @@ namespace Cmdty.Storage.Core
             maxInjectWithdraw = MaxInjectWithdrawRate;
         }
 
+        public static implicit operator InjectWithdrawRange((double minInjectWithdrawRate, double maxInjectWithdrawRate) tuple)
+                                => new InjectWithdrawRange(tuple.minInjectWithdrawRate, tuple.maxInjectWithdrawRate);
+
     }
 }

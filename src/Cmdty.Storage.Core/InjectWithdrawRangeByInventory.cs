@@ -50,5 +50,8 @@ namespace Cmdty.Storage.Core
             injectWithdrawRange = InjectWithdrawRange;
         }
 
+        public static implicit operator InjectWithdrawRangeByInventory((double inventory, InjectWithdrawRange injectWithdrawRange) tuple)
+                                    => new InjectWithdrawRangeByInventory(tuple.inventory, tuple.injectWithdrawRange);
+
     }
 }

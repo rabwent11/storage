@@ -44,12 +44,12 @@ namespace Cmdty.Storage.Core.Test
             
             var injectWithdrawalRanges = new List<InjectWithdrawRangeByInventory>
             {
-                new InjectWithdrawRangeByInventory(0.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(100.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(300.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(600.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(800.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(1000.0, injectWithdrawRange),
+                (inventory: 0.0, injectWithdrawRange),
+                (inventory: 100.0, injectWithdrawRange),
+                (inventory: 300.0, injectWithdrawRange),
+                (inventory: 600.0, injectWithdrawRange),
+                (inventory: 800.0, injectWithdrawRange),
+                (inventory: 1000.0, injectWithdrawRange),
             };
 
             var polynomialInjectWithdrawConstraint = new PolynomialInjectWithdrawConstraint(injectWithdrawalRanges);
@@ -74,12 +74,12 @@ namespace Cmdty.Storage.Core.Test
             
             var injectWithdrawalRanges = new List<InjectWithdrawRangeByInventory>
             {
-                new InjectWithdrawRangeByInventory(0.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(100.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(300.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(600.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(800.0, injectWithdrawRange),
-                new InjectWithdrawRangeByInventory(1000.0, injectWithdrawRange),
+                (inventory: 0.0, injectWithdrawRange),
+                (inventory: 100.0, injectWithdrawRange),
+                (inventory: 300.0, injectWithdrawRange),
+                (inventory: 600.0, injectWithdrawRange),
+                (inventory: 800.0, injectWithdrawRange),
+                (inventory: 1000.0, injectWithdrawRange),
             };
 
             var polynomialInjectWithdrawConstraint = new PolynomialInjectWithdrawConstraint(injectWithdrawalRanges);
