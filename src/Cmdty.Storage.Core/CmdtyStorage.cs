@@ -24,6 +24,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Cmdty.TimePeriodValueTypes;
 using JetBrains.Annotations;
 
@@ -38,8 +39,11 @@ namespace Cmdty.Storage.Core
         private readonly Func<T, IInjectWithdrawConstraint> _injectWithdrawConstraints;
         private readonly Func<T, double> _maxInventory;
         private readonly Func<T, double> _minInventory;
-        private readonly Func<T, double, double, double, double> _injectionCost;
-        private readonly Func<T, double, double, double, double> _withdrawalCost;
+        private readonly Func<T, double, double, IReadOnlyList<DomesticCashFlow>> _injectionCashFlows;
+        private readonly Func<T, double, double, double> _injectCmdtyConsumed;
+        private readonly Func<T, double, double, IReadOnlyList<DomesticCashFlow>> _withdrawalCashFlows;
+        private readonly Func<T, double, double, double> _withdrawCmdtyConsumed;
+
         private readonly Func<double, double, double> _terminalStorageValue;
         public bool MustBeEmptyAtEnd { get; }
 
@@ -48,20 +52,24 @@ namespace Cmdty.Storage.Core
                             Func<T, IInjectWithdrawConstraint> injectWithdrawConstraints,
                             Func<T, double> maxInventory,
                             Func<T, double> minInventory,
-                            Func<T, double, double, double, double> injectionCost,
-                            Func<T, double, double, double, double> withdrawalCost,
+                            Func<T, double, double, IReadOnlyList<DomesticCashFlow>> injectionCashFlows,
+                            Func<T, double, double, IReadOnlyList<DomesticCashFlow>> withdrawalCashFlows,
                             Func<double, double, double> terminalStorageValue,
-                            bool mustBeEmptyAtEnd)
+                            bool mustBeEmptyAtEnd,
+                            Func<T, double, double, double> injectCmdtyConsumed,
+                            Func<T, double, double, double> withdrawCmdtyConsumed)
         {
             StartPeriod = startPeriod;
             EndPeriod = endPeriod;
             _injectWithdrawConstraints = injectWithdrawConstraints;
             _maxInventory = maxInventory;
             _minInventory = minInventory;
-            _injectionCost = injectionCost;
-            _withdrawalCost = withdrawalCost;
+            _injectionCashFlows = injectionCashFlows;
+            _withdrawalCashFlows = withdrawalCashFlows;
             _terminalStorageValue = terminalStorageValue;
             MustBeEmptyAtEnd = mustBeEmptyAtEnd;
+            _injectCmdtyConsumed = injectCmdtyConsumed;
+            _withdrawCmdtyConsumed = withdrawCmdtyConsumed;
         }
 
         public T StartPeriod { get; }
@@ -82,14 +90,24 @@ namespace Cmdty.Storage.Core
             return _minInventory(date);
         }
 
-        public double InjectionCost(T date, double inventory, double injectedVolume, double cmdtyPrice)
+        public IReadOnlyList<DomesticCashFlow> InjectionCost(T date, double inventory, double injectedVolume)
         {
-            return _injectionCost(date, inventory, injectedVolume, cmdtyPrice);
+            return _injectionCashFlows(date, inventory, injectedVolume);
         }
 
-        public double WithdrawalCost(T date, double inventory, double withdrawnVolume, double cmdtyPrice)
+        public double CmdtyVolumeConsumedOnInject(T date, double inventory, double injectedVolume)
         {
-            return _withdrawalCost(date, inventory, withdrawnVolume, cmdtyPrice);
+            return _injectCmdtyConsumed(date, inventory, injectedVolume);
+        }
+
+        public IReadOnlyList<DomesticCashFlow> WithdrawalCost(T date, double inventory, double withdrawnVolume)
+        {
+            return _withdrawalCashFlows(date, inventory, withdrawnVolume);
+        }
+
+        public double CmdtyVolumeConsumedOnWithdraw(T date, double inventory, double withdrawnVolume)
+        {
+            return _withdrawCmdtyConsumed(date, inventory, withdrawnVolume);
         }
 
         public double InventorySpaceUpperBound([NotNull] T period, double nextPeriodInventorySpaceUpperBound)
@@ -118,18 +136,20 @@ namespace Cmdty.Storage.Core
         public static IBuilder<T> Builder => new StorageBuilder();
 
         private sealed class StorageBuilder : IBuilder<T>, IAddInjectWithdrawConstraints, IAddMaxInventory, IAddMinInventory, IAddInjectionCost, 
-                    IAddWithdrawalCost, IAddTerminalStorageState, IBuildCmdtyStorage
+                    IAddWithdrawalCost, IAddTerminalStorageState, IBuildCmdtyStorage, IAddCmdtyConsumedOnInject, IAddCmdtyConsumedOnWithdraw
         {
             private T _startPeriod;
             private T _endPeriod;
             private Func<T, IInjectWithdrawConstraint> _injectWithdrawConstraints;
             private Func<T, double> _maxInventory;
             private Func<T, double> _minInventory;
-            private Func<T, double, double, double, double> _injectionCost;
-            private Func<T, double, double, double, double> _withdrawalCost;
+            private Func<T, double, double, IReadOnlyList<DomesticCashFlow>> _injectionCashFlows;
+            private Func<T, double, double, IReadOnlyList<DomesticCashFlow>> _withdrawalCashFlows;
             private Func<double, double, double> _terminalStorageValue;
             private bool _mustBeEmptyAtEnd;
-
+            private Func<T, double, double, double> _injectCmdtyConsumed;
+            private Func<T, double, double, double> _withdrawCmdtyConsumed;
+            
             IAddInjectWithdrawConstraints IBuilder<T>.WithActiveTimePeriod(T start, T end)
             {
                 _startPeriod = start;
@@ -189,85 +209,37 @@ namespace Cmdty.Storage.Core
                 return this;
             }
 
-            IAddWithdrawalCost IAddInjectionCost.WithPerUnitInjectionCost(double injectionCost)
+            IAddCmdtyConsumedOnInject IAddInjectionCost.WithPerUnitInjectionCost(double perVolumeUnitCost,
+                [NotNull] Func<T, Day> cashFlowDate)
             {
+                if (cashFlowDate == null) throw new ArgumentNullException(nameof(cashFlowDate));
                 // TODO check for non-negative
-                _injectionCost = (date, inventory, injectedVolume, cmdtyPrice) => injectionCost * injectedVolume;
+                _injectionCashFlows = (date, inventory, injectedVolume) 
+                    => new [] {new DomesticCashFlow(cashFlowDate(date), perVolumeUnitCost * injectedVolume)};
                 return this;
             }
 
-            IAddWithdrawalCost IAddInjectionCost.WithTimeDependentInjectionCost(Func<T, double> injectionCost)
+            IAddCmdtyConsumedOnInject IAddInjectionCost.WithInjectionCost(
+                Func<T, double, double, IReadOnlyList<DomesticCashFlow>> injectionCost)
             {
-                if (injectionCost == null) throw new ArgumentNullException(nameof(injectionCost));
-                _injectionCost = (date, inventory, injectedVolume, cmdtyPrice) => injectionCost(date);
+                _injectionCashFlows = injectionCost ?? throw new ArgumentNullException(nameof(injectionCost));
                 return this;
             }
 
-            IAddWithdrawalCost IAddInjectionCost.WithInjectedVolumeDependentInjectionCost(Func<double, double> injectionCost)
+            IAddCmdtyConsumedOnWithdraw IAddWithdrawalCost.WithPerUnitWithdrawalCost(double perVolumeUnitCost,
+                [NotNull] Func<T, Day> cashFlowDate)
             {
-                if (injectionCost == null) throw new ArgumentNullException(nameof(injectionCost));
-                _injectionCost = (date, inventory, injectedVolume, cmdtyPrice) => injectionCost(injectedVolume);
-                return this;
-            }
-
-            IAddWithdrawalCost IAddInjectionCost.WithInventoryDependentInjectionCost(Func<double, double> injectionCost)
-            {
-                if (injectionCost == null) throw new ArgumentNullException(nameof(injectionCost));
-                _injectionCost = (date, inventory, injectedVolume, cmdtyPrice) => injectionCost(inventory);
-                return this;
-            }
-
-            IAddWithdrawalCost IAddInjectionCost.WithPriceDependentInjectionCost(Func<double, double> injectionCost)
-            {
-                if (injectionCost == null) throw new ArgumentNullException(nameof(injectionCost));
-                _injectionCost = (date, inventory, injectedVolume, cmdtyPrice) => injectionCost(cmdtyPrice);
-                return this;
-            }
-
-            IAddWithdrawalCost IAddInjectionCost.WithInjectionCost(Func<T, double, double, double, double> injectionCost)
-            {
-                _injectionCost = injectionCost ?? throw new ArgumentNullException(nameof(injectionCost));
-                return this;
-            }
-
-            IAddTerminalStorageState IAddWithdrawalCost.WithPerUnitWithdrawalCost(double withdrawalCost)
-            {
+                if (cashFlowDate == null) throw new ArgumentNullException(nameof(cashFlowDate));
                 // TODO check for non-negative
-                _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost * Math.Abs(withdrawnVolume);
+                _withdrawalCashFlows = (date, inventory, withdrawnVolume) 
+                    => new[] { new DomesticCashFlow(cashFlowDate(date), perVolumeUnitCost * Math.Abs(withdrawnVolume)) };
                 return this;
             }
 
-            IAddTerminalStorageState IAddWithdrawalCost.WithTimeDependentWithdrawalCost(Func<T, double> withdrawalCost)
+            IAddCmdtyConsumedOnWithdraw IAddWithdrawalCost.WithWithdrawalCost(
+                Func<T, double, double, IReadOnlyList<DomesticCashFlow>> withdrawalCost)
             {
-                if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
-                _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(date);
-                return this;
-            }
-
-            IAddTerminalStorageState IAddWithdrawalCost.WithWithdrawnVolumeDependentWithdrawalCost(Func<double, double> withdrawalCost)
-            {
-                if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
-                _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(withdrawnVolume);
-                return this;
-            }
-
-            IAddTerminalStorageState IAddWithdrawalCost.WithInventoryDependentWithdrawalCost(Func<double, double> withdrawalCost)
-            {
-                if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
-                _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(inventory);
-                return this;
-            }
-
-            IAddTerminalStorageState IAddWithdrawalCost.WithPriceDependentWithdrawalCost(Func<double, double> withdrawalCost)
-            {
-                if (withdrawalCost == null) throw new ArgumentNullException(nameof(withdrawalCost));
-                _withdrawalCost = (date, inventory, withdrawnVolume, cmdtyPrice) => withdrawalCost(cmdtyPrice);
-                return this;
-            }
-
-            IAddTerminalStorageState IAddWithdrawalCost.WithWithdrawalCost(Func<T, double, double, double, double> withdrawalCost)
-            {
-                _withdrawalCost = withdrawalCost ?? throw new ArgumentNullException(nameof(withdrawalCost));
+                _withdrawalCashFlows = withdrawalCost ?? throw new ArgumentNullException(nameof(withdrawalCost));
                 return this;
             }
             
@@ -286,11 +258,49 @@ namespace Cmdty.Storage.Core
             CmdtyStorage<T> IBuildCmdtyStorage.Build()
             {
                 // TODO validate inputs
-                // Default terminal storage value leaves gas in storage worthless
                 Func<double, double, double> terminalStorageValue =_terminalStorageValue ?? ((cmdtyPrice, finalInventory) => 0.0);
 
                 return new CmdtyStorage<T>(_startPeriod, _endPeriod, _injectWithdrawConstraints, _maxInventory, 
-                            _minInventory, _injectionCost, _withdrawalCost, terminalStorageValue, _mustBeEmptyAtEnd);
+                            _minInventory, _injectionCashFlows, _withdrawalCashFlows, terminalStorageValue, _mustBeEmptyAtEnd, 
+                            _injectCmdtyConsumed, _withdrawCmdtyConsumed);
+            }
+
+            IAddWithdrawalCost IAddCmdtyConsumedOnInject.WithNoCmdtyConsumedOnInject()
+            {
+                _injectCmdtyConsumed = (period, inventory, injectedVolume) => 0.0;
+                return this;
+            }
+
+            IAddWithdrawalCost IAddCmdtyConsumedOnInject.WithFixedPercentCmdtyConsumedOnInject(double percentCmdtyConsumed)
+            {
+                _injectCmdtyConsumed = (period, inventory, injectedVolume) => percentCmdtyConsumed * Math.Abs(injectedVolume);
+                return this;
+            }
+
+            IAddWithdrawalCost IAddCmdtyConsumedOnInject.WithCmdtyConsumedOnInject(
+                            [NotNull] Func<T, double, double, double> volumeOfCmdtyConsumed)
+            {
+                _injectCmdtyConsumed = volumeOfCmdtyConsumed ?? throw new ArgumentNullException(nameof(volumeOfCmdtyConsumed));
+                return this;
+            }
+
+            IAddTerminalStorageState IAddCmdtyConsumedOnWithdraw.WithNoCmdtyConsumedOnWithdraw()
+            {
+                _withdrawCmdtyConsumed = (period, inventory, withdrawnVolume) => 0.0;
+                return this;
+            }
+
+            IAddTerminalStorageState IAddCmdtyConsumedOnWithdraw.WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed)
+            {
+                _withdrawCmdtyConsumed = (period, inventory, withdrawnVolume) => percentCmdtyConsumed * Math.Abs(withdrawnVolume);
+                return this;
+            }
+
+            IAddTerminalStorageState IAddCmdtyConsumedOnWithdraw.WithCmdtyConsumedOnWithdraw(
+                                [NotNull] Func<T, double, double, double> volumeOfCmdtyConsumed)
+            {
+                _withdrawCmdtyConsumed = volumeOfCmdtyConsumed ?? throw new ArgumentNullException(nameof(volumeOfCmdtyConsumed));
+                return this;
             }
 
         }
@@ -317,28 +327,28 @@ namespace Cmdty.Storage.Core
         
         public interface IAddInjectionCost
         {
-            // TODO method for fixed cost component for action (no matter what volume)?
-            IAddWithdrawalCost WithPerUnitInjectionCost(double injectionCost);
-            // TODO method for cost as percentage of cmdty price
-            IAddWithdrawalCost WithTimeDependentInjectionCost(Func<T, double> injectionCost);
-            IAddWithdrawalCost WithInjectedVolumeDependentInjectionCost(Func<double, double> injectionCost);
-            IAddWithdrawalCost WithInventoryDependentInjectionCost(Func<double, double> injectionCost);
-            IAddWithdrawalCost WithPriceDependentInjectionCost(Func<double, double> injectionCost);
-            // TODO add other combinations?
-            IAddWithdrawalCost WithInjectionCost(Func<T, double, double, double, double> injectionCost);
+            IAddCmdtyConsumedOnInject WithPerUnitInjectionCost(double perVolumeUnitCost, Func<T, Day> cashFlowDate);
+            IAddCmdtyConsumedOnInject WithInjectionCost(Func<T, double, double, IReadOnlyList<DomesticCashFlow>> injectionCost);
+        }
+
+        public interface IAddCmdtyConsumedOnInject
+        {
+            IAddWithdrawalCost WithNoCmdtyConsumedOnInject();
+            IAddWithdrawalCost WithFixedPercentCmdtyConsumedOnInject(double percentCmdtyConsumed);
+            IAddWithdrawalCost WithCmdtyConsumedOnInject(Func<T, double, double, double> volumeOfCmdtyConsumed);
         }
 
         public interface IAddWithdrawalCost
         {
-            // TODO method for fixed cost component for action (no matter what volume)?
-            IAddTerminalStorageState WithPerUnitWithdrawalCost(double withdrawalCost);
-            // TODO method for cost as percentage of cmdty price
-            IAddTerminalStorageState WithTimeDependentWithdrawalCost(Func<T, double> withdrawalCost);
-            IAddTerminalStorageState WithWithdrawnVolumeDependentWithdrawalCost(Func<double, double> withdrawalCost);
-            IAddTerminalStorageState WithInventoryDependentWithdrawalCost(Func<double, double> withdrawalCost);
-            IAddTerminalStorageState WithPriceDependentWithdrawalCost(Func<double, double> withdrawalCost);
-            // TODO add other combinations?
-            IAddTerminalStorageState WithWithdrawalCost(Func<T, double, double, double, double> withdrawalCost);
+            IAddCmdtyConsumedOnWithdraw WithPerUnitWithdrawalCost(double withdrawalCost, Func<T, Day> cashFlowDate);
+            IAddCmdtyConsumedOnWithdraw WithWithdrawalCost(Func<T, double, double, IReadOnlyList<DomesticCashFlow>> withdrawalCost);
+        }
+
+        public interface IAddCmdtyConsumedOnWithdraw
+        {
+            IAddTerminalStorageState WithNoCmdtyConsumedOnWithdraw();
+            IAddTerminalStorageState WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed);
+            IAddTerminalStorageState WithCmdtyConsumedOnWithdraw(Func<T, double, double, double> volumeOfCmdtyConsumed);
         }
 
         public interface IAddTerminalStorageState

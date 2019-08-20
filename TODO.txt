@@ -39,6 +39,7 @@ Essential
 		- Make parameter TimeSeries type?
 - Put classed in project folders
 - Create and publish NuGet package
+- Merge inject and withdraw cost functions in CmdtyStorage class?
 
 Nice to Have
 - Excel add-in

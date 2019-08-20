@@ -24,6 +24,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
@@ -116,9 +117,6 @@ namespace Cmdty.Storage.Core
 
             if (currentPeriod.Equals(storage.EndPeriod))
             {
-                // TODO check inventory
-
-
                 if (storage.MustBeEmptyAtEnd)
                 {
                     if (startingInventory > 0) // TODO allow some tolerance for floating point numerical error?
@@ -206,7 +204,7 @@ namespace Cmdty.Storage.Core
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(periodLoop, inventory);
             double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory,
-                nextStepInventorySpaceMin, nextStepInventorySpaceMax);
+                                                    nextStepInventorySpaceMin, nextStepInventorySpaceMax);
             var valuesForDecision = new double[decisionSet.Length];
             for (var j = 0; j < decisionSet.Length; j++)
             {
@@ -231,9 +229,13 @@ namespace Cmdty.Storage.Core
 
             double injectWithdrawCashFlow = -injectWithdrawVolume * cmdtyPrice;
             // Assumes storage cost is incurred on the day TODO review
-            double decisionStorageCost = injectWithdrawVolume > 0.0
-                    ? storage.InjectionCost(period, inventory, injectWithdrawVolume, cmdtyPrice)
-                    : storage.WithdrawalCost(period, inventory, -injectWithdrawVolume, cmdtyPrice);
+            IReadOnlyList<DomesticCashFlow> decisionCashFlows = injectWithdrawVolume > 0.0
+                    ? storage.InjectionCost(period, inventory, injectWithdrawVolume)
+                    : storage.WithdrawalCost(period, inventory, -injectWithdrawVolume);
+            
+            double decisionStorageCost = decisionCashFlows.Sum(cashFlow => cashFlow.Amount); // TODO discounting
+
+            // TODO cost of decision volume
 
             return continuationFutureValue + injectWithdrawCashFlow - decisionStorageCost;
         }

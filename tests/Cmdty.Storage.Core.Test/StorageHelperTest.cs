@@ -161,8 +161,10 @@ namespace Cmdty.Storage.Core.Test
                         .WithConstantInjectWithdrawRange(-withdrawalRate, injectionRate)
                         .WithConstantMinInventory(minInventory)
                         .WithConstantMaxInventory(maxInventory)
-                        .WithPerUnitInjectionCost(1.5)
-                        .WithPerUnitWithdrawalCost(0.8)
+                        .WithPerUnitInjectionCost(1.5, injectionDate => injectionDate)
+                        .WithNoCmdtyConsumedOnInject()
+                        .WithPerUnitWithdrawalCost(0.8, withdrawalDate => withdrawalDate)
+                        .WithNoCmdtyConsumedOnWithdraw()
                         .WithTerminalStorageValue((cmdtyPrice, inventory) => 0.0)
                         .Build();
 
@@ -202,8 +204,10 @@ namespace Cmdty.Storage.Core.Test
                         .WithConstantInjectWithdrawRange(-withdrawalRate, injectionRate)
                         .WithConstantMinInventory(minInventory)
                         .WithConstantMaxInventory(maxInventory)
-                        .WithPerUnitInjectionCost(1.5)
-                        .WithPerUnitWithdrawalCost(0.8)
+                        .WithPerUnitInjectionCost(1.5, injectionDate => injectionDate)
+                        .WithNoCmdtyConsumedOnInject()
+                        .WithPerUnitWithdrawalCost(0.8, withdrawalDate => withdrawalDate)
+                        .WithNoCmdtyConsumedOnWithdraw()
                         .MustBeEmptyAtEnd()
                         .Build();
 
