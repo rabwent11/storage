@@ -38,7 +38,7 @@ namespace Cmdty.Storage.Core
         private double _startingInventory;
         private T _currentPeriod;
         private TimeSeries<T, double> _forwardCurve;
-        private Func<T, double> _discountFactors;
+        private Func<Day, double> _discountFactors;
         private IDoubleStateSpaceGridCalc _gridCalc;
         private IInterpolatorFactory _interpolatorFactory;
         private double _gridSpacing = 100;
@@ -71,7 +71,7 @@ namespace Cmdty.Storage.Core
             return this;
         }
 
-        IAddSpacing<T> IAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<T, double> discountFactors)
+        IAddSpacing<T> IAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, double> discountFactors)
         {
             _discountFactors = discountFactors ?? throw new ArgumentNullException(nameof(discountFactors));
             return this;
@@ -107,7 +107,7 @@ namespace Cmdty.Storage.Core
         }
 
         private static IntrinsicStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, TimeSeries<T, double> forwardCurve, 
-                    CmdtyStorage<T> storage, Func<T, double> discountFactors, IDoubleStateSpaceGridCalc gridCalc, 
+                    CmdtyStorage<T> storage, Func<Day, double> discountFactors, IDoubleStateSpaceGridCalc gridCalc, 
                     IInterpolatorFactory interpolatorFactory)
         {
             // TODO validate inputs
@@ -262,8 +262,19 @@ namespace Cmdty.Storage.Core
     public interface IAddDiscountFactorFunc<T>
         where T : ITimePeriod<T>
     {
-        IAddSpacing<T> WithDiscountFactorFunc(Func<T, double> discountFactors);
+        /// <summary>
+        /// Add discount factor function.
+        /// </summary>
+        /// <param name="discountFactors">Function mapping from cash flow date to discount factor.</param>
+        /// <returns></returns>
+        IAddSpacing<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
     }
+
+    //public interface IAddCmdtySettlementRule<T>
+    //    where T : ITimePeriod<T>
+    //{
+    //    IAddSpacing<T> WithCmdtySettlementRule(Func<T, double>)
+    //}
 
     public interface IAddSpacing<T>
         where T : ITimePeriod<T>
