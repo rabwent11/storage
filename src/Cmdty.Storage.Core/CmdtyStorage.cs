@@ -128,7 +128,7 @@ namespace Cmdty.Storage.Core
             return inventorySpaceLower;
         }
 
-        public double TerminalStorageValue(double cmdtyPrice, double finalInventory)
+        public double TerminalStorageNpv(double cmdtyPrice, double finalInventory)
         {
             return _terminalStorageValue(cmdtyPrice, finalInventory);
         }
@@ -243,7 +243,7 @@ namespace Cmdty.Storage.Core
                 return this;
             }
             
-            IBuildCmdtyStorage IAddTerminalStorageState.WithTerminalStorageValue([NotNull] Func<double, double, double> terminalStorageValueFunc)
+            IBuildCmdtyStorage IAddTerminalStorageState.WithTerminalInventoryNpv([NotNull] Func<double, double, double> terminalStorageValueFunc)
             {
                 _terminalStorageValue = terminalStorageValueFunc ?? throw new ArgumentNullException(nameof(terminalStorageValueFunc));
                 return this;
@@ -353,7 +353,12 @@ namespace Cmdty.Storage.Core
 
         public interface IAddTerminalStorageState
         {
-            IBuildCmdtyStorage WithTerminalStorageValue(Func<double, double, double> terminalStorageValueFunc);
+            /// <summary>
+            /// Adds rule of NPV for any inventory left in storage at the end, should this be allowed.
+            /// </summary>
+            /// <param name="terminalStorageValueFunc">Function mapping cmdty price and final inventory on the end period
+            /// to the NPV.</param>
+            IBuildCmdtyStorage WithTerminalInventoryNpv(Func<double, double, double> terminalStorageValueFunc);
             IBuildCmdtyStorage MustBeEmptyAtEnd();
         }
 

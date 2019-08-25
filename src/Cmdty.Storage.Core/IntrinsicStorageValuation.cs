@@ -146,7 +146,7 @@ namespace Cmdty.Storage.Core
                     throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is greater than the maximum allowed in the end period.");
 
                 double cmdtyPrice = forwardCurve[storage.EndPeriod];
-                double npv = storage.TerminalStorageValue(cmdtyPrice, startingInventory); // TODO discounting?
+                double npv = storage.TerminalStorageNpv(cmdtyPrice, startingInventory);
                 return new IntrinsicStorageValuationResults<T>(npv, DoubleTimeSeries<T>.Empty);
             }
 
@@ -157,7 +157,7 @@ namespace Cmdty.Storage.Core
 
             double cmdtyPriceAtEnd = forwardCurve[storage.EndPeriod];
             storageValueByInventory[inventorySpace.Count - 1] = 
-                finalInventory => storage.TerminalStorageValue(cmdtyPriceAtEnd, finalInventory) ;
+                finalInventory => storage.TerminalStorageNpv(cmdtyPriceAtEnd, finalInventory) ;
 
             int backCounter = inventorySpace.Count - 2;
             foreach (T periodLoop in inventorySpace.Indices.Reverse().Skip(1))
@@ -175,9 +175,8 @@ namespace Cmdty.Storage.Core
                 {
                     double inventory = inventorySpaceGrid[i];
                     storageValuesGrid[i] = OptimalDecisionAndValue(storage, periodLoop, inventory, nextStepInventorySpaceMin, 
-                                                nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory).StorageNpv;
-                    // TODO think about at discounting and what PV date the values are
-                    // TODO save decisions?
+                                                nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, 
+                                                settleDateRule, discountFactors).StorageNpv;
                 }
 
                 storageValueByInventory[backCounter] =
@@ -198,7 +197,7 @@ namespace Cmdty.Storage.Core
                 Func<double, double> continuationValueByInventory = storageValueByInventory[i];
                 (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = inventorySpace[periodLoop.Offset(1)];
                 (double storageNpvLoop, double optimalInjectWithdraw) = OptimalDecisionAndValue(storage, periodLoop, inventoryLoop, nextStepInventorySpaceMin,
-                                        nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory);
+                                        nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, settleDateRule, discountFactors);
                 decisionProfileBuilder.Add(periodLoop, optimalInjectWithdraw);
                 inventoryLoop += optimalInjectWithdraw;
                 if (i == 0)
@@ -212,7 +211,7 @@ namespace Cmdty.Storage.Core
 
         private static (double StorageNpv, double OptimalInjectWithdraw) OptimalDecisionAndValue(CmdtyStorage<T> storage, T periodLoop, double inventory,
             double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, double cmdtyPrice,
-            Func<double, double> continuationValueByInventory)
+            Func<double, double> continuationValueByInventory, Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(periodLoop, inventory);
             double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory,
@@ -222,7 +221,7 @@ namespace Cmdty.Storage.Core
             {
                 double decisionInjectWithdraw = decisionSet[j];
                 valuesForDecision[j] = StorageValueForDecision(storage, periodLoop, inventory,
-                    decisionInjectWithdraw, cmdtyPrice, continuationValueByInventory);
+                    decisionInjectWithdraw, cmdtyPrice, continuationValueByInventory, settleDateRule, discountFactors);
             }
 
             (double storageNpv, int indexOfOptimalDecision) = StorageHelper.MaxValueAndIndex(valuesForDecision);
@@ -233,23 +232,30 @@ namespace Cmdty.Storage.Core
 
 
         private static double StorageValueForDecision(CmdtyStorage<T> storage, T period, double inventory,
-                        double injectWithdrawVolume, double cmdtyPrice, Func<double, double> continuationValueInterpolated)
+                        double injectWithdrawVolume, double cmdtyPrice, Func<double, double> continuationValueInterpolated, 
+                        Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
         {
             double inventoryAfterDecision = inventory + injectWithdrawVolume;
-            double continuationFutureValue = continuationValueInterpolated(inventoryAfterDecision);
-            // TODO discount future values?
+            double continuationFutureNpv = continuationValueInterpolated(inventoryAfterDecision);
 
-            double injectWithdrawCashFlow = -injectWithdrawVolume * cmdtyPrice;
-            // Assumes storage cost is incurred on the day TODO review
-            IReadOnlyList<DomesticCashFlow> decisionCashFlows = injectWithdrawVolume > 0.0
+            Day cmdtySettlementDate = settleDateRule(period);
+            double discountFactorFromCmdtySettlement = discountFactors(cmdtySettlementDate);
+
+            double injectWithdrawNpv = -injectWithdrawVolume * cmdtyPrice * discountFactorFromCmdtySettlement;
+
+            IReadOnlyList<DomesticCashFlow> storageCostCashFlows = injectWithdrawVolume > 0.0
                     ? storage.InjectionCost(period, inventory, injectWithdrawVolume)
                     : storage.WithdrawalCost(period, inventory, -injectWithdrawVolume);
-            
-            double decisionStorageCost = decisionCashFlows.Sum(cashFlow => cashFlow.Amount); // TODO discounting
 
-            // TODO cost of decision volume
+            double storageCostNpv = storageCostCashFlows.Sum(cashFlow => cashFlow.Amount * discountFactors(cashFlow.Date));
 
-            return continuationFutureValue + injectWithdrawCashFlow - decisionStorageCost;
+            double cmdtyUsedForInjectWithdrawVolume = injectWithdrawVolume > 0.0
+                ? storage.CmdtyVolumeConsumedOnInject(period, inventory, injectWithdrawVolume)
+                : storage.CmdtyVolumeConsumedOnWithdraw(period, inventory, Math.Abs(injectWithdrawVolume));
+
+            double cmdtyUsedForInjectWithdrawNpv = -cmdtyUsedForInjectWithdrawVolume * cmdtyPrice * discountFactorFromCmdtySettlement;
+
+            return continuationFutureNpv + injectWithdrawNpv - storageCostNpv + cmdtyUsedForInjectWithdrawNpv;
         }
 
     }

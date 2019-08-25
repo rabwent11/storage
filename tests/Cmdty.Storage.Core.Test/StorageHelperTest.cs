@@ -165,7 +165,7 @@ namespace Cmdty.Storage.Core.Test
                         .WithNoCmdtyConsumedOnInject()
                         .WithPerUnitWithdrawalCost(0.8, withdrawalDate => withdrawalDate)
                         .WithNoCmdtyConsumedOnWithdraw()
-                        .WithTerminalStorageValue((cmdtyPrice, inventory) => 0.0)
+                        .WithTerminalInventoryNpv((cmdtyPrice, inventory) => 0.0)
                         .Build();
 
             TimeSeries<Day, InventoryRange> inventorySpace =

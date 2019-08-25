@@ -239,7 +239,7 @@ namespace Cmdty.Storage.Core.Test
                 .WithNoCmdtyConsumedOnInject()
                 .WithPerUnitWithdrawalCost(1.2, withdrawalDate => withdrawalDate)
                 .WithNoCmdtyConsumedOnWithdraw()
-                .WithTerminalStorageValue((cmdtyPrice, terminalInventory) => cmdtyPrice * terminalInventory - 999.0)
+                .WithTerminalInventoryNpv((cmdtyPrice, terminalInventory) => cmdtyPrice * terminalInventory - 999.0)
                 .Build();
 
             var forwardCurve = new TimeSeries<Day, double>.Builder(1)
