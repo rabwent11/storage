@@ -39,6 +39,11 @@ namespace Cmdty.Storage.Core.Test
             var storageStart = new Day(2019, 9, 1);
             var storageEnd = new Day(2019, 9, 30);
 
+            TimeSeries<Month, Day> settlementDates = new TimeSeries<Month, Day>.Builder
+                {
+                    {new Month(2019, 9),  new Day(2019, 10, 5)}
+                }.Build();
+
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                 .WithActiveTimePeriod(storageStart, storageEnd)
                 .WithConstantInjectWithdrawRange(-45.5, 56.6)
@@ -56,6 +61,7 @@ namespace Cmdty.Storage.Core.Test
                 .WithStartingInventory(startingInventory)
                 .ForCurrentPeriod(currentPeriod)
                 .WithForwardCurve(forwardCurve)
+                .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithGridSpacing(10.0)
                 .Calculate();
@@ -219,6 +225,11 @@ namespace Cmdty.Storage.Core.Test
             var storageStart = new Day(2019, 9, 1);
             var storageEnd = new Day(2019, 9, 30);
 
+            TimeSeries<Month, Day> settlementDates = new TimeSeries<Month, Day>.Builder
+                {
+                    {new Month(2019, 9),  new Day(2019, 10, 5)}
+                }.Build();
+
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                 .WithActiveTimePeriod(storageStart, storageEnd)
                 .WithConstantInjectWithdrawRange(-45.5, 56.6)
@@ -241,6 +252,7 @@ namespace Cmdty.Storage.Core.Test
                 .WithStartingInventory(startingInventory)
                 .ForCurrentPeriod(storageEnd)
                 .WithForwardCurve(forwardCurve)
+                .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithGridSpacing(10.0)
                 .Calculate();

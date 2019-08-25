@@ -32,13 +32,14 @@ using JetBrains.Annotations;
 
 namespace Cmdty.Storage.Core
 {
-    public sealed class IntrinsicStorageValuation<T> : IAddStartingInventory<T>, IAddCurrentPeriod<T>, IAddForwardCurve<T>, IAddDiscountFactorFunc<T>, IAddSpacing<T>, IAddInterpolatorOrCalculate<T>
+    public sealed class IntrinsicStorageValuation<T> : IAddStartingInventory<T>, IAddCurrentPeriod<T>, IAddForwardCurve<T>, IAddCmdtySettlementRule<T>, IAddDiscountFactorFunc<T>, IAddSpacing<T>, IAddInterpolatorOrCalculate<T>
         where T : ITimePeriod<T>
     {
         private readonly CmdtyStorage<T> _storage;
         private double _startingInventory;
         private T _currentPeriod;
         private TimeSeries<T, double> _forwardCurve;
+        private Func<T, Day> _settleDateRule;
         private Func<Day, double> _discountFactors;
         private IDoubleStateSpaceGridCalc _gridCalc;
         private IInterpolatorFactory _interpolatorFactory;
@@ -70,9 +71,15 @@ namespace Cmdty.Storage.Core
             return this;
         }
 
-        IAddDiscountFactorFunc<T> IAddForwardCurve<T>.WithForwardCurve([NotNull] TimeSeries<T, double> forwardCurve)
+        IAddCmdtySettlementRule<T> IAddForwardCurve<T>.WithForwardCurve([NotNull] TimeSeries<T, double> forwardCurve)
         {
             _forwardCurve = forwardCurve ?? throw new ArgumentNullException(nameof(forwardCurve));
+            return this;
+        }
+
+        public IAddDiscountFactorFunc<T> WithCmdtySettlementRule([NotNull] Func<T, Day> settleDateRule)
+        {
+            _settleDateRule = settleDateRule ?? throw new ArgumentNullException(nameof(settleDateRule));
             return this;
         }
 
@@ -106,14 +113,14 @@ namespace Cmdty.Storage.Core
 
         IntrinsicStorageValuationResults<T> IAddInterpolatorOrCalculate<T>.Calculate()
         {
-            return Calculate(_currentPeriod, _startingInventory, _forwardCurve, _storage, _discountFactors,
+            return Calculate(_currentPeriod, _startingInventory, _forwardCurve, _storage, _settleDateRule, _discountFactors,
                     _gridCalc ?? new FixedSpacingStateSpaceGridCalc(_gridSpacing),
                     _interpolatorFactory ?? new LinearInterpolatorFactory());
         }
 
-        private static IntrinsicStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, TimeSeries<T, double> forwardCurve, 
-                    CmdtyStorage<T> storage, Func<Day, double> discountFactors, IDoubleStateSpaceGridCalc gridCalc, 
-                    IInterpolatorFactory interpolatorFactory)
+        private static IntrinsicStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory,
+            TimeSeries<T, double> forwardCurve, CmdtyStorage<T> storage, Func<T, Day> settleDateRule, 
+            Func<Day, double> discountFactors, IDoubleStateSpaceGridCalc gridCalc, IInterpolatorFactory interpolatorFactory)
         {
             // TODO validate inputs
 
@@ -244,6 +251,7 @@ namespace Cmdty.Storage.Core
 
             return continuationFutureValue + injectWithdrawCashFlow - decisionStorageCost;
         }
+
     }
 
     public interface IAddStartingInventory<T>
@@ -261,25 +269,28 @@ namespace Cmdty.Storage.Core
     public interface IAddForwardCurve<T>
         where T : ITimePeriod<T>
     {
-        IAddDiscountFactorFunc<T> WithForwardCurve(TimeSeries<T, double> forwardCurve);
+        IAddCmdtySettlementRule<T> WithForwardCurve(TimeSeries<T, double> forwardCurve);
+    }
+
+    public interface IAddCmdtySettlementRule<T>
+        where T : ITimePeriod<T>
+    {
+        /// <summary>
+        /// Adds a settlement date rule.
+        /// </summary>
+        /// <param name="settleDateRule">Function mapping from cmdty delivery date to settlement date.</param>
+        IAddDiscountFactorFunc<T> WithCmdtySettlementRule(Func<T, Day> settleDateRule);
     }
 
     public interface IAddDiscountFactorFunc<T>
         where T : ITimePeriod<T>
     {
         /// <summary>
-        /// Add discount factor function.
+        /// Adds discount factor function.
         /// </summary>
         /// <param name="discountFactors">Function mapping from cash flow date to discount factor.</param>
-        /// <returns></returns>
         IAddSpacing<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
     }
-
-    //public interface IAddCmdtySettlementRule<T>
-    //    where T : ITimePeriod<T>
-    //{
-    //    IAddSpacing<T> WithCmdtySettlementRule(Func<T, double>)
-    //}
 
     public interface IAddSpacing<T>
         where T : ITimePeriod<T>
