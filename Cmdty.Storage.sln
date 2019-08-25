@@ -21,7 +21,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		build.sh = build.sh
 		cake.config = cake.config
 		Directory.Build.props = Directory.Build.props
-		TODO.txt = TODO.txt
 		version.props = version.props
 	EndProjectSection
 EndProject
