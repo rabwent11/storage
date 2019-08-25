@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net45</TargetFramework>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cmdty.Storage.Core\Cmdty.Storage.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ExcelDna.Integration">
+      <HintPath>..\..\lib\ExcelDna\ExcelDna.Integration.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Cmdty.Storage.Excel-AddIn.dna">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Copy SourceFiles="$(OutDir)\Cmdty.Storage.Excel-AddIn.dna" DestinationFiles="$(TargetDir)Cmdty.Storage.Excel-AddIn64.dna" />
+    <Copy SourceFiles="..\..\lib\ExcelDna\ExcelDna.xll" DestinationFiles="$(TargetDir)Cmdty.Storage.Excel-AddIn.xll" />
+    <Copy SourceFiles="..\..\lib\ExcelDna\ExcelDna64.xll" DestinationFiles="$(TargetDir)Cmdty.Storage.Excel-AddIn64.xll" />
+    <Exec Command="..\..\lib\ExcelDna\ExcelDnaPack.exe $(TargetDir)Cmdty.Storage.Excel-AddIn.dna /Y /O $(TargetDir)Cmdty.Storage-x86.xll" />
+    <Exec Command="..\..\lib\ExcelDna\ExcelDnaPack.exe $(TargetDir)Cmdty.Storage.Excel-AddIn64.dna /Y /O $(TargetDir)Cmdty.Storage-x64.xll" />
+    <Copy SourceFiles="$(TargetDir)Cmdty.Storage-x86.xll" DestinationFolder="..\..\artifacts" OverwriteReadOnlyFiles="true"/>
+    <Copy SourceFiles="$(TargetDir)Cmdty.Storage-x64.xll" DestinationFolder="..\..\artifacts" OverwriteReadOnlyFiles="true"/>
+  </Target>
+
+</Project>
