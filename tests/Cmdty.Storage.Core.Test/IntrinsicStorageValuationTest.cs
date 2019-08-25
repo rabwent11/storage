@@ -164,15 +164,17 @@ namespace Cmdty.Storage.Core.Test
             return valuationResults;
         }
 
-        //[Fact]
-        //public void Calculate_ZeroInventoryForwardSpreadHigherThanCycleCost_ResultWithNetPresentValueSpreadMinusCycleCostTimesVolume()
-        //{
-        //    // Cycle cost = 2.0, so create curve with spread of 2.01
-        //    var valuationResults = IntrinsicValuationZeroInventoryForwardCurveWithSpread(200000.01);
+        [Fact]
+        public void Calculate_ZeroInventoryForwardSpreadHigherThanCycleCost_ResultWithNetPresentValueSpreadMinusCycleCostTimesVolume()
+        {
+            // Cycle cost = 2.0, so create curve with spread of 2.01
+            var valuationResults = IntrinsicValuationZeroInventoryForwardCurveWithSpread(2.01);
 
+            double totalVolumeInjectable = 7 * 45.5; // 7 with maximum withdrawal
+            double expectedNpv = totalVolumeInjectable * 0.01; // Volume * (forward spread - 2.0 cycle cost)
 
-        //    Assert.True(valuationResults.NetPresentValue > 0);
-        //}
+            Assert.Equal(expectedNpv, valuationResults.NetPresentValue, 10);
+        }
 
         [Fact]
         public void Calculate_CurrentPeriodAfterStorageEnd_ResultWithZeroNetPresentValue()
