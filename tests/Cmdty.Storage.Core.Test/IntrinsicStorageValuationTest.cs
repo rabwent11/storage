@@ -51,7 +51,7 @@ namespace Cmdty.Storage.Core.Test
                 .MustBeEmptyAtEnd()
                 .Build();
 
-            IntrinsicStorageValuationResults<Day> valuationResults = new IntrinsicStorageValuation<Day>()
+            IntrinsicStorageValuationResults<Day> valuationResults = IntrinsicStorageValuation<Day>
                 .ForStorage(storage)
                 .WithStartingInventory(startingInventory)
                 .ForCurrentPeriod(currentPeriod)
@@ -236,7 +236,7 @@ namespace Cmdty.Storage.Core.Test
                                 {storageEnd, forwardPrice }
                             }.Build();
 
-            IntrinsicStorageValuationResults<Day> valuationResults = new IntrinsicStorageValuation<Day>()
+            IntrinsicStorageValuationResults<Day> valuationResults = IntrinsicStorageValuation<Day>
                 .ForStorage(storage)
                 .WithStartingInventory(startingInventory)
                 .ForCurrentPeriod(storageEnd)

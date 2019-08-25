@@ -32,9 +32,10 @@ using JetBrains.Annotations;
 
 namespace Cmdty.Storage.Core
 {
-    public sealed class IntrinsicStorageValuation<T> : IAddStartingInventory<T>, IAddCurrentPeriod<T>, IAddForwardCurve<T>, IAddDiscountFactorFunc<T>, IAddSpacing<T>, IAddInterpolatorOrCalculate<T> where T : ITimePeriod<T>
+    public sealed class IntrinsicStorageValuation<T> : IAddStartingInventory<T>, IAddCurrentPeriod<T>, IAddForwardCurve<T>, IAddDiscountFactorFunc<T>, IAddSpacing<T>, IAddInterpolatorOrCalculate<T>
+        where T : ITimePeriod<T>
     {
-        private CmdtyStorage<T> _storage;
+        private readonly CmdtyStorage<T> _storage;
         private double _startingInventory;
         private T _currentPeriod;
         private TimeSeries<T, double> _forwardCurve;
@@ -43,10 +44,14 @@ namespace Cmdty.Storage.Core
         private IInterpolatorFactory _interpolatorFactory;
         private double _gridSpacing = 100;
 
-        public IAddStartingInventory<T> ForStorage([NotNull] CmdtyStorage<T> storage)
+        private IntrinsicStorageValuation([NotNull] CmdtyStorage<T> storage)
         {
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
-            return this;
+        }
+
+        public static IAddStartingInventory<T> ForStorage([NotNull] CmdtyStorage<T> storage)
+        {
+            return new IntrinsicStorageValuation<T>(storage);
         }
 
         IAddCurrentPeriod<T> IAddStartingInventory<T>.WithStartingInventory(double inventory)
