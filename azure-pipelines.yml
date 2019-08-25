@@ -38,3 +38,15 @@ steps:
       testResultsFiles: '**/*.trx'
       mergeTestResults: true
       testRunTitle: 'C# Unit Tests'
+
+  - task: CopyFiles@2
+    displayName: Copy NuGet package to Artifact Staging Directory
+    inputs:
+      Contents: artifacts/**
+      TargetFolder: $(Build.ArtifactStagingDirectory)
+      flattenFolders: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'publish artifacts'
+    inputs:
+      ArtifactName: 'drop'
