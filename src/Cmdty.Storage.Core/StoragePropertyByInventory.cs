@@ -23,37 +23,30 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-using System;
-
 namespace Cmdty.Storage.Core
 {
-    public sealed class InjectWithdrawRange
+    // TODO delete?
+    public class StoragePropertyByInventory
     {
-        // Positive number is inject, negative is withdraw
-        public double MaxInjectWithdrawRate { get; }
+        public double Inventory { get; }
         public double MinInjectWithdrawRate { get; }
+        public double MaxInjectWithdrawRate { get; }
+        public double WithdrawCostRate { get; }
+        public double InjectCostRate { get; }
+        public double CmdtyUsedOnWithdraw { get; }
+        public double CmdtyUsedOnInject { get; }
 
-        public InjectWithdrawRange(double minInjectWithdrawRate, double maxInjectWithdrawRate)
+        public StoragePropertyByInventory(double inventory, double minInjectWithdrawRate, double maxInjectWithdrawRate, 
+            double withdrawCostRate, double injectCostRate, double cmdtyUsedOnWithdraw, double cmdtyUsedOnInject)
         {
-            if (minInjectWithdrawRate > maxInjectWithdrawRate)
-                throw new ArgumentException($"Parameter {nameof(maxInjectWithdrawRate)} value cannot be below parameter {nameof(minInjectWithdrawRate)} value");
+            Inventory = inventory;
             MinInjectWithdrawRate = minInjectWithdrawRate;
             MaxInjectWithdrawRate = maxInjectWithdrawRate;
+            WithdrawCostRate = withdrawCostRate;
+            InjectCostRate = injectCostRate;
+            CmdtyUsedOnWithdraw = cmdtyUsedOnWithdraw;
+            CmdtyUsedOnInject = cmdtyUsedOnInject;
         }
-
-        public override string ToString()
-        {
-            return $"{nameof(MinInjectWithdrawRate)}: {MinInjectWithdrawRate}, {nameof(MaxInjectWithdrawRate)}: {MaxInjectWithdrawRate}";
-        }
-
-        public void Deconstruct(out double minInjectWithdraw, out double maxInjectWithdraw)
-        {
-            minInjectWithdraw = MinInjectWithdrawRate;
-            maxInjectWithdraw = MaxInjectWithdrawRate;
-        }
-
-        public static implicit operator InjectWithdrawRange((double minInjectWithdrawRate, double maxInjectWithdrawRate) tuple)
-                                => new InjectWithdrawRange(tuple.minInjectWithdrawRate, tuple.maxInjectWithdrawRate);
 
     }
 }

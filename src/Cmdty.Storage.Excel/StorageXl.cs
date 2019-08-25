@@ -33,58 +33,114 @@ namespace Cmdty.Storage.Excel
 {
     public static class StorageXl
     {
-        [ExcelFunction(Name = "cmdty.HelloStorage", Category = "Cmdty.Storage", IsThreadSafe = true, 
-            IsVolatile = false, IsExceptionSafe = true)]
-        public static object HelloStorage()
+        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageIntrinsicValue), Category = AddIn.ExcelFunctionCategory, 
+            IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
+        public static object StorageIntrinsicValue(
+            DateTime valuationDate,
+            DateTime storageStart,
+            DateTime storageEnd,
+            double currentInventory,
+            object forwardCurve,
+            double gridSpacing,
+            [ExcelArgument(Name = "Granularity")] object granularity
+            )
         {
-            var currentPeriod = new Day(2019, 9, 15);
 
-            var forwardCurveBuilder = new TimeSeries<Day, double>.Builder();
+            return StorageNpv<Day>(valuationDate, storageStart, storageEnd, currentInventory, forwardCurve, gridSpacing);
+        }
 
-            foreach (var day in new Day(2019, 9, 15).EnumerateTo(new Day(2019, 9, 22)))
-            {
-                forwardCurveBuilder.Add(day, 56.6);
-            }
+        private static double StorageNpv<T>(DateTime valuationDateTime,
+            DateTime storageStartDateTime,
+            DateTime storageEndDateTime,
+            double currentInventory,
+            object forwardCurveIn, double gridSpacing)
+            where T : ITimePeriod<T>
+        {
+            T currentPeriod = TimePeriodFactory.FromDateTime<T>(valuationDateTime);
 
-            foreach (var day in new Day(2019, 9, 23).EnumerateTo(new Day(2019, 9, 30)))
-            {
-                forwardCurveBuilder.Add(day, 61.8);
-            }
-
-            var storageStart = new Day(2019, 9, 1);
-            var storageEnd = new Day(2019, 9, 30);
+            DoubleTimeSeries<T> forwardCurve = CreateDoubleTimeSeries<T>(forwardCurveIn, "Forward_curve");
+            
+            T storageStart = TimePeriodFactory.FromDateTime<T>(storageStartDateTime);
+            T storageEnd = TimePeriodFactory.FromDateTime<T>(storageEndDateTime);
 
             TimeSeries<Month, Day> settlementDates = new TimeSeries<Month, Day>.Builder
             {
                 {new Month(2019, 9),  new Day(2019, 10, 5)}
             }.Build();
 
-            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+            CmdtyStorage<T> storage = CmdtyStorage<T>.Builder
                 .WithActiveTimePeriod(storageStart, storageEnd)
                 .WithConstantInjectWithdrawRange(-45.5, 56.6)
                 .WithConstantMinInventory(0.0)
                 .WithConstantMaxInventory(1000.0)
-                .WithPerUnitInjectionCost(0.8, injectionDate => injectionDate)
+                .WithPerUnitInjectionCost(0.8, injectionDate => injectionDate.First<Day>())
                 .WithNoCmdtyConsumedOnInject()
-                .WithPerUnitWithdrawalCost(1.2, withdrawalDate => withdrawalDate)
+                .WithPerUnitWithdrawalCost(1.2, withdrawalDate => withdrawalDate.First<Day>())
                 .WithNoCmdtyConsumedOnWithdraw()
                 .MustBeEmptyAtEnd()
                 .Build();
 
-            IntrinsicStorageValuationResults<Day> valuationResults = IntrinsicStorageValuation<Day>
+            IntrinsicStorageValuationResults<T> valuationResults = IntrinsicStorageValuation<T>
                 .ForStorage(storage)
-                .WithStartingInventory(0.0)
+                .WithStartingInventory(currentInventory)
                 .ForCurrentPeriod(currentPeriod)
-                .WithForwardCurve(forwardCurveBuilder.Build())
+                .WithForwardCurve(forwardCurve)
                 .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
-                .WithGridSpacing(10.0)
+                .WithGridSpacing(gridSpacing)
                 .Calculate();
 
             return valuationResults.NetPresentValue;
-            //return "Hello Storage!";
         }
 
+        // TODO put this function in common location to be reused
+        private static DoubleTimeSeries<T> CreateDoubleTimeSeries<T>(object excelValues, string excelArgumentName)
+            where T : ITimePeriod<T>
+        {
+            if (excelValues is ExcelMissing || excelValues is ExcelEmpty)
+                throw new ArgumentException(excelArgumentName + " hasn't been specified.");
 
+            if (!(excelValues is object[,] excelValuesArray))
+                throw new ArgumentException(excelArgumentName + " has been incorrectly entered. Argument value should be of a range with 2 columns, the first containing dates, the second containing numbers.");
+            
+            if (excelValuesArray.GetLength(1) != 2)
+                throw new ArgumentException(excelArgumentName + " has been incorrectly entered. Argument value should be a range 2 columns.");
+
+            var builder = new DoubleTimeSeries<T>.Builder();
+
+            for (int i = 0; i < excelValuesArray.GetLength(0); i++)
+            {
+                if (excelValuesArray[i, 0] is ExcelEmpty)
+                    break;
+                
+                if (!(excelValuesArray[i, 1] is double doubleValue))
+                    throw new ArgumentException($"Value in the second column of row {i} for argument {excelArgumentName} is not a number.");
+
+                DateTime curvePointDateTime = ObjectToDateTime(excelValuesArray[i, 0], "");
+                T curvePointPeriod = TimePeriodFactory.FromDateTime<T>(curvePointDateTime);
+
+                builder.Add(curvePointPeriod, doubleValue);
+            }
+            
+            return builder.Build();
+        }
+
+        private static DateTime ObjectToDateTime(object excelDateTime, string excelArgumentName)
+        {
+            if (!(excelDateTime is double doubleValue))
+                throw new ArgumentException();
+            
+            try
+            {
+                DateTime dateTime = DateTime.FromOADate(doubleValue);
+                return dateTime;
+            }
+            catch (Exception)
+            {
+                throw new ArgumentException($"Cannot create DateTime from {doubleValue} value for argument {excelArgumentName}.");
+            }
+
+        }
+        
     }
 }

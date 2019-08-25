@@ -52,7 +52,7 @@ namespace Cmdty.Storage.Core
             return builder.WithInjectWithdrawConstraint(polynomialInjectWithdrawConstraint);
         }
 
-        public static CmdtyStorage<T>.IAddMinInventory WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
+        public static CmdtyStorage<T>.IAddInjectionCost WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
                     [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
                     [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges)
             where T : ITimePeriod<T>
@@ -60,7 +60,9 @@ namespace Cmdty.Storage.Core
             if (builder == null) throw new ArgumentNullException(nameof(builder));
             if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
 
-            var sortedList = new SortedList<T, IInjectWithdrawConstraint>();
+            var injectWithdrawSortedList = new SortedList<T, IInjectWithdrawConstraint>();
+            var inventoryRangeList = new List<InventoryRange>();
+
             foreach ((T period, IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRange) in injectWithdrawRanges)
             {
                 if (period == null)
@@ -69,23 +71,18 @@ namespace Cmdty.Storage.Core
                     throw new ArgumentException("Null InjectWithdrawRanges in collection.", nameof(injectWithdrawRange));
 
                 var injectWithdrawRangeArray = injectWithdrawRange.ToArray();
-                if (injectWithdrawRangeArray.Length == 0)
-                    throw new ArgumentException("", nameof(injectWithdrawRanges));
+                if (injectWithdrawRangeArray.Length < 2)
+                    throw new ArgumentException($"Period {period} contains less than 2 inject/withdraw/inventory constraints.", nameof(injectWithdrawRanges));
 
-                IInjectWithdrawConstraint constraint;
-                if (injectWithdrawRangeArray.Length == 1)
-                {
-                    (_, (double minInjectWithdraw, double maxInjectWithdraw)) = injectWithdrawRangeArray[0];
-                    constraint = new ConstantInjectWithdrawConstraint(minInjectWithdraw, maxInjectWithdraw);
-                }
-                else
-                {
-                    constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray);
-                }
+                IInjectWithdrawConstraint constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray);
+
+                double minInventory = injectWithdrawRangeArray.Min(inventoryRange => inventoryRange.Inventory);
+                double maxInventory = injectWithdrawRangeArray.Max(inventoryRange => inventoryRange.Inventory);
 
                 try
                 {
-                    sortedList.Add(period, constraint);
+                    injectWithdrawSortedList.Add(period, constraint);
+                    inventoryRangeList.Add(new InventoryRange(minInventory, maxInventory));
                 }
                 catch (ArgumentException) // TODO unit test
                 {
@@ -93,45 +90,87 @@ namespace Cmdty.Storage.Core
                 }
             }
 
-            if (sortedList.Count == 0)
+            if (injectWithdrawSortedList.Count == 0)
                 throw new ArgumentException("No inject/withdraw constrains provided.", nameof(injectWithdrawRanges));
 
             // TODO create helper method (in Cmdty.TimeSeries) to create TimeSeries from piecewise data?
-            T firstPeriod = sortedList.Keys[0];
-            T lastPeriod = sortedList.Keys[sortedList.Count - 1];
+            T firstPeriod = injectWithdrawSortedList.Keys[0];
+            T lastPeriod = injectWithdrawSortedList.Keys[injectWithdrawSortedList.Count - 1];
             int numPeriods = lastPeriod.OffsetFrom(firstPeriod) + 1;
 
-            var timeSeriesValues = new IInjectWithdrawConstraint[numPeriods];
+            var timeSeriesInjectWithdrawValues = new IInjectWithdrawConstraint[numPeriods];
+            var timeSeriesInventoryRangeValues = new InventoryRange[numPeriods];
 
             T periodLoop = firstPeriod;
-            IInjectWithdrawConstraint constraintLoop = sortedList.Values[0];
+            IInjectWithdrawConstraint constraintLoop = injectWithdrawSortedList.Values[0];
+            InventoryRange inventoryRangeLoop = inventoryRangeList[0];
 
             int arrayCounter = 0;
             int sortedListCounter = 0;
             do
             {
-                if (periodLoop.Equals(sortedList.Keys[sortedListCounter]))
+                if (periodLoop.Equals(injectWithdrawSortedList.Keys[sortedListCounter]))
                 {
-                    constraintLoop = sortedList.Values[sortedListCounter];
+                    constraintLoop = injectWithdrawSortedList.Values[sortedListCounter];
+                    inventoryRangeLoop = inventoryRangeList[sortedListCounter];
                     sortedListCounter++;
                 }
-                timeSeriesValues[arrayCounter] = constraintLoop;
+                timeSeriesInjectWithdrawValues[arrayCounter] = constraintLoop;
+                timeSeriesInventoryRangeValues[arrayCounter] = inventoryRangeLoop;
 
                 periodLoop = periodLoop.Offset(1);
                 arrayCounter++;
             } while (periodLoop.CompareTo(lastPeriod) <= 0);
 
-            var timeSeries = new TimeSeries<T, IInjectWithdrawConstraint>(firstPeriod, timeSeriesValues);
+            var injectWithdrawTimeSeries = new TimeSeries<T, IInjectWithdrawConstraint>(firstPeriod, timeSeriesInjectWithdrawValues);
+            var inventoryRangeTimeSeries = new TimeSeries<T, InventoryRange>(firstPeriod, timeSeriesInventoryRangeValues);
 
             IInjectWithdrawConstraint GetInjectWithdrawConstraint(T period)
             {
-                if (period.CompareTo(timeSeries.End) > 0)
-                    return timeSeries[timeSeries.End];
-                return timeSeries[period];
+                if (period.CompareTo(injectWithdrawTimeSeries.End) > 0)
+                    return injectWithdrawTimeSeries[injectWithdrawTimeSeries.End];
+                return injectWithdrawTimeSeries[period];
             }
 
-            return builder.WithInjectWithdrawConstraint(GetInjectWithdrawConstraint);
+            CmdtyStorage<T>.IAddMinInventory addMinInventory = builder.WithInjectWithdrawConstraint(GetInjectWithdrawConstraint);
+
+            double GetMinInventory(T period)
+            {
+                if (period.CompareTo(inventoryRangeTimeSeries.End) > 0)
+                    return inventoryRangeTimeSeries[inventoryRangeTimeSeries.End].MaxInventory;
+                return inventoryRangeTimeSeries[period].MaxInventory;
+            }
+
+            CmdtyStorage<T>.IAddMaxInventory addMaxInventory = addMinInventory.WithMinInventory(GetMinInventory);
+
+            double GetMaxInventory(T period)
+            {
+                if (period.CompareTo(inventoryRangeTimeSeries.End) > 0)
+                    return inventoryRangeTimeSeries[inventoryRangeTimeSeries.End].MaxInventory;
+                return inventoryRangeTimeSeries[period].MaxInventory;
+            }
+            
+            return addMaxInventory.WithMaxInventory(GetMaxInventory);
         }
+
+        // TODO delete?
+        //public static CmdtyStorage<T>.IAddTerminalStorageState WithStoragePropertyByPeriod<T>(
+        //    [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder, 
+        //    [NotNull] IEnumerable<StoragePropertiesByPeriod<T>> storageProperties)
+        //    where T : ITimePeriod<T>
+        //{
+        //    if (builder == null) throw new ArgumentNullException(nameof(builder));
+        //    if (storageProperties == null) throw new ArgumentNullException(nameof(storageProperties));
+
+        //    CmdtyStorage<T>.IAddMinInventory addMinInventory = builder.WithTimeDependentInjectWithdrawRange(null);
+        //    CmdtyStorage<T>.IAddMaxInventory addMaxInventory = addMinInventory.WithMinInventory(null);
+
+        //    CmdtyStorage<T>.IAddInjectionCost withMaxInventory = addMaxInventory.WithMaxInventory(null);
+
+        //    CmdtyStorage<T>.IAddCmdtyConsumedOnInject addCmdtyConsumedOnInject = withMaxInventory.WithInjectionCost(null);
+
+
+        //}
 
     }
 }
