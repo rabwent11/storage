@@ -24,6 +24,7 @@
 #endregion
 
 using System;
+using System.Reflection;
 using Cmdty.Storage.Core;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
@@ -34,8 +35,8 @@ namespace Cmdty.Storage.Excel
     public static class IntrinsicXl
     {
 
-        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + "." + nameof(StorageIntrinsicValue), Category = AddIn.ExcelFunctionCategory, 
-            IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
+        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageIntrinsicValue), 
+            Category = AddIn.ExcelFunctionCategory, IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
         public static object StorageIntrinsicValue(
                         DateTime valuationDate,
                         DateTime storageStart,
@@ -58,8 +59,8 @@ namespace Cmdty.Storage.Excel
                     currentInventory, forwardCurve, interestRateCurve, gridSpacing).NetPresentValue);
         }
 
-        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + "." + nameof(StorageIntrinsicDecisionProfile), Category = AddIn.ExcelFunctionCategory,
-            IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
+        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageIntrinsicDecisionProfile), 
+            Category = AddIn.ExcelFunctionCategory, IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
         public static object StorageIntrinsicDecisionProfile(
             DateTime valuationDate,
             DateTime storageStart,
@@ -128,7 +129,5 @@ namespace Cmdty.Storage.Excel
             return valuationResults;
         }
         
-        // TODO function which returns the version
-
     }
 }

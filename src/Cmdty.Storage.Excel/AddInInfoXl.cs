@@ -23,11 +23,26 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
+using System.Reflection;
+using ExcelDna.Integration;
+
 namespace Cmdty.Storage.Excel
 {
-    internal static class AddIn
+    public static class AddInInfoXl
     {
-        public const string ExcelFunctionNamePrefix = "cmdty.";
-        public const string ExcelFunctionCategory = "CMDTY Storage";
+
+        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageAddInVersion),
+            Category = AddIn.ExcelFunctionCategory, IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
+        public static object StorageAddInVersion(object trigger)
+        {
+            return StorageExcelHelper.ExecuteExcelFunction(() =>
+            {
+                Assembly currentAssembly = Assembly.GetExecutingAssembly();
+                AssemblyInformationalVersionAttribute infoVersionAttribute =
+                    currentAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                return infoVersionAttribute.InformationalVersion;
+            });
+        }
+
     }
 }
