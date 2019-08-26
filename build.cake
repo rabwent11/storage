@@ -152,6 +152,37 @@ Task("Push-NuGetToCmdtyFeed")
     });
 });
 
+private string GetEnvironmentVariable(string envVariableName)
+{
+    string envVariableValue = EnvironmentVariable(envVariableName);
+    if (string.IsNullOrEmpty(envVariableValue))
+        throw new ApplicationException($"Environment variable '{envVariableName}' has not been set.");
+    return envVariableValue;
+}
+
+var publishNuGetTask = Task("Publish-NuGet")
+    .Does(() =>
+{
+    string nugetApiKey = GetEnvironmentVariable("NUGET_API_KEY");
+
+    var nupkgPath = GetFiles(artifactsDirectory.ToString() + "/*.nupkg").Single();
+
+    NuGetPush(nupkgPath, new NuGetPushSettings 
+    {
+        ApiKey = nugetApiKey,
+        Source = "https://api.nuget.org/v3/index.json"
+    });
+});
+
+if (!publishWithoutBuild)
+{
+    publishNuGetTask.IsDependentOn("Pack-NuGet");
+}
+else
+{
+    Information("Publishing without first building as PublishWithoutBuild variable set to true.");
+}
+
 Task("Default")
 	.IsDependentOn("Pack-NuGet");
 
