@@ -111,7 +111,19 @@ Task("Test-C#")
     }
 });
 
+Task("Build-Samples")
+    .IsDependentOn("Add-NuGetSource")
+	.Does(() =>
+{
+	var dotNetCoreSettings = new DotNetCoreBuildSettings()
+        {
+            Configuration = configuration,
+        };
+	DotNetCoreBuild("samples/csharp/Cmdty.Storage.Samples.sln", dotNetCoreSettings);
+});
+
 Task("Pack-NuGet")
+	.IsDependentOn("Build-Samples")
 	.IsDependentOn("Test-C#")
 	.Does(() =>
 {
