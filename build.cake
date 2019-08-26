@@ -1,6 +1,7 @@
 var target = Argument<string>("Target", "Default");
 var configuration = Argument<string>("Configuration", "Release");
 bool publishWithoutBuild = Argument<bool>("PublishWithoutBuild", false);
+string nugetPrereleaseTextPart = Argument<string>("PrereleaseText", "alpha");
 
 var artifactsDirectory = Directory("./artifacts");
 var testResultDir = "./temp/";
@@ -8,11 +9,22 @@ var isRunningOnBuildServer = !BuildSystem.IsLocalBuild;
 
 var msBuildSettings = new DotNetCoreMSBuildSettings();
 
+// Maps text used in prerelease part in NuGet package to PyPI package
+var prereleaseVersionTextMapping = new Dictionary<string, string>
+{
+	{"alpha", "a"},
+	{"beta", "b"},
+	{"rc", "rc"}
+};
+
+string pythonPrereleaseTextPart = prereleaseVersionTextMapping[nugetPrereleaseTextPart];
+
+msBuildSettings.WithProperty("PythonPreReleaseTextPart", pythonPrereleaseTextPart);
 
 if (HasArgument("BuildNumber"))
 {
     msBuildSettings.WithProperty("BuildNumber", Argument<string>("BuildNumber"));
-    msBuildSettings.WithProperty("VersionSuffix", "alpha" + Argument<string>("BuildNumber"));
+    msBuildSettings.WithProperty("VersionSuffix", nugetPrereleaseTextPart + Argument<string>("BuildNumber"));
 }
 
 if (HasArgument("VersionPrefix"))
@@ -98,10 +110,40 @@ Task("Test-C#")
     }
 });
 
+Task("Pack-NuGet")
+	.IsDependentOn("Test-C#")
+	.IsDependentOn("Clean-Artifacts")
+	.Does(() =>
+{
+	var dotNetPackSettings = new DotNetCorePackSettings()
+                {
+                    Configuration = configuration,
+                    OutputDirectory = artifactsDirectory,
+                    NoRestore = true,
+                    NoBuild = true,
+                    MSBuildSettings = msBuildSettings
+                };
+	DotNetCorePack("src/Cmdty.Storage/Cmdty.Storage.csproj", dotNetPackSettings);
+});	
+
+Task("Push-NuGetToCmdtyFeed")
+    .IsDependentOn("Add-NuGetSource")
+    .IsDependentOn("Pack-NuGet")
+    .Does(() =>
+{
+    var nupkgPath = GetFiles(artifactsDirectory.ToString() + "/*.nupkg").Single();
+    Information($"Pushing NuGetPackage in {nupkgPath} to Cmdty feed");
+    NuGetPush(nupkgPath, new NuGetPushSettings 
+    {
+        Source = "Cmdty",
+        ApiKey = "VSTS"
+    });
+});
+
 Task("Default")
-	.IsDependentOn("Test-C#");
+	.IsDependentOn("Pack-NuGet");
 
 Task("CI")
-	.IsDependentOn("Test-C#");
+	.IsDependentOn("Push-NuGetToCmdtyFeed");
 
 RunTarget(target);
