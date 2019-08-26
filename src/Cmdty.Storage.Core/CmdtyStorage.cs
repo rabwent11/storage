@@ -77,6 +77,17 @@ namespace Cmdty.Storage.Core
         
         public InjectWithdrawRange GetInjectWithdrawRange(T date, double inventory)
         {
+            double minInventory = _minInventory(date);
+            if (inventory < minInventory)
+                throw new ArgumentException($"Inventory is below minimum allowed value of {minInventory} during period {date}.", nameof(inventory));
+
+            double maxInventory = _maxInventory(date);
+            if (inventory > maxInventory)
+                throw new ArgumentException($"Inventory is above maximum allowed value of {maxInventory} during period {date}.", nameof(inventory));
+
+            if (date.CompareTo(EndPeriod) >= 0)
+                return new InjectWithdrawRange(0.0, 0.0);
+
             return _injectWithdrawConstraints(date).GetInjectWithdrawRange(inventory);
         }
         
@@ -260,7 +271,17 @@ namespace Cmdty.Storage.Core
                 // TODO validate inputs
                 Func<double, double, double> terminalStorageValue =_terminalStorageValue ?? ((cmdtyPrice, finalInventory) => 0.0);
 
-                return new CmdtyStorage<T>(_startPeriod, _endPeriod, _injectWithdrawConstraints, _maxInventory, 
+                Func<T, double> maxInventory;
+                if (_mustBeEmptyAtEnd)
+                {
+                    maxInventory = period => period.CompareTo(_endPeriod) >= 0 ? 0.0 : _maxInventory(period);
+                }
+                else
+                {
+                    maxInventory = _maxInventory;
+                }
+
+                return new CmdtyStorage<T>(_startPeriod, _endPeriod, _injectWithdrawConstraints, maxInventory, 
                             _minInventory, _injectionCashFlows, _withdrawalCashFlows, terminalStorageValue, _mustBeEmptyAtEnd, 
                             _injectCmdtyConsumed, _withdrawCmdtyConsumed);
             }

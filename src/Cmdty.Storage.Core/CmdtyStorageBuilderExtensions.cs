@@ -137,8 +137,8 @@ namespace Cmdty.Storage.Core
             double GetMinInventory(T period)
             {
                 if (period.CompareTo(inventoryRangeTimeSeries.End) > 0)
-                    return inventoryRangeTimeSeries[inventoryRangeTimeSeries.End].MaxInventory;
-                return inventoryRangeTimeSeries[period].MaxInventory;
+                    return inventoryRangeTimeSeries[inventoryRangeTimeSeries.End].MinInventory;
+                return inventoryRangeTimeSeries[period].MinInventory;
             }
 
             CmdtyStorage<T>.IAddMaxInventory addMaxInventory = addMinInventory.WithMinInventory(GetMinInventory);

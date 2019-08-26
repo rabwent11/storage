@@ -85,7 +85,7 @@ namespace Cmdty.Storage.Core.Test
                 (period: new Day(2019, 10, 17), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
                 {
                     (inventory: 0.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06)),  // Constant inject/withdraw rates require 2 rows to be provided
-                    (inventory: 1000.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06))
+                    (inventory: 600.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06))
                 })
             };
 
@@ -110,7 +110,7 @@ namespace Cmdty.Storage.Core.Test
             Assert.Equal(54.5, injectWithdrawRangeBetweenDates.MaxInjectWithdrawRate, 12);
 
             // Inject/withdraw on second date
-            var injectWithdrawRangeOnSecondDate = storage.GetInjectWithdrawRange(new Day(2019, 10, 17), 1000);
+            var injectWithdrawRangeOnSecondDate = storage.GetInjectWithdrawRange(new Day(2019, 10, 17), 300);
             Assert.Equal(-130.0, injectWithdrawRangeOnSecondDate.MinInjectWithdrawRate, 12);
             Assert.Equal(133.06, injectWithdrawRangeOnSecondDate.MaxInjectWithdrawRate, 12);
 
@@ -120,11 +120,75 @@ namespace Cmdty.Storage.Core.Test
             Assert.Equal(133.06, injectWithdrawRangeBetweenSecondDateAndEnd.MaxInjectWithdrawRate, 12);
 
             // Inject/withdraw after end of storage
-            var injectWithdrawRangeAfterEnd = storage.GetInjectWithdrawRange(new Day(2019, 11, 5), 500);
-            Assert.Equal(-130.0, injectWithdrawRangeAfterEnd.MinInjectWithdrawRate, 12);
-            Assert.Equal(133.06, injectWithdrawRangeAfterEnd.MaxInjectWithdrawRate, 12);
+            var injectWithdrawRangeAfterEnd = storage.GetInjectWithdrawRange(new Day(2019, 11, 5), 0);
+            Assert.Equal(0.0, injectWithdrawRangeAfterEnd.MinInjectWithdrawRate, 12);
+            Assert.Equal(0.0, injectWithdrawRangeAfterEnd.MaxInjectWithdrawRate, 12);
 
         }
+
+        [Fact]
+        public void Build_WithTimeAndInventoryVaryingInjectWithdrawRates_MinAndMaxInventoryAsExpected()
+        {
+            var injectWithdrawConstraints = new List<InjectWithdrawRangeByInventoryAndPeriod<Day>>
+            {
+                (period: new Day(2019, 10, 1), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                        {
+                            (inventory: 0.0, (minInjectWithdrawRate: -44.85, maxInjectWithdrawRate: 56.8)), // Inventory empty, highest injection rate
+                            (inventory: 100.0, (minInjectWithdrawRate: -45.01, maxInjectWithdrawRate: 54.5)),
+                            (inventory: 300.0, (minInjectWithdrawRate: -45.78, maxInjectWithdrawRate: 52.01)),
+                            (inventory: 600.0, (minInjectWithdrawRate: -46.17, maxInjectWithdrawRate: 51.9)),
+                            (inventory: 800.0, (minInjectWithdrawRate: -46.99, maxInjectWithdrawRate: 50.8)),
+                            (inventory: 1000.0, (minInjectWithdrawRate: -47.12, maxInjectWithdrawRate: 50.01)) // Inventory full, highest withdrawal rate
+                        }),
+                (period: new Day(2019, 10, 17), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: 0.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06)),  // Constant inject/withdraw rates require 2 rows to be provided
+                    (inventory: 600.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06))
+                })
+            };
+
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                                .WithActiveTimePeriod(new Day(2019, 10, 1), new Day(2019, 11, 1))
+                                .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+                                .WithPerUnitInjectionCost(ConstantInjectionCost, injectionDate => injectionDate)
+                                .WithNoCmdtyConsumedOnInject()
+                                .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)
+                                .WithNoCmdtyConsumedOnWithdraw()
+                                .MustBeEmptyAtEnd()
+                                .Build();
+
+            // Min/max inventory on first date
+            double minInventoryOnFirstDate = storage.MinInventory(new Day(2019, 10, 1));
+            double maxInventoryOnFirstDate = storage.MaxInventory(new Day(2019, 10, 1));
+            Assert.Equal(0.0, minInventoryOnFirstDate, 12);
+            Assert.Equal(1000.0, maxInventoryOnFirstDate, 12);
+
+            // Min/max inventory between dates (same as on first date)
+            double minInventoryBetweenDates = storage.MinInventory(new Day(2019, 10, 16));
+            double maxInventoryBetweenDates = storage.MaxInventory(new Day(2019, 10, 16));
+            Assert.Equal(0.0, minInventoryBetweenDates, 12);
+            Assert.Equal(1000.0, maxInventoryBetweenDates, 12);
+
+            // Min/max inventory on second date
+            double minInventoryOnSecondDate = storage.MinInventory(new Day(2019, 10, 17));
+            double maxInventoryOnSecondDate = storage.MaxInventory(new Day(2019, 10, 17));
+            Assert.Equal(0.0, minInventoryOnSecondDate, 12);
+            Assert.Equal(600.0, maxInventoryOnSecondDate, 12);
+
+            // Min/max inventory between second date and end
+            double minInventoryBetweenSecondDateAndEnd = storage.MinInventory(new Day(2019, 10, 29));
+            double maxInventoryBetweenSecondDateAndEnd = storage.MaxInventory(new Day(2019, 10, 29));
+            Assert.Equal(0.0, minInventoryBetweenSecondDateAndEnd, 12);
+            Assert.Equal(600.0, maxInventoryBetweenSecondDateAndEnd, 12);
+
+            // Min/max inventory after end of storage
+            double minInventoryAfterEnd = storage.MinInventory(new Day(2019, 11, 5));
+            double maxInventoryAfterEnd = storage.MaxInventory(new Day(2019, 11, 5));
+            Assert.Equal(0.0, minInventoryAfterEnd, 12);
+            Assert.Equal(0.0, maxInventoryAfterEnd, 12);
+
+        }
+
 
 
     }

@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using JetBrains.Annotations;
 
@@ -54,5 +55,9 @@ namespace Cmdty.Storage.Core
             (T period, IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRanges) tuple)
                 => new InjectWithdrawRangeByInventoryAndPeriod<T>(tuple.period, tuple.injectWithdrawRanges);
 
+        public override string ToString()
+        {
+            return $"{nameof(Period)}: {Period}, {nameof(InjectWithdrawRanges)}.Count: {InjectWithdrawRanges.Count()}";
+        }
     }
 }
