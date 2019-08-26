@@ -9,8 +9,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3AC698D6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.Storage.Core", "src\Cmdty.Storage.Core\Cmdty.Storage.Core.csproj", "{276FC664-A2BF-4507-B981-EBA47A0CC6E0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.Storage.Intrinsic", "src\Cmdty.Storage.Intrinsic\Cmdty.Storage.Intrinsic.csproj", "{4B5791F4-C70A-4266-845F-73F771656BDF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.Storage.Core.Test", "tests\Cmdty.Storage.Core.Test\Cmdty.Storage.Core.Test.csproj", "{C361C95E-E363-4548-B206-DFA715826607}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D3F154D7-4D1B-4688-8799-EF7D5ACFABAE}"
@@ -26,7 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Cmdty.Storage.Python", "src\Cmdty.Storage.Python\Cmdty.Storage.Python.pyproj", "{21DBF96B-40ED-4DC2-AFE1-0BC170FFF2D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cmdty.Storage.Excel", "src\Cmdty.Storage.Excel\Cmdty.Storage.Excel.csproj", "{46E6B2AB-9279-420A-A5EF-726578D1D7C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.Storage.Excel", "src\Cmdty.Storage.Excel\Cmdty.Storage.Excel.csproj", "{46E6B2AB-9279-420A-A5EF-726578D1D7C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,10 +36,6 @@ Global
 		{276FC664-A2BF-4507-B981-EBA47A0CC6E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{276FC664-A2BF-4507-B981-EBA47A0CC6E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{276FC664-A2BF-4507-B981-EBA47A0CC6E0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4B5791F4-C70A-4266-845F-73F771656BDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4B5791F4-C70A-4266-845F-73F771656BDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4B5791F4-C70A-4266-845F-73F771656BDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4B5791F4-C70A-4266-845F-73F771656BDF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C361C95E-E363-4548-B206-DFA715826607}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C361C95E-E363-4548-B206-DFA715826607}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C361C95E-E363-4548-B206-DFA715826607}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -58,7 +52,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{276FC664-A2BF-4507-B981-EBA47A0CC6E0} = {10F327D9-2E26-4747-B714-24ECF7C9CFCC}
-		{4B5791F4-C70A-4266-845F-73F771656BDF} = {10F327D9-2E26-4747-B714-24ECF7C9CFCC}
 		{C361C95E-E363-4548-B206-DFA715826607} = {3AC698D6-ED67-4C58-83C7-ED2BD46472F5}
 		{21DBF96B-40ED-4DC2-AFE1-0BC170FFF2D3} = {10F327D9-2E26-4747-B714-24ECF7C9CFCC}
 		{46E6B2AB-9279-420A-A5EF-726578D1D7C0} = {10F327D9-2E26-4747-B714-24ECF7C9CFCC}
