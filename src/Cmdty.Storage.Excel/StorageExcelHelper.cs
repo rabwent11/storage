@@ -174,5 +174,19 @@ namespace Cmdty.Storage.Excel
 
         }
 
+        public static object[,] TimeSeriesToExcelReturnValues<TIndex>(TimeSeries<TIndex, double> timeSeries, bool indicesAsText)
+            where TIndex : ITimePeriod<TIndex>
+        {
+            var resultArray = new object[timeSeries.Count, 2];
+
+            for (int i = 0; i < timeSeries.Count; i++)
+            {
+                resultArray[i, 0] = indicesAsText ? (object)timeSeries.Indices[i].ToString() : timeSeries.Indices[i].Start;
+                resultArray[i, 1] = timeSeries[i];
+            }
+
+            return resultArray;
+        }
+
     }
 }

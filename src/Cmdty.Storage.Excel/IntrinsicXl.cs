@@ -33,7 +33,8 @@ namespace Cmdty.Storage.Excel
 {
     public static class IntrinsicXl
     {
-        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageIntrinsicValue), Category = AddIn.ExcelFunctionCategory, 
+
+        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + "." + nameof(StorageIntrinsicValue), Category = AddIn.ExcelFunctionCategory, 
             IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
         public static object StorageIntrinsicValue(
                         DateTime valuationDate,
@@ -51,13 +52,42 @@ namespace Cmdty.Storage.Excel
                         [ExcelArgument(Name = "Granularity")] object granularity)
         {
             return StorageExcelHelper.ExecuteExcelFunction(() =>
-                StorageNpv<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints,
+                IntrinsicStorageValuation<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal,
-                    currentInventory, forwardCurve, interestRateCurve, gridSpacing));
+                    currentInventory, forwardCurve, interestRateCurve, gridSpacing).NetPresentValue);
         }
 
-        private static double StorageNpv<T>(DateTime valuationDateTime,
+        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + "." + nameof(StorageIntrinsicDecisionProfile), Category = AddIn.ExcelFunctionCategory,
+            IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
+        public static object StorageIntrinsicDecisionProfile(
+            DateTime valuationDate,
+            DateTime storageStart,
+            DateTime storageEnd,
+            object injectWithdrawConstraints,
+            double injectionCostRate,
+            double cmdtyConsumedOnInjection,
+            double withdrawalCostRate,
+            double cmdtyConsumedOnWithdrawal,
+            double currentInventory,
+            object forwardCurve,
+            object interestRateCurve,
+            double gridSpacing,
+            [ExcelArgument(Name = "Granularity")] object granularity)
+        {
+            return StorageExcelHelper.ExecuteExcelFunction(() =>
+            {
+                DoubleTimeSeries<Day> timeSeries = IntrinsicStorageValuation<Day>(valuationDate, storageStart, storageEnd,
+                    injectWithdrawConstraints,
+                    injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
+                    cmdtyConsumedOnWithdrawal,
+                    currentInventory, forwardCurve, interestRateCurve, gridSpacing).DecisionProfile;
+                
+                return StorageExcelHelper.TimeSeriesToExcelReturnValues(timeSeries, false);
+            });
+        }
+
+        private static IntrinsicStorageValuationResults<T> IntrinsicStorageValuation<T>(DateTime valuationDateTime,
             DateTime storageStartDateTime,
             DateTime storageEndDateTime,
             object injectWithdrawConstraints,
@@ -85,7 +115,7 @@ namespace Cmdty.Storage.Excel
                 {new Month(2019, 9),  new Day(2019, 10, 5)},
             }.Build();
 
-            IntrinsicStorageValuationResults<T> valuationResults = IntrinsicStorageValuation<T>
+            IntrinsicStorageValuationResults<T> valuationResults = Core.IntrinsicStorageValuation<T>
                 .ForStorage(storage)
                 .WithStartingInventory(currentInventory)
                 .ForCurrentPeriod(currentPeriod)
@@ -95,8 +125,10 @@ namespace Cmdty.Storage.Excel
                 .WithGridSpacing(gridSpacing)
                 .Calculate();
 
-            return valuationResults.NetPresentValue;
+            return valuationResults;
         }
         
+        // TODO function which returns the version
+
     }
 }
