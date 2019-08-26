@@ -75,6 +75,7 @@ Task("Clean-Artifacts")
 
 Task("Build")
 	.IsDependentOn("Add-NuGetSource")
+	.IsDependentOn("Clean-Artifacts") // Necessary as msbuild tasks in Cmdty.Storage.Excel.csproj copy the add-ins into the artifacts directory
     .Does(() =>
 {
     var dotNetCoreSettings = new DotNetCoreBuildSettings()
@@ -112,7 +113,6 @@ Task("Test-C#")
 
 Task("Pack-NuGet")
 	.IsDependentOn("Test-C#")
-	.IsDependentOn("Clean-Artifacts")
 	.Does(() =>
 {
 	var dotNetPackSettings = new DotNetCorePackSettings()
