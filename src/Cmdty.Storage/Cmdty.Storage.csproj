@@ -2,10 +2,18 @@
 
   <PropertyGroup>
     <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <PackageId>Cmdty.Storage</PackageId>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/cmdty/storage</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cmdty/storage</RepositoryUrl>
+    <Description>Valuation and optimisation of commodity storage facilities.</Description>
+    <PackageTags>commodities;trading;oil;gas;power;quantitative;finance</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cmdty.Curves" Version="0.1.0-alpha2019081704" />
+    <PackageReference Include="Cmdty.Curves" Version="0.1.0-beta1" />
   </ItemGroup>
 
   <ItemGroup>
