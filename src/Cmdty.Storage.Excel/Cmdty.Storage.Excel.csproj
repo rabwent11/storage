@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cmdty.Storage.Core\Cmdty.Storage.Core.csproj" />
+    <ProjectReference Include="..\Cmdty.Storage\Cmdty.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,8 +27,8 @@
     <Copy SourceFiles="..\..\lib\ExcelDna\ExcelDna64.xll" DestinationFiles="$(TargetDir)Cmdty.Storage.Excel-AddIn64.xll" />
     <Exec Command="..\..\lib\ExcelDna\ExcelDnaPack.exe $(TargetDir)Cmdty.Storage.Excel-AddIn.dna /Y /O $(TargetDir)Cmdty.Storage-x86.xll" />
     <Exec Command="..\..\lib\ExcelDna\ExcelDnaPack.exe $(TargetDir)Cmdty.Storage.Excel-AddIn64.dna /Y /O $(TargetDir)Cmdty.Storage-x64.xll" />
-    <Copy SourceFiles="$(TargetDir)Cmdty.Storage-x86.xll" DestinationFolder="..\..\artifacts" OverwriteReadOnlyFiles="true"/>
-    <Copy SourceFiles="$(TargetDir)Cmdty.Storage-x64.xll" DestinationFolder="..\..\artifacts" OverwriteReadOnlyFiles="true"/>
+    <Copy SourceFiles="$(TargetDir)Cmdty.Storage-x86.xll" DestinationFolder="..\..\artifacts" OverwriteReadOnlyFiles="true" />
+    <Copy SourceFiles="$(TargetDir)Cmdty.Storage-x64.xll" DestinationFolder="..\..\artifacts" OverwriteReadOnlyFiles="true" />
   </Target>
 
 </Project>

@@ -24,8 +24,6 @@
 #endregion
 
 using System;
-using System.Reflection;
-using Cmdty.Storage.Core;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using ExcelDna.Integration;
@@ -53,7 +51,7 @@ namespace Cmdty.Storage.Excel
                         [ExcelArgument(Name = "Granularity")] object granularity)
         {
             return StorageExcelHelper.ExecuteExcelFunction(() =>
-                IntrinsicStorageValuation<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints,
+                IntrinsicStorageVal<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal,
                     currentInventory, forwardCurve, interestRateCurve, gridSpacing).NetPresentValue);
@@ -78,7 +76,7 @@ namespace Cmdty.Storage.Excel
         {
             return StorageExcelHelper.ExecuteExcelFunction(() =>
             {
-                DoubleTimeSeries<Day> timeSeries = IntrinsicStorageValuation<Day>(valuationDate, storageStart, storageEnd,
+                DoubleTimeSeries<Day> timeSeries = IntrinsicStorageVal<Day>(valuationDate, storageStart, storageEnd,
                     injectWithdrawConstraints,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal,
@@ -88,7 +86,7 @@ namespace Cmdty.Storage.Excel
             });
         }
 
-        private static IntrinsicStorageValuationResults<T> IntrinsicStorageValuation<T>(DateTime valuationDateTime,
+        private static IntrinsicStorageValuationResults<T> IntrinsicStorageVal<T>(DateTime valuationDateTime,
             DateTime storageStartDateTime,
             DateTime storageEndDateTime,
             object injectWithdrawConstraints,
@@ -116,7 +114,7 @@ namespace Cmdty.Storage.Excel
                 {new Month(2019, 9),  new Day(2019, 10, 5)},
             }.Build();
 
-            IntrinsicStorageValuationResults<T> valuationResults = Core.IntrinsicStorageValuation<T>
+            IntrinsicStorageValuationResults<T> valuationResults = IntrinsicStorageValuation<T>
                 .ForStorage(storage)
                 .WithStartingInventory(currentInventory)
                 .ForCurrentPeriod(currentPeriod)

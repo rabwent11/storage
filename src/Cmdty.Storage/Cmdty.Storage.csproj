@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cmdty.Curves" Version="0.1.0-alpha2019081704" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Cmdty.Storage.Test, PublicKey=00240000048000009400000006020000002400005253413100040000010001000719be14a0c566e30fbccf4924b7f04021767c9a61b82d74f543134c686a8a26593b50195e204a9e3e3e39c2fb9fde5fb6e76788b7221d2fb92e36fb19961b0beae96ad53f5c133299b6dd4a003cddfc12fc0d13888d230ca7f219493b039a10adc443b2e34316f4c111ef34e1463a96cd12e550af46e0d42c72309c0e15ea9a</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TargetFramework)' == 'net45'">
+    <WriteLinesToFile File="..\Cmdty.Storage.Python\storage\__version__.py" Lines="__version__ = '$(PythonVersion)'" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+</Project>
