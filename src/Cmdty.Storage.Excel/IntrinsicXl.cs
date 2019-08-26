@@ -36,26 +36,25 @@ namespace Cmdty.Storage.Excel
         [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageIntrinsicValue), Category = AddIn.ExcelFunctionCategory, 
             IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
         public static object StorageIntrinsicValue(
-            DateTime valuationDate,
-            DateTime storageStart,
-            DateTime storageEnd,
-            object injectWithdrawConstraints,
-            double injectionCostRate,
-            double cmdtyConsumedOnInjection,
-            double withdrawalCostRate,
-            double cmdtyConsumedOnWithdrawal,
-            double currentInventory,
-            object forwardCurve,
-            object interestRateCurve,
-            double gridSpacing,
-            [ExcelArgument(Name = "Granularity")] object granularity
-            )
+                        DateTime valuationDate,
+                        DateTime storageStart,
+                        DateTime storageEnd,
+                        object injectWithdrawConstraints,
+                        double injectionCostRate,
+                        double cmdtyConsumedOnInjection,
+                        double withdrawalCostRate,
+                        double cmdtyConsumedOnWithdrawal,
+                        double currentInventory,
+                        object forwardCurve,
+                        object interestRateCurve,
+                        double gridSpacing,
+                        [ExcelArgument(Name = "Granularity")] object granularity)
         {
-
-            return StorageNpv<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints, 
-                injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate, 
-                cmdtyConsumedOnWithdrawal,
-                currentInventory, forwardCurve, interestRateCurve, gridSpacing);
+            return StorageExcelHelper.ExecuteExcelFunction(() =>
+                StorageNpv<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints,
+                    injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
+                    cmdtyConsumedOnWithdrawal,
+                    currentInventory, forwardCurve, interestRateCurve, gridSpacing));
         }
 
         private static double StorageNpv<T>(DateTime valuationDateTime,
@@ -72,29 +71,18 @@ namespace Cmdty.Storage.Excel
             double gridSpacing)
             where T : ITimePeriod<T>
         {
+            var storage = StorageExcelHelper.CreateCmdtyStorageFromExcelInputs<T>(storageStartDateTime,
+                storageEndDateTime, injectWithdrawConstraints, injectionCostRate, cmdtyConsumedOnInjection,
+                withdrawalCostRate, cmdtyConsumedOnWithdrawal);
+
             T currentPeriod = TimePeriodFactory.FromDateTime<T>(valuationDateTime);
 
             DoubleTimeSeries<T> forwardCurve = StorageExcelHelper.CreateDoubleTimeSeries<T>(forwardCurveIn, "Forward_curve");
             
-            T storageStart = TimePeriodFactory.FromDateTime<T>(storageStartDateTime);
-            T storageEnd = TimePeriodFactory.FromDateTime<T>(storageEndDateTime);
-
             TimeSeries<Month, Day> settlementDates = new TimeSeries<Month, Day>.Builder
             {
                 {new Month(2019, 9),  new Day(2019, 10, 5)}
             }.Build();
-
-            CmdtyStorage<T> storage = CmdtyStorage<T>.Builder
-                .WithActiveTimePeriod(storageStart, storageEnd)
-                .WithConstantInjectWithdrawRange(-45.5, 56.6)
-                .WithConstantMinInventory(0.0)
-                .WithConstantMaxInventory(1000.0)
-                .WithPerUnitInjectionCost(0.8, injectionDate => injectionDate.First<Day>())
-                .WithNoCmdtyConsumedOnInject()
-                .WithPerUnitWithdrawalCost(1.2, withdrawalDate => withdrawalDate.First<Day>())
-                .WithNoCmdtyConsumedOnWithdraw()
-                .MustBeEmptyAtEnd()
-                .Build();
 
             IntrinsicStorageValuationResults<T> valuationResults = IntrinsicStorageValuation<T>
                 .ForStorage(storage)
@@ -108,10 +96,6 @@ namespace Cmdty.Storage.Excel
 
             return valuationResults.NetPresentValue;
         }
-
-
-
- 
         
     }
 }

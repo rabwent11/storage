@@ -26,8 +26,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Cmdty.Storage.Core;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
@@ -37,14 +35,28 @@ namespace Cmdty.Storage.Excel
 {
     public static class StorageExcelHelper
     {
+        public static object ExecuteExcelFunction(Func<object> functionBody)
+        {
+            if (ExcelDnaUtil.IsInFunctionWizard())
+                return "Currently in Function Wizard.";
 
-        private static CmdtyStorage<T> CreateCmdtyStorageFromExcelInputs<T>(DateTime storageStartDateTime,
-            DateTime storageEndDateTime,
-            object injectWithdrawConstraintsIn,
-            double injectionCostRate,
-            double cmdtyConsumedOnInjection,
-            double withdrawalCostRate,
-            double cmdtyConsumedOnWithdrawal)
+            try
+            {
+                return functionBody();
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+        }
+        
+        public static CmdtyStorage<T> CreateCmdtyStorageFromExcelInputs<T>(DateTime storageStartDateTime,
+                                        DateTime storageEndDateTime,
+                                        object injectWithdrawConstraintsIn,
+                                        double injectionCostRate,
+                                        double cmdtyConsumedOnInjection,
+                                        double withdrawalCostRate,
+                                        double cmdtyConsumedOnWithdrawal)
             where T : ITimePeriod<T>
         {
             T storageStart = TimePeriodFactory.FromDateTime<T>(storageStartDateTime);
@@ -58,28 +70,33 @@ namespace Cmdty.Storage.Excel
 
             if (injectWithdrawArray.GetLength(1) != 4)
                 throw new ArgumentException("Inject/withdraw constraints have been incorrectly entered. Argument value should be a range 4 columns.");
-
-
-            var injectWith = TakeWhileNotEmpty(injectWithdrawArray).Select((row, i) => new
+            
+            var injectWithdrawGrouped = TakeWhileNotEmpty(injectWithdrawArray).Select((row, i) => new
             {
-                period = row[0],
+                period = ObjectToDateTime(row[0], $"Row {i + 1} of inject/withdraw/inventory constrains contains invalid date time in 1st column."),
                 inventory = ObjectToDouble(row[1], $"Row {i + 1} of inject/withdraw/inventory constraints contains invalid inventory in 2nd column as is not a number."),
                 injectRate = ObjectToDouble(row[2], $"Row {i + 1} of inject/withdraw/inventory constraints contains invalid injection rate in 3rd column as is not a number."),
                 withdrawRate = ObjectToDouble(row[3], $"Row {i + 1} of inject/withdraw/inventory constraints contains invalid withdrawal in 4th column as is not a number.")
             }).GroupBy(arg => arg.period);
 
+            var injectWithdrawConstraints = new List<InjectWithdrawRangeByInventoryAndPeriod<T>>();
+            foreach (var injectWithdrawGroup in injectWithdrawGrouped)
+            {
+                T period = TimePeriodFactory.FromDateTime<T>(injectWithdrawGroup.Key);
+                IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawByInventory = injectWithdrawGroup.Select(arg =>
+                        new InjectWithdrawRangeByInventory(arg.inventory, new InjectWithdrawRange(-arg.withdrawRate, arg.injectRate)));
+                injectWithdrawConstraints.Add(new InjectWithdrawRangeByInventoryAndPeriod<T>(period, injectWithdrawByInventory));
+            }
 
             CmdtyStorage<T> storage = CmdtyStorage<T>.Builder
-            .WithActiveTimePeriod(storageStart, storageEnd)
-            .WithConstantInjectWithdrawRange(-45.5, 56.6)
-            .WithConstantMinInventory(0.0)
-            .WithConstantMaxInventory(1000.0)
-            .WithPerUnitInjectionCost(injectionCostRate, injectionDate => injectionDate.First<Day>())
-            .WithFixedPercentCmdtyConsumedOnInject(cmdtyConsumedOnInjection)
-            .WithPerUnitWithdrawalCost(withdrawalCostRate, withdrawalDate => withdrawalDate.First<Day>())
-            .WithFixedPercentCmdtyConsumedOnWithdraw(cmdtyConsumedOnWithdrawal)
-            .MustBeEmptyAtEnd()
-            .Build();
+                    .WithActiveTimePeriod(storageStart, storageEnd)
+                    .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+                    .WithPerUnitInjectionCost(injectionCostRate, injectionDate => injectionDate.First<Day>())
+                    .WithFixedPercentCmdtyConsumedOnInject(cmdtyConsumedOnInjection)
+                    .WithPerUnitWithdrawalCost(withdrawalCostRate, withdrawalDate => withdrawalDate.First<Day>())
+                    .WithFixedPercentCmdtyConsumedOnWithdraw(cmdtyConsumedOnWithdrawal)
+                    .MustBeEmptyAtEnd()
+                    .Build();
 
             return storage;
         }
@@ -124,7 +141,7 @@ namespace Cmdty.Storage.Excel
                 if (!(excelValuesArray[i, 1] is double doubleValue))
                     throw new ArgumentException($"Value in the second column of row {i} for argument {excelArgumentName} is not a number.");
 
-                DateTime curvePointDateTime = ObjectToDateTime(excelValuesArray[i, 0], "");
+                DateTime curvePointDateTime = ObjectToDateTime(excelValuesArray[i, 0], $"Cannot create DateTime from value in second row of argument {excelArgumentName}.");
                 T curvePointPeriod = TimePeriodFactory.FromDateTime<T>(curvePointDateTime);
 
                 builder.Add(curvePointPeriod, doubleValue);
@@ -140,10 +157,10 @@ namespace Cmdty.Storage.Excel
             return doubleNumber;
         }
 
-        private static DateTime ObjectToDateTime(object excelDateTime, string excelArgumentName)
+        private static DateTime ObjectToDateTime(object excelDateTime, string errorMessage)
         {
             if (!(excelDateTime is double doubleValue))
-                throw new ArgumentException();
+                throw new ArgumentException(errorMessage);
 
             try
             {
@@ -152,7 +169,7 @@ namespace Cmdty.Storage.Excel
             }
             catch (Exception)
             {
-                throw new ArgumentException($"Cannot create DateTime from {doubleValue} value for argument {excelArgumentName}.");
+                throw new ArgumentException(errorMessage);
             }
 
         }
