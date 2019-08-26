@@ -70,40 +70,40 @@ namespace Cmdty.Storage.Core
         }
         
         // TODO create base class for finding min and max inventory from arbitrary functional inject/withdraw profiles
-        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceUpperBound, double storageMinInventory, double storageMaxInventory)
+        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory, double currentPeriodMaxInventory)
         {
             double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceUpperBound + _minInjectWithdrawPolynomial.Evaluate(inventory);
             double PolyToSolve1StDeriv(double inventory) => 1 + _minInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
             // TODO remove hard coding of parameters
-            if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, storageMinInventory,
-                storageMaxInventory, 1E-12, 100, 20, out double thisPeriodMaxInventory))
+            if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
+                currentPeriodMaxInventory, 1E-12, 100, 20, out double thisPeriodMaxInventory))
             {
                 throw new ApplicationException("Cannot solve for the current period maximum inventory"); // TODO better exception message
             }
 
-            if (thisPeriodMaxInventory < storageMinInventory)
+            if (thisPeriodMaxInventory < currentPeriodMinInventory)
                 throw new ApplicationException("Cannot solve for the current period maximum inventory");
 
-            return Math.Min(thisPeriodMaxInventory, storageMaxInventory);
+            return Math.Min(thisPeriodMaxInventory, currentPeriodMaxInventory);
         }
 
-        public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double storageMinInventory, double storageMaxInventory)
+        public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double currentPeriodMinInventory, double currentPeriodMaxInventory)
         {
             double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceLowerBound + _maxInjectWithdrawPolynomial.Evaluate(inventory);
             double PolyToSolve1StDeriv(double inventory) => 1 + _maxInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
             // TODO remove hard coding of parameters
-            if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, storageMinInventory,
-                storageMaxInventory, 1E-12, 100, 20, out double thisPeriodMinInventory))
+            if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
+                currentPeriodMaxInventory, 1E-12, 100, 20, out double thisPeriodMinInventory))
             {
                 throw new ApplicationException("Cannot solve for the current period minimum inventory"); // TODO better exception message
             }
 
-            if (thisPeriodMinInventory > storageMaxInventory)
+            if (thisPeriodMinInventory > currentPeriodMaxInventory)
                 throw new ApplicationException("Cannot solve for the current period minimum inventory");
 
-            return Math.Max(thisPeriodMinInventory, storageMinInventory);
+            return Math.Max(thisPeriodMinInventory, currentPeriodMinInventory);
         }
 
     }
