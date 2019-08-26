@@ -21,4 +21,4 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-from storage.__version__ import __version__
+from cmdty_storage.__version__ import __version__

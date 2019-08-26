@@ -343,7 +343,7 @@ src/Cmdty.Storage.Python/build/*
 src/Cmdty.Storage.Python/list/*
 
 # Python version file generated during build
-src/Cmdty.Storage.Python/storage/__version__.py
+src/Cmdty.Storage.Python/cmdty_storage/__version__.py
 
 # Generated for Python test
 junit/

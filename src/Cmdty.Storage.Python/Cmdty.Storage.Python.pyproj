@@ -22,13 +22,13 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="storage\" />
+    <Folder Include="cmdty_storage\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="storage\__init__.py">
+    <Compile Include="cmdty_storage\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="storage\__version__.py" />
+    <Compile Include="cmdty_storage\__version__.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

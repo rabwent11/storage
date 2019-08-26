@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TargetFramework)' == 'net45'">
-    <WriteLinesToFile File="..\Cmdty.Storage.Python\storage\__version__.py" Lines="__version__ = '$(PythonVersion)'" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="..\Cmdty.Storage.Python\cmdty_storage\__version__.py" Lines="__version__ = '$(PythonVersion)'" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
 </Project>
