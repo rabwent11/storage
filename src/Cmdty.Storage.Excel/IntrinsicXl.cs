@@ -81,7 +81,8 @@ namespace Cmdty.Storage.Excel
             
             TimeSeries<Month, Day> settlementDates = new TimeSeries<Month, Day>.Builder
             {
-                {new Month(2019, 9),  new Day(2019, 10, 5)}
+                {new Month(2019, 8),  new Day(2019, 9, 5)},
+                {new Month(2019, 9),  new Day(2019, 10, 5)},
             }.Build();
 
             IntrinsicStorageValuationResults<T> valuationResults = IntrinsicStorageValuation<T>
