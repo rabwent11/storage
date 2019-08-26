@@ -79,8 +79,9 @@ namespace Cmdty.Storage.Core
             for (int i = numPeriods - 2; i >= 0; i--)
             {
                 periodBackLoop = periodBackLoop.Offset(-1);
-                backwardCalcMaxInventory[i] = storage.InventorySpaceUpperBound(periodBackLoop, backwardCalcMaxInventory[i + 1]);
-                backwardCalcMinInventory[i] = storage.InventorySpaceLowerBound(periodBackLoop, backwardCalcMinInventory[i + 1]);
+                backwardCalcMaxInventory[i] = storage.InventorySpaceUpperBound(periodBackLoop, backwardCalcMinInventory[i + 1], backwardCalcMaxInventory[i + 1]);
+                backwardCalcMinInventory[i] = storage.InventorySpaceLowerBound(periodBackLoop, backwardCalcMinInventory[i + 1], 
+                                                                backwardCalcMaxInventory[i + 1]);
             }
 
             // Calculate overall inventory space and check for consistency

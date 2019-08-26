@@ -70,8 +70,24 @@ namespace Cmdty.Storage.Core
         }
         
         // TODO create base class for finding min and max inventory from arbitrary functional inject/withdraw profiles
-        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory, double currentPeriodMaxInventory)
+        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound,
+            double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
+            double currentPeriodMaxInventory)
         {
+            //double currentPeriodMaxInjectWithdrawAtMinInventory = _maxInjectWithdrawPolynomial.Evaluate(currentPeriodMaxInventory);
+            //double currentPeriodMinInjectWithdrawAtMinInventory = _minInjectWithdrawPolynomial.Evaluate(currentPeriodMaxInventory);
+
+            //double nextPeriodMaxInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodMaxInjectWithdrawAtMinInventory;
+            //double nextPeriodMinInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodMinInjectWithdrawAtMinInventory;
+
+            //if (nextPeriodInventorySpaceLowerBound >= nextPeriodMinInventoryFromThisPeriodMinInventory &&
+            //    nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMinInventory)
+            //{
+            //    // No need to solve root as next period inventory space lower bound can be reached from the current period min inventory
+            //    return currentPeriodMinInventory;
+            //}
+
+
             double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceUpperBound + _minInjectWithdrawPolynomial.Evaluate(inventory);
             double PolyToSolve1StDeriv(double inventory) => 1 + _minInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
@@ -88,8 +104,23 @@ namespace Cmdty.Storage.Core
             return Math.Min(thisPeriodMaxInventory, currentPeriodMaxInventory);
         }
 
-        public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double currentPeriodMinInventory, double currentPeriodMaxInventory)
+        public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound,
+            double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
+            double currentPeriodMaxInventory)
         {
+            //double currentPeriodMaxInjectWithdrawAtMinInventory = _maxInjectWithdrawPolynomial.Evaluate(currentPeriodMinInventory);
+            //double currentPeriodMinInjectWithdrawAtMinInventory = _minInjectWithdrawPolynomial.Evaluate(currentPeriodMinInventory);
+
+            //double nextPeriodMaxInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodMaxInjectWithdrawAtMinInventory;
+            //double nextPeriodMinInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodMinInjectWithdrawAtMinInventory;
+
+            //if (nextPeriodInventorySpaceLowerBound >= nextPeriodMinInventoryFromThisPeriodMinInventory &&
+            //    nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMinInventory)
+            //{
+            //    // No need to solve root as next period inventory space lower bound can be reached from the current period min inventory
+            //    return currentPeriodMinInventory;
+            //}
+
             double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceLowerBound + _maxInjectWithdrawPolynomial.Evaluate(inventory);
             double PolyToSolve1StDeriv(double inventory) => 1 + _maxInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 

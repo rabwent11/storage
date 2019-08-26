@@ -28,7 +28,7 @@ namespace Cmdty.Storage.Core
     public interface IInjectWithdrawConstraint
     {
         InjectWithdrawRange GetInjectWithdrawRange(double inventory);
-        double InventorySpaceUpperBound(double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory, double currentPeriodMaxInventory);
-        double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double currentPeriodMinInventory, double currentPeriodMaxInventory);
+        double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory, double currentPeriodMaxInventory);
+        double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory, double currentPeriodMaxInventory);
     }
 }

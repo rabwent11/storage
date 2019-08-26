@@ -121,21 +121,21 @@ namespace Cmdty.Storage.Core
             return _withdrawCmdtyConsumed(date, inventory, withdrawnVolume);
         }
 
-        public double InventorySpaceUpperBound([NotNull] T period, double nextPeriodInventorySpaceUpperBound)
+        public double InventorySpaceUpperBound([NotNull] T period, double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound)
         {
             if (period == null) throw new ArgumentNullException(nameof(period));
             IInjectWithdrawConstraint injectWithdrawConstraint = _injectWithdrawConstraints(period);
             double inventorySpaceUpper =
-                injectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodInventorySpaceUpperBound, MinInventory(period), MaxInventory(period));
+                injectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodInventorySpaceLowerBound, nextPeriodInventorySpaceUpperBound, MinInventory(period), MaxInventory(period));
             return inventorySpaceUpper;
         }
 
-        public double InventorySpaceLowerBound([NotNull] T period, double nextPeriodInventorySpaceLowerBound)
+        public double InventorySpaceLowerBound([NotNull] T period, double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound)
         {
             if (period == null) throw new ArgumentNullException(nameof(period));
             IInjectWithdrawConstraint injectWithdrawConstraint = _injectWithdrawConstraints(period);
             double inventorySpaceLower =
-                injectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodInventorySpaceLowerBound, MinInventory(period), MaxInventory(period));
+                injectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodInventorySpaceLowerBound, nextPeriodInventorySpaceUpperBound, MinInventory(period), MaxInventory(period));
             return inventorySpaceLower;
         }
 

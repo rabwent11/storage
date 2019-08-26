@@ -47,12 +47,16 @@ namespace Cmdty.Storage.Core
             return _injectWithdrawRange;
         }
 
-        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory, double currentPeriodMaxInventory)
+        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound,
+            double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
+            double currentPeriodMaxInventory)
         {
             return Math.Min(nextPeriodInventorySpaceUpperBound - _injectWithdrawRange.MinInjectWithdrawRate, currentPeriodMaxInventory);
         }
 
-        public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double currentPeriodMinInventory, double currentPeriodMaxInventory)
+        public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound,
+            double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
+            double currentPeriodMaxInventory)
         {
             return Math.Max(nextPeriodInventorySpaceLowerBound - _injectWithdrawRange.MaxInjectWithdrawRate, currentPeriodMinInventory);
         }
