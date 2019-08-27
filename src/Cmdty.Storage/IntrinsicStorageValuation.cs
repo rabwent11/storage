@@ -32,7 +32,8 @@ using JetBrains.Annotations;
 
 namespace Cmdty.Storage
 {
-    public sealed class IntrinsicStorageValuation<T> : IAddStartingInventory<T>, IAddCurrentPeriod<T>, IAddForwardCurve<T>, IAddCmdtySettlementRule<T>, IAddDiscountFactorFunc<T>, IAddSpacing<T>, IAddInterpolatorOrCalculate<T>
+    public sealed class IntrinsicStorageValuation<T> : IAddStartingInventory<T>, IAddCurrentPeriod<T>, IAddForwardCurve<T>, 
+        IAddCmdtySettlementRule<T>, IAddDiscountFactorFunc<T>, IAddSpacing<T>, INumericalTolerance<T>, IAddInterpolatorOrCalculate<T>
         where T : ITimePeriod<T>
     {
         private readonly CmdtyStorage<T> _storage;
@@ -44,6 +45,7 @@ namespace Cmdty.Storage
         private IDoubleStateSpaceGridCalc _gridCalc;
         private IInterpolatorFactory _interpolatorFactory;
         private double _gridSpacing = 100;
+        private double _numericalTolerance;
 
         private IntrinsicStorageValuation([NotNull] CmdtyStorage<T> storage)
         {
@@ -89,7 +91,7 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IAddInterpolatorOrCalculate<T> IAddSpacing<T>.WithGridSpacing(double gridSpacing)
+        INumericalTolerance<T> IAddSpacing<T>.WithGridSpacing(double gridSpacing)
         {
             if (gridSpacing <= 0.0)
                 throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive", nameof(gridSpacing));
@@ -97,10 +99,18 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IAddInterpolatorOrCalculate<T> IAddSpacing<T>
+        INumericalTolerance<T> IAddSpacing<T>
                     .WithStateSpaceGridCalculation([NotNull] IDoubleStateSpaceGridCalc gridCalc)
         {
             _gridCalc = gridCalc ?? throw new ArgumentNullException(nameof(gridCalc));
+            return this;
+        }
+
+        IAddInterpolatorOrCalculate<T> INumericalTolerance<T>.WithNumericalTolerance(double numericalTolerance)
+        {
+            if (numericalTolerance <= 0)
+                throw new ArgumentException("Numerical tolerance must be positive.", nameof(numericalTolerance));
+            _numericalTolerance = numericalTolerance;
             return this;
         }
 
@@ -115,12 +125,13 @@ namespace Cmdty.Storage
         {
             return Calculate(_currentPeriod, _startingInventory, _forwardCurve, _storage, _settleDateRule, _discountFactors,
                     _gridCalc ?? new FixedSpacingStateSpaceGridCalc(_gridSpacing),
-                    _interpolatorFactory ?? new LinearInterpolatorFactory());
+                    _interpolatorFactory ?? new LinearInterpolatorFactory(), _numericalTolerance);
         }
 
         private static IntrinsicStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory,
-            TimeSeries<T, double> forwardCurve, CmdtyStorage<T> storage, Func<T, Day> settleDateRule, 
-            Func<Day, double> discountFactors, IDoubleStateSpaceGridCalc gridCalc, IInterpolatorFactory interpolatorFactory)
+                TimeSeries<T, double> forwardCurve, CmdtyStorage<T> storage, Func<T, Day> settleDateRule,
+                Func<Day, double> discountFactors, IDoubleStateSpaceGridCalc gridCalc,
+                IInterpolatorFactory interpolatorFactory, double numericalTolerance)
         {
             if (startingInventory < 0)
                 throw new ArgumentException("Inventory cannot be negative.", nameof(startingInventory));
@@ -187,7 +198,7 @@ namespace Cmdty.Storage
                     double inventory = inventorySpaceGrid[i];
                     storageValuesGrid[i] = OptimalDecisionAndValue(storage, periodLoop, inventory, nextStepInventorySpaceMin, 
                                                 nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, 
-                                                settleDateRule, discountFactors).StorageNpv;
+                                                settleDateRule, discountFactors, numericalTolerance).StorageNpv;
                 }
 
                 storageValueByInventory[backCounter] =
@@ -208,7 +219,7 @@ namespace Cmdty.Storage
                 Func<double, double> continuationValueByInventory = storageValueByInventory[i];
                 (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = inventorySpace[periodLoop.Offset(1)];
                 (double storageNpvLoop, double optimalInjectWithdraw) = OptimalDecisionAndValue(storage, periodLoop, inventoryLoop, nextStepInventorySpaceMin,
-                                        nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, settleDateRule, discountFactors);
+                                        nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, settleDateRule, discountFactors, numericalTolerance);
                 decisionProfileBuilder.Add(periodLoop, optimalInjectWithdraw);
                 inventoryLoop += optimalInjectWithdraw;
                 if (i == 0)
@@ -222,11 +233,12 @@ namespace Cmdty.Storage
 
         private static (double StorageNpv, double OptimalInjectWithdraw) OptimalDecisionAndValue(CmdtyStorage<T> storage, T periodLoop, double inventory,
             double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, double cmdtyPrice,
-            Func<double, double> continuationValueByInventory, Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
+            Func<double, double> continuationValueByInventory, Func<T, Day> settleDateRule, Func<Day, double> discountFactors, 
+            double numericalTolerance)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(periodLoop, inventory);
             double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory,
-                                                    nextStepInventorySpaceMin, nextStepInventorySpaceMax);
+                                                    nextStepInventorySpaceMin, nextStepInventorySpaceMax, numericalTolerance);
             var valuesForDecision = new double[decisionSet.Length];
             for (var j = 0; j < decisionSet.Length; j++)
             {
@@ -312,8 +324,14 @@ namespace Cmdty.Storage
     public interface IAddSpacing<T>
         where T : ITimePeriod<T>
     {
-        IAddInterpolatorOrCalculate<T> WithGridSpacing(double gridSpacing);
-        IAddInterpolatorOrCalculate<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
+        INumericalTolerance<T> WithGridSpacing(double gridSpacing);
+        INumericalTolerance<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
+    }
+
+    public interface INumericalTolerance<T>
+        where T : ITimePeriod<T>
+    {
+        IAddInterpolatorOrCalculate<T> WithNumericalTolerance(double numericalTolerance);
     }
 
     public interface IAddInterpolatorOrCalculate<T>

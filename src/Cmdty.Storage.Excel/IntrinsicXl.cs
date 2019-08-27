@@ -118,6 +118,7 @@ namespace Cmdty.Storage.Excel
                 .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithGridSpacing(gridSpacing)
+                .WithNumericalTolerance(1E-10)
                 .Calculate();
 
             return valuationResults;

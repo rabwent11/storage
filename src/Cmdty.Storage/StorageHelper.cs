@@ -100,12 +100,9 @@ namespace Cmdty.Storage
             return new TimeSeries<T, InventoryRange>(startActiveStorage.Offset(1), inventoryRanges);
         }
 
-        private const double Tolerance = 1E-10; // TODO remove this hard coding
-
         public static double[] CalculateBangBangDecisionSet(InjectWithdrawRange injectWithdrawRange, double currentInventory,
-                                        double nextStepMinInventory, double nextStepMaxInventory)
+                                        double nextStepMinInventory, double nextStepMaxInventory, double numericalTolerance)
         {
-            // TODO have tolerance for floating point numerical error?
             if (nextStepMinInventory > nextStepMaxInventory)
                 throw new ArgumentException($"Parameter {nameof(nextStepMinInventory)} value cannot be higher than parameter {nameof(nextStepMaxInventory)} value");
 
@@ -114,14 +111,14 @@ namespace Cmdty.Storage
 
             if (inventoryAfterMaxWithdrawal > nextStepMaxInventory) // Max withdrawal still above next step max inventory
             {
-                if (inventoryAfterMaxWithdrawal - nextStepMaxInventory < Tolerance)
+                if (inventoryAfterMaxWithdrawal - nextStepMaxInventory < numericalTolerance)
                 {
                     // Next period inventory is breached, but only by a small amount, probably due to root finding in PolynomialInjectWithdrawConstraint during inventory space reduction
                     yieldedWithdrawalRate = nextStepMaxInventory - currentInventory; // TODO unit test code reaching here
                 }
                 else
                 {
-                    throw new ArgumentException("Inventory constraints cannot be fulfilled"); // TODO better exception message
+                    throw new ArgumentException("Inventory constraints cannot be fulfilled. This could potentially be fixed by increasing the numerical tolerance.");
                 }
             }
             else if (inventoryAfterMaxWithdrawal > nextStepMinInventory)
@@ -138,14 +135,14 @@ namespace Cmdty.Storage
 
             if (inventoryAfterMaxInjection < nextStepMinInventory) // Max injection still below next step min inventory constraint
             {
-                if (nextStepMinInventory - inventoryAfterMaxInjection < Tolerance)
+                if (nextStepMinInventory - inventoryAfterMaxInjection < numericalTolerance)
                 {
                     // Next period inventory is breached, but only by a small amount, probably due to root finding in PolynomialInjectWithdrawConstraint during inventory space reduction
                     yieldedInjectionRate = nextStepMinInventory - currentInventory; // TODO unit test code reaching here
                 }
                 else
                 {
-                    throw new ArgumentException("Inventory constraints cannot be fulfilled"); // TODO better exception message
+                    throw new ArgumentException("Inventory constraints cannot be fulfilled. This could potentially be fixed by increasing the numerical tolerance.");
                 }
             }
             else if (inventoryAfterMaxInjection < nextStepMaxInventory)

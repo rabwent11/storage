@@ -65,6 +65,7 @@ namespace Cmdty.Storage.Test
                 .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithGridSpacing(10.0)
+                .WithNumericalTolerance(1E-10)
                 .Calculate();
 
             return valuationResults;
@@ -258,6 +259,7 @@ namespace Cmdty.Storage.Test
                 .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithGridSpacing(10.0)
+                .WithNumericalTolerance(1E-10)
                 .Calculate();
 
             return valuationResults;
