@@ -32,8 +32,8 @@ using JetBrains.Annotations;
 
 namespace Cmdty.Storage
 {
-    public sealed class IntrinsicStorageValuation<T> : IAddStartingInventory<T>, IAddCurrentPeriod<T>, IAddForwardCurve<T>, 
-        IAddCmdtySettlementRule<T>, IAddDiscountFactorFunc<T>, IAddSpacing<T>, INumericalTolerance<T>, IAddInterpolatorOrCalculate<T>
+    public sealed class IntrinsicStorageValuation<T> : IIntrinsicAddStartingInventory<T>, IIntrinsicAddCurrentPeriod<T>, IIntrinsicAddForwardCurve<T>, 
+            IIntrinsicAddCmdtySettlementRule<T>, IIntrinsicAddDiscountFactorFunc<T>, IIntrinsicAddSpacing<T>, IIntrinscNumericalTolerance<T>, IIntrinsicAddInterpolatorOrCalculate<T>
         where T : ITimePeriod<T>
     {
         private readonly CmdtyStorage<T> _storage;
@@ -52,12 +52,12 @@ namespace Cmdty.Storage
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
         }
 
-        public static IAddStartingInventory<T> ForStorage([NotNull] CmdtyStorage<T> storage)
+        public static IIntrinsicAddStartingInventory<T> ForStorage([NotNull] CmdtyStorage<T> storage)
         {
             return new IntrinsicStorageValuation<T>(storage);
         }
 
-        IAddCurrentPeriod<T> IAddStartingInventory<T>.WithStartingInventory(double inventory)
+        IIntrinsicAddCurrentPeriod<T> IIntrinsicAddStartingInventory<T>.WithStartingInventory(double inventory)
         {
             if (inventory < 0)
                 throw new ArgumentException("Inventory cannot be negative", nameof(inventory));
@@ -65,7 +65,7 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IAddForwardCurve<T> IAddCurrentPeriod<T>.ForCurrentPeriod([NotNull] T currentPeriod)
+        IIntrinsicAddForwardCurve<T> IIntrinsicAddCurrentPeriod<T>.ForCurrentPeriod([NotNull] T currentPeriod)
         {
             if (currentPeriod == null)
                 throw new ArgumentNullException(nameof(currentPeriod));
@@ -73,25 +73,25 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IAddCmdtySettlementRule<T> IAddForwardCurve<T>.WithForwardCurve([NotNull] TimeSeries<T, double> forwardCurve)
+        IIntrinsicAddCmdtySettlementRule<T> IIntrinsicAddForwardCurve<T>.WithForwardCurve([NotNull] TimeSeries<T, double> forwardCurve)
         {
             _forwardCurve = forwardCurve ?? throw new ArgumentNullException(nameof(forwardCurve));
             return this;
         }
 
-        public IAddDiscountFactorFunc<T> WithCmdtySettlementRule([NotNull] Func<T, Day> settleDateRule)
+        public IIntrinsicAddDiscountFactorFunc<T> WithCmdtySettlementRule([NotNull] Func<T, Day> settleDateRule)
         {
             _settleDateRule = settleDateRule ?? throw new ArgumentNullException(nameof(settleDateRule));
             return this;
         }
 
-        IAddSpacing<T> IAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, double> discountFactors)
+        IIntrinsicAddSpacing<T> IIntrinsicAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, double> discountFactors)
         {
             _discountFactors = discountFactors ?? throw new ArgumentNullException(nameof(discountFactors));
             return this;
         }
 
-        INumericalTolerance<T> IAddSpacing<T>.WithGridSpacing(double gridSpacing)
+        IIntrinscNumericalTolerance<T> IIntrinsicAddSpacing<T>.WithGridSpacing(double gridSpacing)
         {
             if (gridSpacing <= 0.0)
                 throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive", nameof(gridSpacing));
@@ -99,14 +99,14 @@ namespace Cmdty.Storage
             return this;
         }
 
-        INumericalTolerance<T> IAddSpacing<T>
+        IIntrinscNumericalTolerance<T> IIntrinsicAddSpacing<T>
                     .WithStateSpaceGridCalculation([NotNull] IDoubleStateSpaceGridCalc gridCalc)
         {
             _gridCalc = gridCalc ?? throw new ArgumentNullException(nameof(gridCalc));
             return this;
         }
 
-        IAddInterpolatorOrCalculate<T> INumericalTolerance<T>.WithNumericalTolerance(double numericalTolerance)
+        IIntrinsicAddInterpolatorOrCalculate<T> IIntrinscNumericalTolerance<T>.WithNumericalTolerance(double numericalTolerance)
         {
             if (numericalTolerance <= 0)
                 throw new ArgumentException("Numerical tolerance must be positive.", nameof(numericalTolerance));
@@ -114,14 +114,14 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IAddInterpolatorOrCalculate<T> IAddInterpolatorOrCalculate<T>
+        IIntrinsicAddInterpolatorOrCalculate<T> IIntrinsicAddInterpolatorOrCalculate<T>
                     .WithInterpolatorFactory([NotNull] IInterpolatorFactory interpolatorFactory)
         {
             _interpolatorFactory = interpolatorFactory ?? throw new ArgumentNullException(nameof(interpolatorFactory));
             return this;
         }
 
-        IntrinsicStorageValuationResults<T> IAddInterpolatorOrCalculate<T>.Calculate()
+        IntrinsicStorageValuationResults<T> IIntrinsicAddInterpolatorOrCalculate<T>.Calculate()
         {
             return Calculate(_currentPeriod, _startingInventory, _forwardCurve, _storage, _settleDateRule, _discountFactors,
                     _gridCalc ?? new FixedSpacingStateSpaceGridCalc(_gridSpacing),
@@ -283,61 +283,61 @@ namespace Cmdty.Storage
 
     }
 
-    public interface IAddStartingInventory<T>
+    public interface IIntrinsicAddStartingInventory<T>
         where T : ITimePeriod<T>
     {
-        IAddCurrentPeriod<T> WithStartingInventory(double inventory);
+        IIntrinsicAddCurrentPeriod<T> WithStartingInventory(double inventory);
     }
 
-    public interface IAddCurrentPeriod<T>
+    public interface IIntrinsicAddCurrentPeriod<T>
         where T : ITimePeriod<T>
     {
-        IAddForwardCurve<T> ForCurrentPeriod(T currentPeriod);
+        IIntrinsicAddForwardCurve<T> ForCurrentPeriod(T currentPeriod);
     }
 
-    public interface IAddForwardCurve<T>
+    public interface IIntrinsicAddForwardCurve<T>
         where T : ITimePeriod<T>
     {
-        IAddCmdtySettlementRule<T> WithForwardCurve(TimeSeries<T, double> forwardCurve);
+        IIntrinsicAddCmdtySettlementRule<T> WithForwardCurve(TimeSeries<T, double> forwardCurve);
     }
 
-    public interface IAddCmdtySettlementRule<T>
+    public interface IIntrinsicAddCmdtySettlementRule<T>
         where T : ITimePeriod<T>
     {
         /// <summary>
         /// Adds a settlement date rule.
         /// </summary>
         /// <param name="settleDateRule">Function mapping from cmdty delivery date to settlement date.</param>
-        IAddDiscountFactorFunc<T> WithCmdtySettlementRule(Func<T, Day> settleDateRule);
+        IIntrinsicAddDiscountFactorFunc<T> WithCmdtySettlementRule(Func<T, Day> settleDateRule);
     }
 
-    public interface IAddDiscountFactorFunc<T>
+    public interface IIntrinsicAddDiscountFactorFunc<T>
         where T : ITimePeriod<T>
     {
         /// <summary>
         /// Adds discount factor function.
         /// </summary>
         /// <param name="discountFactors">Function mapping from cash flow date to discount factor.</param>
-        IAddSpacing<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
+        IIntrinsicAddSpacing<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
     }
 
-    public interface IAddSpacing<T>
+    public interface IIntrinsicAddSpacing<T>
         where T : ITimePeriod<T>
     {
-        INumericalTolerance<T> WithGridSpacing(double gridSpacing);
-        INumericalTolerance<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
+        IIntrinscNumericalTolerance<T> WithGridSpacing(double gridSpacing);
+        IIntrinscNumericalTolerance<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
     }
 
-    public interface INumericalTolerance<T>
+    public interface IIntrinscNumericalTolerance<T>
         where T : ITimePeriod<T>
     {
-        IAddInterpolatorOrCalculate<T> WithNumericalTolerance(double numericalTolerance);
+        IIntrinsicAddInterpolatorOrCalculate<T> WithNumericalTolerance(double numericalTolerance);
     }
 
-    public interface IAddInterpolatorOrCalculate<T>
+    public interface IIntrinsicAddInterpolatorOrCalculate<T>
         where T : ITimePeriod<T>
     {
-        IAddInterpolatorOrCalculate<T> WithInterpolatorFactory(IInterpolatorFactory interpolatorFactory);
+        IIntrinsicAddInterpolatorOrCalculate<T> WithInterpolatorFactory(IInterpolatorFactory interpolatorFactory);
         IntrinsicStorageValuationResults<T> Calculate();
     }
 

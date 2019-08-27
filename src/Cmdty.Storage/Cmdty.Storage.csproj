@@ -13,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Cmdty.Core" Version="0.1.0-beta1" />
     <PackageReference Include="Cmdty.Curves" Version="0.1.0-beta1" />
   </ItemGroup>
 

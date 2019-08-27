@@ -23,28 +23,14 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-using System;
 using Cmdty.TimePeriodValueTypes;
-using Cmdty.TimeSeries;
-using JetBrains.Annotations;
 
 namespace Cmdty.Storage
 {
-    public static class IntrinsicStorageValuationExtensions
+    public sealed class TreeStorageValuationResults<T>
+        where T : ITimePeriod<T>
     {
 
-        public static IIntrinsicAddDiscountFactorFunc<T> WithMonthlySettlement<T>(
-                [NotNull] this IIntrinsicAddCmdtySettlementRule<T> intrinsicAddCmdtySettlementRule, TimeSeries<Month, Day> settlementDates)
-            where T : ITimePeriod<T>
-        {
-            if (intrinsicAddCmdtySettlementRule == null) throw new ArgumentNullException(nameof(intrinsicAddCmdtySettlementRule));
-
-            return intrinsicAddCmdtySettlementRule.WithCmdtySettlementRule(deliveryDate =>
-            {
-                var deliveryMonth = Month.FromDateTime(deliveryDate.Start); // TODO could this not work sometimes? UK Power EFA periods?
-                return settlementDates[deliveryMonth];
-            });
-        }
-
+        // TODO fill this in
     }
 }
