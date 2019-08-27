@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <DnaLibrary Name="Cmdty.Storage.Excel Add-In" RuntimeVersion="v4.0" xmlns="http://schemas.excel-dna.net/addin/2018/05/dnalibrary">
   <ExternalLibrary Path="Cmdty.Storage.Excel.dll" ExplicitExports="true" LoadFromBytes="true" Pack="true" IncludePdb="true" />
-  <Reference Path="Cmdty.Storage.Core.dll" Pack="true" />
+  <Reference Path="Cmdty.Storage.dll" Pack="true" />
   <Reference Path="Cmdty.Curves.dll" Pack="true" />
   <Reference Path="Cmdty.TimePeriodValueTypes.dll" Pack="true" />
   <Reference Path="Cmdty.TimeSeries.dll" Pack="true" />
