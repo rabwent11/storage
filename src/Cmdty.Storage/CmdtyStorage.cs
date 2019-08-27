@@ -163,6 +163,8 @@ namespace Cmdty.Storage
             
             IAddInjectWithdrawConstraints IBuilder<T>.WithActiveTimePeriod(T start, T end)
             {
+                if (start.CompareTo(end) >= 0)
+                    throw new ArgumentException("Storage start period must be before end period.");
                 _startPeriod = start;
                 _endPeriod = end;
                 return this;
@@ -190,7 +192,9 @@ namespace Cmdty.Storage
 
             IAddInjectionCost IAddMaxInventory.WithConstantMaxInventory(double maxInventory)
             {
-                // TODO Check not negative
+                if (maxInventory < 0)
+                    throw new ArgumentException("Maximum inventory must be non-negative.", nameof(maxInventory));
+
                 _maxInventory = date => maxInventory;
                 return this;
             }
@@ -209,7 +213,9 @@ namespace Cmdty.Storage
 
             IAddMaxInventory IAddMinInventory.WithConstantMinInventory(double minInventory)
             {
-                // TODO check not negative
+                if (minInventory < 0)
+                    throw new ArgumentException("Minimum inventory must be non-negative.", nameof(minInventory));
+
                 _minInventory = date => minInventory;
                 return this;
             }
@@ -221,10 +227,12 @@ namespace Cmdty.Storage
             }
 
             IAddCmdtyConsumedOnInject IAddInjectionCost.WithPerUnitInjectionCost(double perVolumeUnitCost,
-                [NotNull] Func<T, Day> cashFlowDate)
+                                                    [NotNull] Func<T, Day> cashFlowDate)
             {
                 if (cashFlowDate == null) throw new ArgumentNullException(nameof(cashFlowDate));
-                // TODO check for non-negative
+                if (perVolumeUnitCost < 0)
+                    throw new ArgumentException("Per unit inject cost must be non-negative.", nameof(perVolumeUnitCost));
+
                 _injectionCashFlows = (date, inventory, injectedVolume) 
                     => new [] {new DomesticCashFlow(cashFlowDate(date), perVolumeUnitCost * injectedVolume)};
                 return this;
@@ -238,10 +246,12 @@ namespace Cmdty.Storage
             }
 
             IAddCmdtyConsumedOnWithdraw IAddWithdrawalCost.WithPerUnitWithdrawalCost(double perVolumeUnitCost,
-                [NotNull] Func<T, Day> cashFlowDate)
+                                                    [NotNull] Func<T, Day> cashFlowDate)
             {
                 if (cashFlowDate == null) throw new ArgumentNullException(nameof(cashFlowDate));
-                // TODO check for non-negative
+                if (perVolumeUnitCost < 0)
+                    throw new ArgumentException("Per unit inject cost must be non-negative.", nameof(perVolumeUnitCost));
+
                 _withdrawalCashFlows = (date, inventory, withdrawnVolume) 
                     => new[] { new DomesticCashFlow(cashFlowDate(date), perVolumeUnitCost * Math.Abs(withdrawnVolume)) };
                 return this;
@@ -268,7 +278,6 @@ namespace Cmdty.Storage
 
             CmdtyStorage<T> IBuildCmdtyStorage.Build()
             {
-                // TODO validate inputs
                 Func<double, double, double> terminalStorageValue =_terminalStorageValue ?? ((cmdtyPrice, finalInventory) => 0.0);
 
                 Func<T, double> maxInventory;

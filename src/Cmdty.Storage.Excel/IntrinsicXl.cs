@@ -108,18 +108,14 @@ namespace Cmdty.Storage.Excel
 
             DoubleTimeSeries<T> forwardCurve = StorageExcelHelper.CreateDoubleTimeSeries<T>(forwardCurveIn, "Forward_curve");
             
-            TimeSeries<Month, Day> settlementDates = new TimeSeries<Month, Day>.Builder
-            {
-                {new Month(2019, 8),  new Day(2019, 9, 5)},
-                {new Month(2019, 9),  new Day(2019, 10, 5)},
-            }.Build();
+            // TODO input settlement dates and use interest rates
 
             IntrinsicStorageValuationResults<T> valuationResults = IntrinsicStorageValuation<T>
                 .ForStorage(storage)
                 .WithStartingInventory(currentInventory)
                 .ForCurrentPeriod(currentPeriod)
                 .WithForwardCurve(forwardCurve)
-                .WithMonthlySettlement(settlementDates)
+                .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithGridSpacing(gridSpacing)
                 .Calculate();

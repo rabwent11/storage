@@ -122,7 +122,8 @@ namespace Cmdty.Storage
             TimeSeries<T, double> forwardCurve, CmdtyStorage<T> storage, Func<T, Day> settleDateRule, 
             Func<Day, double> discountFactors, IDoubleStateSpaceGridCalc gridCalc, IInterpolatorFactory interpolatorFactory)
         {
-            // TODO validate inputs
+            if (startingInventory < 0)
+                throw new ArgumentException("Inventory cannot be negative.", nameof(startingInventory));
 
             if (currentPeriod.CompareTo(storage.EndPeriod) > 0)
                 return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty);
@@ -151,7 +152,17 @@ namespace Cmdty.Storage
             }
 
             TimeSeries<T, InventoryRange> inventorySpace = StorageHelper.CalculateInventorySpace(storage, startingInventory, currentPeriod);
-            
+
+            // TODO think of method to put in TimeSeries class to perform the validation check below in one line
+            if (forwardCurve.IsEmpty)
+                throw new ArgumentException("Forward curve cannot be empty.", nameof(forwardCurve));
+
+            if (forwardCurve.Start.CompareTo(inventorySpace.Start) > 0)
+                throw new ArgumentException("Forward curve starts too late.", nameof(forwardCurve));
+
+            if (forwardCurve.End.CompareTo(inventorySpace.End) < 0)
+                throw new ArgumentException("Forward curve does not extend until storage end period.", nameof(forwardCurve));
+
             // Perform backward induction
             var storageValueByInventory = new Func<double, double>[inventorySpace.Count];
 

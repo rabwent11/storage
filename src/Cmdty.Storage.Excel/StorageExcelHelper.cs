@@ -70,7 +70,7 @@ namespace Cmdty.Storage.Excel
             if (injectWithdrawArray.GetLength(1) != 4)
                 throw new ArgumentException("Inject/withdraw constraints have been incorrectly entered. Argument value should be a range 4 columns.");
             
-            var injectWithdrawGrouped = TakeWhileNotEmpty(injectWithdrawArray).Select((row, i) => new
+            var injectWithdrawGrouped = TakeWhileNotEmptyOrError(injectWithdrawArray).Select((row, i) => new
             {
                 period = ObjectToDateTime(row[0], $"Row {i + 1} of inject/withdraw/inventory constrains contains invalid date time in 1st column."),
                 inventory = ObjectToDouble(row[1], $"Row {i + 1} of inject/withdraw/inventory constraints contains invalid inventory in 2nd column as is not a number."),
@@ -100,12 +100,12 @@ namespace Cmdty.Storage.Excel
             return storage;
         }
 
-        private static IEnumerable<object[]> TakeWhileNotEmpty(object[,] excelInput)
+        private static IEnumerable<object[]> TakeWhileNotEmptyOrError(object[,] excelInput)
         {
             int numColumns = excelInput.GetLength(1);
             for (int i = 0; i < excelInput.GetLength(0); i++)
             {
-                if (excelInput[i, 0] is ExcelEmpty)
+                if (excelInput[i, 0] is ExcelEmpty || excelInput[i, 0] is ExcelError)
                     yield break;
 
                 var slice = new object[numColumns];
@@ -134,7 +134,7 @@ namespace Cmdty.Storage.Excel
 
             for (int i = 0; i < excelValuesArray.GetLength(0); i++)
             {
-                if (excelValuesArray[i, 0] is ExcelEmpty)
+                if (excelValuesArray[i, 0] is ExcelEmpty || excelValuesArray[i, 0] is ExcelError)
                     break;
 
                 if (!(excelValuesArray[i, 1] is double doubleValue))
