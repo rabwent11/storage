@@ -65,6 +65,7 @@ namespace Cmdty.Storage.Test
                 .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithFixedGridSpacing(10.0)
+                .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
                 .Calculate();
 
@@ -259,6 +260,7 @@ namespace Cmdty.Storage.Test
                 .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithFixedGridSpacing(10.0)
+                .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
                 .Calculate();
 

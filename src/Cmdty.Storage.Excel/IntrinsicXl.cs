@@ -126,6 +126,7 @@ namespace Cmdty.Storage.Excel
                 .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
                 .WithDiscountFactorFunc(day => 1.0)
                 .WithFixedNumberOfPointsOnGlobalInventoryRange(numGridPoints)
+                .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(numericalTolerance)
                 .Calculate();
 

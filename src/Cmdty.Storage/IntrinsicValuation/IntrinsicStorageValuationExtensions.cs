@@ -47,7 +47,7 @@ namespace Cmdty.Storage
             });
         }
 
-        public static IIntrinsicNumericalTolerance<T> WithFixedGridSpacing<T>([NotNull] this IIntrinsicAddSpacing<T> intrinsicAddSpacing, double gridSpacing)
+        public static IAddInterpolator<T> WithFixedGridSpacing<T>([NotNull] this IIntrinsicAddSpacing<T> intrinsicAddSpacing, double gridSpacing)
             where T : ITimePeriod<T>
         {
             if (intrinsicAddSpacing == null) throw new ArgumentNullException(nameof(intrinsicAddSpacing));
@@ -57,7 +57,7 @@ namespace Cmdty.Storage
             return intrinsicAddSpacing.WithStateSpaceGridCalculation(storage => new FixedSpacingStateSpaceGridCalc(gridSpacing));
         }
 
-        public static IIntrinsicNumericalTolerance<T> WithFixedNumberOfPointsOnGlobalInventoryRange<T>(
+        public static IAddInterpolator<T> WithFixedNumberOfPointsOnGlobalInventoryRange<T>(
                 [NotNull] this IIntrinsicAddSpacing<T> intrinsicAddSpacing, int numGridPointsOverGlobalInventoryRange)
             where T : ITimePeriod<T>
         {
@@ -77,6 +77,27 @@ namespace Cmdty.Storage
             }
 
             return intrinsicAddSpacing.WithStateSpaceGridCalculation(GridCalcFactory);
+        }
+
+        public static IIntrinsicNumericalTolerance<T> WithLinearInventorySpaceInterpolation<T>([NotNull] this IAddInterpolator<T> addInterpolator)
+            where T : ITimePeriod<T>
+        {
+            if (addInterpolator == null) throw new ArgumentNullException(nameof(addInterpolator));
+            return addInterpolator.WithInterpolatorFactory(new LinearInterpolatorFactory());
+        }
+
+        // TODO unit test for this method. Initial testing showed that maybe should always use linear interpolation on the final step
+        /// <summary>
+        /// WARNING, TESTING HAS SHOWN THIS METHOD OF INTERPOLATION DOESN'T WORK VERY WELL
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="addInterpolator"></param>
+        /// <returns></returns>
+        public static IIntrinsicNumericalTolerance<T> WithCubicSplineInventorySpaceInterpolation<T>([NotNull] this IAddInterpolator<T> addInterpolator)
+            where T : ITimePeriod<T>
+        {
+            if (addInterpolator == null) throw new ArgumentNullException(nameof(addInterpolator));
+            return addInterpolator.WithInterpolatorFactory(new NaturalCubicSplineInterpolatorFactory());
         }
 
     }
