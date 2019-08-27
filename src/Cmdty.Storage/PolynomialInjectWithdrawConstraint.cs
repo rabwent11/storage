@@ -92,7 +92,7 @@ namespace Cmdty.Storage
 
             // TODO remove hard coding of parameters
             if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
-                currentPeriodMaxInventory, 1E-12, 100, 20, out double thisPeriodMaxInventory))
+                currentPeriodMaxInventory, 1E-10, 100, 20, out double thisPeriodMaxInventory))
             {
                 throw new ApplicationException("Cannot solve for the current period maximum inventory"); // TODO better exception message
             }
