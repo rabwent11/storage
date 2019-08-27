@@ -121,7 +121,7 @@ namespace Cmdty.Storage.Excel
                 .WithForwardCurve(forwardCurve)
                 .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
                 .WithDiscountFactorFunc(day => 1.0)
-                .WithGridSpacing(gridSpacing)
+                .WithFixedGridSpacing(gridSpacing)
                 .WithNumericalTolerance(numericalTolerance)
                 .Calculate();
 

@@ -44,7 +44,6 @@ namespace Cmdty.Storage
         private Func<Day, double> _discountFactors;
         private IDoubleStateSpaceGridCalc _gridCalc;
         private IInterpolatorFactory _interpolatorFactory;
-        private double _gridSpacing = 100;
         private double _numericalTolerance;
 
         private IntrinsicStorageValuation([NotNull] CmdtyStorage<T> storage)
@@ -91,14 +90,6 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IIntrinsicNumericalTolerance<T> IIntrinsicAddSpacing<T>.WithGridSpacing(double gridSpacing)
-        {
-            if (gridSpacing <= 0.0)
-                throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive", nameof(gridSpacing));
-            _gridSpacing = gridSpacing;
-            return this;
-        }
-
         IIntrinsicNumericalTolerance<T> IIntrinsicAddSpacing<T>
                     .WithStateSpaceGridCalculation([NotNull] IDoubleStateSpaceGridCalc gridCalc)
         {
@@ -124,8 +115,7 @@ namespace Cmdty.Storage
         IntrinsicStorageValuationResults<T> IIntrinsicAddInterpolatorOrCalculate<T>.Calculate()
         {
             return Calculate(_currentPeriod, _startingInventory, _forwardCurve, _storage, _settleDateRule, _discountFactors,
-                    _gridCalc ?? new FixedSpacingStateSpaceGridCalc(_gridSpacing),
-                    _interpolatorFactory ?? new LinearInterpolatorFactory(), _numericalTolerance);
+                    _gridCalc, _interpolatorFactory ?? new LinearInterpolatorFactory(), _numericalTolerance);
         }
 
         private static IntrinsicStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory,
@@ -324,7 +314,6 @@ namespace Cmdty.Storage
     public interface IIntrinsicAddSpacing<T>
         where T : ITimePeriod<T>
     {
-        IIntrinsicNumericalTolerance<T> WithGridSpacing(double gridSpacing);
         IIntrinsicNumericalTolerance<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
     }
 

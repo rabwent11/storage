@@ -46,5 +46,15 @@ namespace Cmdty.Storage
             });
         }
 
+        public static IIntrinsicNumericalTolerance<T> WithFixedGridSpacing<T>([NotNull] this IIntrinsicAddSpacing<T> intrinsicAddSpacing, double gridSpacing)
+            where T : ITimePeriod<T>
+        {
+            if (intrinsicAddSpacing == null) throw new ArgumentNullException(nameof(intrinsicAddSpacing));
+            if (gridSpacing <= 0.0)
+                throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive.", nameof(gridSpacing));
+
+            return intrinsicAddSpacing.WithStateSpaceGridCalculation(new FixedSpacingStateSpaceGridCalc(gridSpacing));
+        }
+
     }
 }

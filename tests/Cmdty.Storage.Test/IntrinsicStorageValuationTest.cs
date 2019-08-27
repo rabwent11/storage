@@ -64,7 +64,7 @@ namespace Cmdty.Storage.Test
                 .WithForwardCurve(forwardCurve)
                 .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
-                .WithGridSpacing(10.0)
+                .WithFixedGridSpacing(10.0)
                 .WithNumericalTolerance(1E-10)
                 .Calculate();
 
@@ -258,7 +258,7 @@ namespace Cmdty.Storage.Test
                 .WithForwardCurve(forwardCurve)
                 .WithMonthlySettlement(settlementDates)
                 .WithDiscountFactorFunc(day => 1.0)
-                .WithGridSpacing(10.0)
+                .WithFixedGridSpacing(10.0)
                 .WithNumericalTolerance(1E-10)
                 .Calculate();
 
