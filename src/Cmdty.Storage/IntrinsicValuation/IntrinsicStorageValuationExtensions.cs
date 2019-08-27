@@ -53,7 +53,7 @@ namespace Cmdty.Storage
             if (gridSpacing <= 0.0)
                 throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive.", nameof(gridSpacing));
 
-            return intrinsicAddSpacing.WithStateSpaceGridCalculation(new FixedSpacingStateSpaceGridCalc(gridSpacing));
+            return intrinsicAddSpacing.WithStateSpaceGridCalculation(storage => new FixedSpacingStateSpaceGridCalc(gridSpacing));
         }
 
     }
