@@ -24,6 +24,7 @@
 #endregion
 
 using System;
+using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using JetBrains.Annotations;
@@ -54,6 +55,28 @@ namespace Cmdty.Storage
                 throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive.", nameof(gridSpacing));
 
             return intrinsicAddSpacing.WithStateSpaceGridCalculation(storage => new FixedSpacingStateSpaceGridCalc(gridSpacing));
+        }
+
+        public static IIntrinsicNumericalTolerance<T> WithFixedNumberOfPointsOnGlobalInventoryRange<T>(
+                [NotNull] this IIntrinsicAddSpacing<T> intrinsicAddSpacing, int numGridPointsOverGlobalInventoryRange)
+            where T : ITimePeriod<T>
+        {
+            if (intrinsicAddSpacing == null) throw new ArgumentNullException(nameof(intrinsicAddSpacing));
+            if (numGridPointsOverGlobalInventoryRange < 3)
+                throw new ArgumentException($"Parameter {nameof(numGridPointsOverGlobalInventoryRange)} value must be at least 3.", nameof(numGridPointsOverGlobalInventoryRange));
+            
+            IDoubleStateSpaceGridCalc GridCalcFactory(CmdtyStorage<T> storage)
+            {
+                T[] storagePeriods = storage.StartPeriod.EnumerateTo(storage.EndPeriod).ToArray();
+
+                double globalMaxInventory = storagePeriods.Max(period => storage.MaxInventory(period));
+                double globalMinInventory = storagePeriods.Min(period => storage.MaxInventory(period));
+                double gridSpacing = (globalMaxInventory - globalMinInventory) /
+                                     (numGridPointsOverGlobalInventoryRange - 1);
+                return new FixedSpacingStateSpaceGridCalc(gridSpacing);
+            }
+
+            return intrinsicAddSpacing.WithStateSpaceGridCalculation(GridCalcFactory);
         }
 
     }

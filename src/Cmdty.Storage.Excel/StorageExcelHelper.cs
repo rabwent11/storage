@@ -56,12 +56,12 @@ namespace Cmdty.Storage.Excel
 
             try
             {
-                return (T) excelArgument;
+                return (T) Convert.ChangeType(excelArgument, typeof(T));
             }
             catch (Exception)
             {
                 string typeName = typeof(T).Name;
-                throw new ArgumentException($"Excel argument '{argumentName}' is not of type {typeName}");
+                throw new ArgumentException($"Excel argument '{argumentName}' is not of type {typeName}, and cannot be converted to this type.");
             }
         }
 

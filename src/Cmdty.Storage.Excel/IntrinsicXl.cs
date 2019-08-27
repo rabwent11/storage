@@ -47,7 +47,7 @@ namespace Cmdty.Storage.Excel
                         double currentInventory,
                         object forwardCurve,
                         object interestRateCurve,
-                        double gridSpacing,
+                        object numGlobalGridPoints, // TODO excel argument says default is 100
                         object numericalTolerance,
                         [ExcelArgument(Name = "Granularity")] object granularity)
         {
@@ -55,7 +55,7 @@ namespace Cmdty.Storage.Excel
                 IntrinsicStorageVal<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal,
-                    currentInventory, forwardCurve, interestRateCurve, gridSpacing, numericalTolerance).NetPresentValue);
+                    currentInventory, forwardCurve, interestRateCurve, numGlobalGridPoints, numericalTolerance).NetPresentValue);
         }
 
         [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageIntrinsicDecisionProfile), 
@@ -72,7 +72,7 @@ namespace Cmdty.Storage.Excel
             double currentInventory,
             object forwardCurve,
             object interestRateCurve,
-            double gridSpacing,
+            object numGlobalGridPoints, // TODO excel argument says default is 100
             object numericalTolerance,
             [ExcelArgument(Name = "Granularity")] object granularity)
         {
@@ -82,7 +82,7 @@ namespace Cmdty.Storage.Excel
                     injectWithdrawConstraints,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal,
-                    currentInventory, forwardCurve, interestRateCurve, gridSpacing, numericalTolerance).DecisionProfile;
+                    currentInventory, forwardCurve, interestRateCurve, numGlobalGridPoints, numericalTolerance).DecisionProfile;
                 
                 return StorageExcelHelper.TimeSeriesToExcelReturnValues(timeSeries, false);
             });
@@ -99,7 +99,8 @@ namespace Cmdty.Storage.Excel
             double currentInventory,
             object forwardCurveIn,
             object interestRateCurve,
-            double gridSpacing, object numericalToleranceIn)
+            object numGlobalGridPointsIn, 
+            object numericalToleranceIn)
             where T : ITimePeriod<T>
         {
             var storage = StorageExcelHelper.CreateCmdtyStorageFromExcelInputs<T>(storageStartDateTime,
@@ -114,6 +115,9 @@ namespace Cmdty.Storage.Excel
             double numericalTolerance = StorageExcelHelper.DefaultIfExcelEmptyOrMissing(numericalToleranceIn, 1E-10, 
                                                     "Numerical_tolerance");
 
+            int numGridPoints =
+                StorageExcelHelper.DefaultIfExcelEmptyOrMissing<int>(numGlobalGridPointsIn, 100, "Num_global_grid_points");
+
             IntrinsicStorageValuationResults<T> valuationResults = IntrinsicStorageValuation<T>
                 .ForStorage(storage)
                 .WithStartingInventory(currentInventory)
@@ -121,7 +125,7 @@ namespace Cmdty.Storage.Excel
                 .WithForwardCurve(forwardCurve)
                 .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
                 .WithDiscountFactorFunc(day => 1.0)
-                .WithFixedGridSpacing(gridSpacing)
+                .WithFixedNumberOfPointsOnGlobalInventoryRange(numGridPoints)
                 .WithNumericalTolerance(numericalTolerance)
                 .Calculate();
 
