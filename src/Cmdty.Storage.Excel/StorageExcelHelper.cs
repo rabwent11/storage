@@ -48,7 +48,23 @@ namespace Cmdty.Storage.Excel
                 return e.Message;
             }
         }
-        
+
+        public static T DefaultIfExcelEmptyOrMissing<T>(object excelArgument, T defaultValue, string argumentName)
+        {
+            if (excelArgument is ExcelMissing || excelArgument is ExcelEmpty)
+                return defaultValue;
+
+            try
+            {
+                return (T) excelArgument;
+            }
+            catch (Exception)
+            {
+                string typeName = typeof(T).Name;
+                throw new ArgumentException($"Excel argument '{argumentName}' is not of type {typeName}");
+            }
+        }
+
         public static CmdtyStorage<T> CreateCmdtyStorageFromExcelInputs<T>(DateTime storageStartDateTime,
                                         DateTime storageEndDateTime,
                                         object injectWithdrawConstraintsIn,
