@@ -153,24 +153,5 @@ namespace Cmdty.Storage
             return addMaxInventory.WithMaxInventory(GetMaxInventory);
         }
 
-        // TODO delete?
-        //public static CmdtyStorage<T>.IAddTerminalStorageState WithStoragePropertyByPeriod<T>(
-        //    [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder, 
-        //    [NotNull] IEnumerable<StoragePropertiesByPeriod<T>> storageProperties)
-        //    where T : ITimePeriod<T>
-        //{
-        //    if (builder == null) throw new ArgumentNullException(nameof(builder));
-        //    if (storageProperties == null) throw new ArgumentNullException(nameof(storageProperties));
-
-        //    CmdtyStorage<T>.IAddMinInventory addMinInventory = builder.WithTimeDependentInjectWithdrawRange(null);
-        //    CmdtyStorage<T>.IAddMaxInventory addMaxInventory = addMinInventory.WithMinInventory(null);
-
-        //    CmdtyStorage<T>.IAddInjectionCost withMaxInventory = addMaxInventory.WithMaxInventory(null);
-
-        //    CmdtyStorage<T>.IAddCmdtyConsumedOnInject addCmdtyConsumedOnInject = withMaxInventory.WithInjectionCost(null);
-
-
-        //}
-
     }
 }
