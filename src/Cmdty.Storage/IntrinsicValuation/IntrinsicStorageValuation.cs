@@ -33,7 +33,7 @@ using JetBrains.Annotations;
 namespace Cmdty.Storage
 {
     public sealed class IntrinsicStorageValuation<T> : IIntrinsicAddStartingInventory<T>, IIntrinsicAddCurrentPeriod<T>, IIntrinsicAddForwardCurve<T>, 
-            IIntrinsicAddCmdtySettlementRule<T>, IIntrinsicAddDiscountFactorFunc<T>, IIntrinsicAddSpacing<T>, IIntrinscNumericalTolerance<T>, IIntrinsicAddInterpolatorOrCalculate<T>
+            IIntrinsicAddCmdtySettlementRule<T>, IIntrinsicAddDiscountFactorFunc<T>, IIntrinsicAddSpacing<T>, IIntrinsicNumericalTolerance<T>, IIntrinsicAddInterpolatorOrCalculate<T>
         where T : ITimePeriod<T>
     {
         private readonly CmdtyStorage<T> _storage;
@@ -91,7 +91,7 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IIntrinscNumericalTolerance<T> IIntrinsicAddSpacing<T>.WithGridSpacing(double gridSpacing)
+        IIntrinsicNumericalTolerance<T> IIntrinsicAddSpacing<T>.WithGridSpacing(double gridSpacing)
         {
             if (gridSpacing <= 0.0)
                 throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive", nameof(gridSpacing));
@@ -99,14 +99,14 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IIntrinscNumericalTolerance<T> IIntrinsicAddSpacing<T>
+        IIntrinsicNumericalTolerance<T> IIntrinsicAddSpacing<T>
                     .WithStateSpaceGridCalculation([NotNull] IDoubleStateSpaceGridCalc gridCalc)
         {
             _gridCalc = gridCalc ?? throw new ArgumentNullException(nameof(gridCalc));
             return this;
         }
 
-        IIntrinsicAddInterpolatorOrCalculate<T> IIntrinscNumericalTolerance<T>.WithNumericalTolerance(double numericalTolerance)
+        IIntrinsicAddInterpolatorOrCalculate<T> IIntrinsicNumericalTolerance<T>.WithNumericalTolerance(double numericalTolerance)
         {
             if (numericalTolerance <= 0)
                 throw new ArgumentException("Numerical tolerance must be positive.", nameof(numericalTolerance));
@@ -324,11 +324,11 @@ namespace Cmdty.Storage
     public interface IIntrinsicAddSpacing<T>
         where T : ITimePeriod<T>
     {
-        IIntrinscNumericalTolerance<T> WithGridSpacing(double gridSpacing);
-        IIntrinscNumericalTolerance<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
+        IIntrinsicNumericalTolerance<T> WithGridSpacing(double gridSpacing);
+        IIntrinsicNumericalTolerance<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
     }
 
-    public interface IIntrinscNumericalTolerance<T>
+    public interface IIntrinsicNumericalTolerance<T>
         where T : ITimePeriod<T>
     {
         IIntrinsicAddInterpolatorOrCalculate<T> WithNumericalTolerance(double numericalTolerance);
