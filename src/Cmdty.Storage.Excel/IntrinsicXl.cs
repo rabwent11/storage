@@ -78,13 +78,22 @@ namespace Cmdty.Storage.Excel
         {
             return StorageExcelHelper.ExecuteExcelFunction(() =>
             {
-                DoubleTimeSeries<Day> timeSeries = IntrinsicStorageVal<Day>(valuationDate, storageStart, storageEnd,
+                IntrinsicStorageValuationResults<Day> valuationResults = IntrinsicStorageVal<Day>(valuationDate, storageStart, storageEnd,
                     injectWithdrawConstraints,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal,
-                    currentInventory, forwardCurve, interestRateCurve, numGlobalGridPoints, numericalTolerance).DecisionProfile;
-                
-                return StorageExcelHelper.TimeSeriesToExcelReturnValues(timeSeries, false);
+                    currentInventory, forwardCurve, interestRateCurve, numGlobalGridPoints, numericalTolerance);
+
+                var resultArray = new object[valuationResults.DecisionProfile.Count, 3];
+
+                for (int i = 0; i < resultArray.GetLength(0); i++)
+                {
+                    resultArray[i, 0] = valuationResults.DecisionProfile.Indices[i].Start;
+                    resultArray[i, 1] = valuationResults.DecisionProfile[i];
+                    resultArray[i, 2] = valuationResults.CmdtyVolumeConsumed[i];
+                }
+
+                return resultArray;
             });
         }
 
