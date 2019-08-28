@@ -257,6 +257,7 @@ namespace Cmdty.Storage
         {
             double inventoryAfterDecision = inventory + injectWithdrawVolume;
             double continuationFutureNpv = continuationValueInterpolated(inventoryAfterDecision);
+            // TODO use StorageHelper.StorageImmediateNpvForDecision
 
             Day cmdtySettlementDate = settleDateRule(period);
             double discountFactorFromCmdtySettlement = discountFactors(cmdtySettlementDate);

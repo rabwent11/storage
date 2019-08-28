@@ -30,7 +30,15 @@ namespace Cmdty.Storage
     public sealed class TreeStorageValuationResults<T>
         where T : ITimePeriod<T>
     {
+        public double NetPresentValue { get; }
 
-        // TODO fill this in
+        public TreeStorageValuationResults(double netPresentValue)
+        {
+            NetPresentValue = netPresentValue;
+        }
+
+        // TODO ToString override
+        // TODO Deconstruct method
+
     }
 }

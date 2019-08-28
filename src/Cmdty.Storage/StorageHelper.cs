@@ -24,6 +24,8 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using JetBrains.Annotations;
@@ -190,5 +192,35 @@ namespace Cmdty.Storage
 
             return (max, indexOfMax);
         }
+
+        // TODO use this in IntrinsicStorageValuation
+        public static (double ImmediateNpv, double CmdtyConsumed) 
+            StorageImmediateNpvForDecision<T>(CmdtyStorage<T> storage, T period, double inventory,
+                double injectWithdrawVolume, double cmdtyPrice, Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
+            where T : ITimePeriod<T>
+        {
+            Day cmdtySettlementDate = settleDateRule(period);
+            double discountFactorFromCmdtySettlement = discountFactors(cmdtySettlementDate);
+
+            double injectWithdrawNpv = -injectWithdrawVolume * cmdtyPrice * discountFactorFromCmdtySettlement;
+
+            IReadOnlyList<DomesticCashFlow> storageCostCashFlows = injectWithdrawVolume > 0.0
+                    ? storage.InjectionCost(period, inventory, injectWithdrawVolume)
+                    : storage.WithdrawalCost(period, inventory, -injectWithdrawVolume);
+
+            double storageCostNpv = storageCostCashFlows.Sum(cashFlow => cashFlow.Amount * discountFactors(cashFlow.Date));
+
+            double cmdtyUsedForInjectWithdrawVolume = injectWithdrawVolume > 0.0
+                ? storage.CmdtyVolumeConsumedOnInject(period, inventory, injectWithdrawVolume)
+                : storage.CmdtyVolumeConsumedOnWithdraw(period, inventory, -injectWithdrawVolume);
+
+            // Note that calculations assume that decision volumes do NOT include volumes consumed, and that these volumes are purchased in the market
+            double cmdtyUsedForInjectWithdrawNpv = -cmdtyUsedForInjectWithdrawVolume * cmdtyPrice * discountFactorFromCmdtySettlement;
+
+            double immediateNpv = injectWithdrawNpv - storageCostNpv + cmdtyUsedForInjectWithdrawNpv;
+
+            return (ImmediateNpv: immediateNpv, CmdtyConsumed: cmdtyUsedForInjectWithdrawVolume);
+        }
+
     }
 }
