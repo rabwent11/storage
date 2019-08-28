@@ -45,17 +45,21 @@ namespace Cmdty.Storage
         }
 
         public static CmdtyStorage<T>.IAddMinInventory WithInventoryDependentInjectWithdrawRange<T>([NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
-                            IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRanges)
+                            IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRanges,
+                            double newtonRaphsonAccuracy = 1E-10, int newtonRaphsonMaxNumIterations = 100, 
+                            int newtonRaphsonSubdivision = 20)
             where T : ITimePeriod<T>
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
-            var polynomialInjectWithdrawConstraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRanges);
+            var polynomialInjectWithdrawConstraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRanges, 
+                            newtonRaphsonAccuracy, newtonRaphsonMaxNumIterations, newtonRaphsonSubdivision);
             return builder.WithInjectWithdrawConstraint(polynomialInjectWithdrawConstraint);
         }
 
         public static CmdtyStorage<T>.IAddInjectionCost WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
                     [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
-                    [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges)
+                    [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges, 
+                    double newtonRaphsonAccuracy = 1E-10, int newtonRaphsonMaxNumIterations = 100, int newtonRaphsonSubdivision = 20)
             where T : ITimePeriod<T>
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
@@ -87,7 +91,8 @@ namespace Cmdty.Storage
                 }
                 else
                 {
-                    constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray);
+                    constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray, newtonRaphsonAccuracy, 
+                                                    newtonRaphsonMaxNumIterations, newtonRaphsonSubdivision);
                 }
 
                 double minInventory = injectWithdrawRangeArray.Min(inventoryRange => inventoryRange.Inventory);
