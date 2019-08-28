@@ -97,19 +97,20 @@ namespace Cmdty.Storage.Excel
             });
         }
 
-        private static IntrinsicStorageValuationResults<T> IntrinsicStorageVal<T>(DateTime valuationDateTime,
-            DateTime storageStartDateTime,
-            DateTime storageEndDateTime,
-            object injectWithdrawConstraints,
-            double injectionCostRate,
-            double cmdtyConsumedOnInjection,
-            double withdrawalCostRate,
-            double cmdtyConsumedOnWithdrawal,
-            double currentInventory,
-            object forwardCurveIn,
-            object interestRateCurve,
-            object numGlobalGridPointsIn, 
-            object numericalToleranceIn)
+        private static IntrinsicStorageValuationResults<T> IntrinsicStorageVal<T>(
+                                    DateTime valuationDateTime,
+                                    DateTime storageStartDateTime,
+                                    DateTime storageEndDateTime,
+                                    object injectWithdrawConstraints,
+                                    double injectionCostRate,
+                                    double cmdtyConsumedOnInjection,
+                                    double withdrawalCostRate,
+                                    double cmdtyConsumedOnWithdrawal,
+                                    double currentInventory,
+                                    object forwardCurveIn,
+                                    object interestRateCurve,
+                                    object numGlobalGridPointsIn, 
+                                    object numericalToleranceIn)
             where T : ITimePeriod<T>
         {
             double numericalTolerance = StorageExcelHelper.DefaultIfExcelEmptyOrMissing(numericalToleranceIn, 1E-10,

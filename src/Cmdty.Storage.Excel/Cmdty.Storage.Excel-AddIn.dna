@@ -5,6 +5,8 @@
   <Reference Path="Cmdty.Curves.dll" Pack="true" />
   <Reference Path="Cmdty.TimePeriodValueTypes.dll" Pack="true" />
   <Reference Path="Cmdty.TimeSeries.dll" Pack="true" />
+  <Reference Path="Cmdty.Core.Simulation.dll" Pack="true" />
+  <Reference Path="Cmdty.Core.Trees.dll" Pack="true" />
   <Reference Path="JetBrains.Annotations.dll" Pack="true" />
   <Reference Path="MathNet.Numerics.dll" Pack="true" />
   <Reference Path="System.ValueTuple.dll" Pack="true" />
