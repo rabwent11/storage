@@ -33,7 +33,7 @@ namespace Cmdty.Storage
 {
     public sealed class TreeStorageValuation<T> : ITreeAddStartingInventory<T>, ITreeAddCurrentPeriod<T>, ITreeAddForwardCurve<T>,
         ITreeAddTreeFactory<T>, ITreeAddCmdtySettlementRule<T>, ITreeAddDiscountFactorFunc<T>, 
-            ITreeAddSpacing<T>, ITreeAddNumericalTolerance<T>, IAddInterpolatorOrCalculate<T>
+            ITreeAddInventoryGridCalculation<T>, ITreeAddInterpolator<T>, ITreeAddNumericalTolerance<T>, ITreeCalculate<T>
         where T : ITimePeriod<T>
     {
         private readonly CmdtyStorage<T> _storage;
@@ -43,9 +43,8 @@ namespace Cmdty.Storage
         private Func<TimeSeries<T, double>, TimeSeries<T, TreeNode>> _treeFactory;
         private Func<T, Day> _settleDateRule;
         private Func<Day, double> _discountFactors;
-        private IDoubleStateSpaceGridCalc _gridCalc;
+        private Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
         private IInterpolatorFactory _interpolatorFactory;
-        private double _gridSpacing = 100;
         private double _numericalTolerance;
 
         private TreeStorageValuation([NotNull] CmdtyStorage<T> storage)
@@ -93,28 +92,26 @@ namespace Cmdty.Storage
             return this;
         }
 
-        ITreeAddSpacing<T> ITreeAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, double> discountFactors)
+        ITreeAddInventoryGridCalculation<T> ITreeAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, double> discountFactors)
         {
             _discountFactors = discountFactors ?? throw new ArgumentNullException(nameof(discountFactors));
             return this;
         }
 
-        ITreeAddNumericalTolerance<T> ITreeAddSpacing<T>.WithGridSpacing(double gridSpacing)
+        ITreeAddInterpolator<T> ITreeAddInventoryGridCalculation<T>.WithStateSpaceGridCalculation(
+            Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory)
         {
-            if (gridSpacing <= 0.0)
-                throw new ArgumentException($"Parameter {nameof(gridSpacing)} value must be positive", nameof(gridSpacing));
-            _gridSpacing = gridSpacing;
+            _gridCalcFactory = gridCalcFactory ?? throw new ArgumentNullException(nameof(gridCalcFactory));
             return this;
         }
 
-        ITreeAddNumericalTolerance<T> ITreeAddSpacing<T>
-                    .WithStateSpaceGridCalculation([NotNull] IDoubleStateSpaceGridCalc gridCalc)
+        ITreeAddNumericalTolerance<T> ITreeAddInterpolator<T>.WithInterpolatorFactory([NotNull] IInterpolatorFactory interpolatorFactory)
         {
-            _gridCalc = gridCalc ?? throw new ArgumentNullException(nameof(gridCalc));
+            _interpolatorFactory = interpolatorFactory ?? throw new ArgumentNullException(nameof(interpolatorFactory));
             return this;
         }
 
-        IAddInterpolatorOrCalculate<T> ITreeAddNumericalTolerance<T>.WithNumericalTolerance(double numericalTolerance)
+        ITreeCalculate<T> ITreeAddNumericalTolerance<T>.WithNumericalTolerance(double numericalTolerance)
         {
             if (numericalTolerance <= 0)
                 throw new ArgumentException("Numerical tolerance must be positive.", nameof(numericalTolerance));
@@ -122,30 +119,21 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IAddInterpolatorOrCalculate<T> IAddInterpolatorOrCalculate<T>
-                    .WithInterpolatorFactory([NotNull] IInterpolatorFactory interpolatorFactory)
-        {
-            _interpolatorFactory = interpolatorFactory ?? throw new ArgumentNullException(nameof(interpolatorFactory));
-            return this;
-        }
-
-        TreeStorageValuationResults<T> IAddInterpolatorOrCalculate<T>.Calculate()
+        TreeStorageValuationResults<T> ITreeCalculate<T>.Calculate()
         {
             return Calculate(_currentPeriod, _startingInventory, _forwardCurve, _treeFactory, _storage,
-                _settleDateRule, _discountFactors, _gridCalc ?? new FixedSpacingStateSpaceGridCalc(_gridSpacing),
-                    _interpolatorFactory ?? new LinearInterpolatorFactory(), _numericalTolerance);
+                _settleDateRule, _discountFactors, _gridCalcFactory,
+                    _interpolatorFactory, _numericalTolerance);
         }
 
-        private static TreeStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, TimeSeries<T, double> forwardCurve, 
-            Func<TimeSeries<T, double>, TimeSeries<T, TreeNode>> treeFactory, CmdtyStorage<T> storage, Func<T, Day> settleDateRule, 
-            Func<Day, double> discountFactors, IDoubleStateSpaceGridCalc doubleStateSpaceGridCalc, IInterpolatorFactory interpolatorFactory, 
+        private static TreeStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, 
+            TimeSeries<T, double> forwardCurve, Func<TimeSeries<T, double>, TimeSeries<T, TreeNode>> treeFactory, 
+            CmdtyStorage<T> storage, Func<T, Day> settleDateRule, Func<Day, double> discountFactors, 
+            Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory, IInterpolatorFactory interpolatorFactory, 
             double numericalTolerance)
         {
-
-
             throw new NotImplementedException();
         }
-
 
     }
 
@@ -196,26 +184,30 @@ namespace Cmdty.Storage
         /// Adds discount factor function.
         /// </summary>
         /// <param name="discountFactors">Function mapping from cash flow date to discount factor.</param>
-        ITreeAddSpacing<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
+        ITreeAddInventoryGridCalculation<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
     }
 
-    public interface ITreeAddSpacing<T>
+    public interface ITreeAddInventoryGridCalculation<T>
         where T : ITimePeriod<T>
     {
-        ITreeAddNumericalTolerance<T> WithGridSpacing(double gridSpacing);
-        ITreeAddNumericalTolerance<T> WithStateSpaceGridCalculation(IDoubleStateSpaceGridCalc gridCalc);
+        ITreeAddInterpolator<T> WithStateSpaceGridCalculation(Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory);
+    }
+
+    public interface ITreeAddInterpolator<T>
+        where T : ITimePeriod<T>
+    {
+        ITreeAddNumericalTolerance<T> WithInterpolatorFactory(IInterpolatorFactory interpolatorFactory);
     }
 
     public interface ITreeAddNumericalTolerance<T>
         where T : ITimePeriod<T>
     {
-        IAddInterpolatorOrCalculate<T> WithNumericalTolerance(double numericalTolerance);
+        ITreeCalculate<T> WithNumericalTolerance(double numericalTolerance);
     }
-
-    public interface IAddInterpolatorOrCalculate<T>
+    
+    public interface ITreeCalculate<T>
         where T : ITimePeriod<T>
     {
-        IAddInterpolatorOrCalculate<T> WithInterpolatorFactory(IInterpolatorFactory interpolatorFactory);
         TreeStorageValuationResults<T> Calculate();
     }
 
