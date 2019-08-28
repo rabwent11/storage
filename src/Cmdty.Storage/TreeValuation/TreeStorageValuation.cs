@@ -24,6 +24,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Cmdty.Core.Trees;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
@@ -40,7 +41,7 @@ namespace Cmdty.Storage
         private double _startingInventory;
         private T _currentPeriod;
         private TimeSeries<T, double> _forwardCurve;
-        private Func<TimeSeries<T, double>, TimeSeries<T, TreeNode>> _treeFactory;
+        private Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> _treeFactory;
         private Func<T, Day> _settleDateRule;
         private Func<Day, double> _discountFactors;
         private Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
@@ -80,7 +81,7 @@ namespace Cmdty.Storage
         }
 
         ITreeAddCmdtySettlementRule<T> ITreeAddTreeFactory<T>.WithTreeFactory(
-            [NotNull] Func<TimeSeries<T, double>, TimeSeries<T, TreeNode>> treeFactory)
+            [NotNull] Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> treeFactory)
         {
             _treeFactory = treeFactory ?? throw new ArgumentNullException(nameof(treeFactory));
             return this;
@@ -127,7 +128,7 @@ namespace Cmdty.Storage
         }
 
         private static TreeStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, 
-            TimeSeries<T, double> forwardCurve, Func<TimeSeries<T, double>, TimeSeries<T, TreeNode>> treeFactory, 
+            TimeSeries<T, double> forwardCurve, Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> treeFactory, 
             CmdtyStorage<T> storage, Func<T, Day> settleDateRule, Func<Day, double> discountFactors, 
             Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory, IInterpolatorFactory interpolatorFactory, 
             double numericalTolerance)
@@ -164,7 +165,7 @@ namespace Cmdty.Storage
         /// </summary>
         /// <param name="treeFactory">Function mapping from the forward curve to the price tree.</param>
         ITreeAddCmdtySettlementRule<T>
-            WithTreeFactory(Func<TimeSeries<T, double>, TimeSeries<T, TreeNode>> treeFactory);
+            WithTreeFactory(Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> treeFactory);
     }
 
     public interface ITreeAddCmdtySettlementRule<T>
