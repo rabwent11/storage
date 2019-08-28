@@ -36,13 +36,24 @@ namespace Cmdty.Storage
     {
         private readonly Polynomial _maxInjectWithdrawPolynomial;
         private readonly Polynomial _minInjectWithdrawPolynomial;
-
         private readonly Polynomial _maxInjectWithdrawPolynomial1StDeriv;
         private readonly Polynomial _minInjectWithdrawPolynomial1StDeriv;
+        private readonly double _newtonRaphsonAccuracy;
+        private readonly int _newtonRaphsonMaxNumIterations;
+        private readonly int _newtonRaphsonSubdivision;
 
-        public PolynomialInjectWithdrawConstraint([NotNull] IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRanges)
+        public PolynomialInjectWithdrawConstraint([NotNull] IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRanges,
+                        double newtonRaphsonAccuracy= 1E-10, int newtonRaphsonMaxNumIterations=100, int newtonRaphsonSubdivision=20)
         {
             if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
+
+            // TODO check in MATH.NET that this preconditions are consistent with their implementation
+            if (newtonRaphsonAccuracy < 0)
+                throw new ArgumentException("Newton Raphson Accuracy must be positive number.", nameof(newtonRaphsonAccuracy));
+            if (newtonRaphsonMaxNumIterations < 2)
+                throw new ArgumentException("Newton Raphson max number of iteration must be at least 2.", nameof(newtonRaphsonMaxNumIterations));
+            if (newtonRaphsonSubdivision < 1)
+                throw new ArgumentException("Newton Raphson subdivision must be at least 1.", nameof(newtonRaphsonSubdivision));
 
             List<InjectWithdrawRangeByInventory> injectWithdrawRangesList = injectWithdrawRanges.ToList();
             if (injectWithdrawRangesList.Count < 2)
@@ -60,6 +71,10 @@ namespace Cmdty.Storage
 
             _minInjectWithdrawPolynomial = new Polynomial(Fit.Polynomial(inventories, minInjectWithdrawRates, polyOrder));
             _minInjectWithdrawPolynomial1StDeriv = _minInjectWithdrawPolynomial.Differentiate();
+
+            _newtonRaphsonAccuracy = newtonRaphsonAccuracy;
+            _newtonRaphsonMaxNumIterations = newtonRaphsonMaxNumIterations;
+            _newtonRaphsonSubdivision = newtonRaphsonSubdivision;
         }
 
         public InjectWithdrawRange GetInjectWithdrawRange(double inventory)
@@ -69,7 +84,6 @@ namespace Cmdty.Storage
             return new InjectWithdrawRange(minInjectWithdrawRate, maxInjectWithdrawRate);
         }
         
-        // TODO create base class for finding min and max inventory from arbitrary functional inject/withdraw profiles
         public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound,
                         double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
                         double currentPeriodMaxInventory)
@@ -90,7 +104,6 @@ namespace Cmdty.Storage
             double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceUpperBound + _minInjectWithdrawPolynomial.Evaluate(inventory);
             double PolyToSolve1StDeriv(double inventory) => 1 + _minInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
-            // TODO remove hard coding of parameters
             if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
                 currentPeriodMaxInventory, 1E-10, 100, 20, out double thisPeriodMaxInventory))
             {
@@ -123,9 +136,9 @@ namespace Cmdty.Storage
             double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceLowerBound + _maxInjectWithdrawPolynomial.Evaluate(inventory);
             double PolyToSolve1StDeriv(double inventory) => 1 + _maxInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
-            // TODO remove hard coding of parameters
             if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
-                currentPeriodMaxInventory, 1E-12, 100, 20, out double thisPeriodMinInventory))
+                currentPeriodMaxInventory, _newtonRaphsonAccuracy, _newtonRaphsonMaxNumIterations, 
+                        _newtonRaphsonSubdivision, out double thisPeriodMinInventory))
             {
                 throw new ApplicationException("Cannot solve for the current period minimum inventory"); // TODO better exception message
             }

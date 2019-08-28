@@ -29,6 +29,6 @@ namespace Cmdty.Storage
 {
     public interface IDoubleStateSpaceGridCalc // TODO move to Cmdty.Core
     {
-        IEnumerable<double> GetGridPoints(double stateSpaceLowerBound, double stateSpaceUpperBound); // TODO use InventoryRange type as parameter?
+        IEnumerable<double> GetGridPoints(double stateSpaceLowerBound, double stateSpaceUpperBound);
     }
 }

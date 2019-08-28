@@ -36,7 +36,7 @@ namespace Cmdty.Storage
         public static TimeSeries<T, InventoryRange> CalculateInventorySpace<T>(CmdtyStorage<T> storage, double startingInventory, T currentPeriod)
             where T : ITimePeriod<T>
         {
-            if (currentPeriod.CompareTo(storage.EndPeriod) > 0)
+            if (currentPeriod.CompareTo(storage.EndPeriod) > 0) // TODO should condition be >= 0?
                 throw new ArgumentException("Storage has expired");// TODO change to return empty TimeSeries?
 
             T startActiveStorage = storage.StartPeriod.CompareTo(currentPeriod) > 0 ? storage.StartPeriod : currentPeriod;
