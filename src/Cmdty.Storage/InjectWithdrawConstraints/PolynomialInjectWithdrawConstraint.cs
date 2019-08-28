@@ -105,13 +105,14 @@ namespace Cmdty.Storage
             double PolyToSolve1StDeriv(double inventory) => 1 + _minInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
             if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
-                currentPeriodMaxInventory, 1E-10, 100, 20, out double thisPeriodMaxInventory))
+                currentPeriodMaxInventory, _newtonRaphsonAccuracy, _newtonRaphsonMaxNumIterations,
+                        _newtonRaphsonSubdivision, out double thisPeriodMaxInventory))
             {
-                throw new ApplicationException("Cannot solve for the current period maximum inventory"); // TODO better exception message
+                throw new ApplicationException("Cannot solve for the current period inventory space upper bound. Try changing Newton Raphson parameters.");
             }
 
-            if (thisPeriodMaxInventory < currentPeriodMinInventory)
-                throw new ApplicationException("Cannot solve for the current period maximum inventory");
+            if (thisPeriodMaxInventory < currentPeriodMinInventory)// TODO allow tolerance? If so, need to think how this will feed through to other parts of code.
+                throw new ApplicationException("Inventory constraints cannot be satisfied.");
 
             return Math.Min(thisPeriodMaxInventory, currentPeriodMaxInventory);
         }
@@ -140,11 +141,11 @@ namespace Cmdty.Storage
                 currentPeriodMaxInventory, _newtonRaphsonAccuracy, _newtonRaphsonMaxNumIterations, 
                         _newtonRaphsonSubdivision, out double thisPeriodMinInventory))
             {
-                throw new ApplicationException("Cannot solve for the current period minimum inventory"); // TODO better exception message
+                throw new ApplicationException("Cannot solve for the current period inventory space lower bound. Try changing Newton Raphson parameters.");
             }
 
-            if (thisPeriodMinInventory > currentPeriodMaxInventory)
-                throw new ApplicationException("Cannot solve for the current period minimum inventory");
+            if (thisPeriodMinInventory > currentPeriodMaxInventory) // TODO allow tolerance? If so, need to think how this will feed through to other parts of code.
+                throw new ApplicationException("Inventory constraints cannot be satisfied.");
 
             return Math.Max(thisPeriodMinInventory, currentPeriodMinInventory);
         }
