@@ -112,18 +112,18 @@ namespace Cmdty.Storage.Excel
             object numericalToleranceIn)
             where T : ITimePeriod<T>
         {
+            double numericalTolerance = StorageExcelHelper.DefaultIfExcelEmptyOrMissing(numericalToleranceIn, 1E-10,
+                                                                            "Numerical_tolerance");
+
             var storage = StorageExcelHelper.CreateCmdtyStorageFromExcelInputs<T>(storageStartDateTime,
-                storageEndDateTime, injectWithdrawConstraints, injectionCostRate, cmdtyConsumedOnInjection,
-                withdrawalCostRate, cmdtyConsumedOnWithdrawal);
+                        storageEndDateTime, injectWithdrawConstraints, injectionCostRate, cmdtyConsumedOnInjection,
+                        withdrawalCostRate, cmdtyConsumedOnWithdrawal, numericalTolerance);
 
             T currentPeriod = TimePeriodFactory.FromDateTime<T>(valuationDateTime);
 
             DoubleTimeSeries<T> forwardCurve = StorageExcelHelper.CreateDoubleTimeSeries<T>(forwardCurveIn, "Forward_curve");
             
             // TODO input settlement dates and use interest rates
-            double numericalTolerance = StorageExcelHelper.DefaultIfExcelEmptyOrMissing(numericalToleranceIn, 1E-10, 
-                                                    "Numerical_tolerance");
-
             int numGridPoints =
                 StorageExcelHelper.DefaultIfExcelEmptyOrMissing<int>(numGlobalGridPointsIn, 100, "Num_global_grid_points");
 

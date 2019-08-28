@@ -66,12 +66,13 @@ namespace Cmdty.Storage.Excel
         }
 
         public static CmdtyStorage<T> CreateCmdtyStorageFromExcelInputs<T>(DateTime storageStartDateTime,
-                                        DateTime storageEndDateTime,
-                                        object injectWithdrawConstraintsIn,
-                                        double injectionCostRate,
-                                        double cmdtyConsumedOnInjection,
-                                        double withdrawalCostRate,
-                                        double cmdtyConsumedOnWithdrawal)
+            DateTime storageEndDateTime,
+            object injectWithdrawConstraintsIn,
+            double injectionCostRate,
+            double cmdtyConsumedOnInjection,
+            double withdrawalCostRate,
+            double cmdtyConsumedOnWithdrawal, 
+            double newtonRaphsonAccuracy)
             where T : ITimePeriod<T>
         {
             T storageStart = TimePeriodFactory.FromDateTime<T>(storageStartDateTime);
@@ -105,7 +106,7 @@ namespace Cmdty.Storage.Excel
 
             CmdtyStorage<T> storage = CmdtyStorage<T>.Builder
                     .WithActiveTimePeriod(storageStart, storageEnd)
-                    .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+                    .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints, newtonRaphsonAccuracy)
                     .WithPerUnitInjectionCost(injectionCostRate, injectionDate => injectionDate.First<Day>())
                     .WithFixedPercentCmdtyConsumedOnInject(cmdtyConsumedOnInjection)
                     .WithPerUnitWithdrawalCost(withdrawalCostRate, withdrawalDate => withdrawalDate.First<Day>())
