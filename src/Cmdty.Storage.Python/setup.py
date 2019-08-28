@@ -55,14 +55,14 @@ setuptools.setup(
         'Topic :: Office/Business :: Financial :: Investment',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Software Development :: Libraries :: Python Modules',
-    ]
-    #install_requires=[
-    #    'pythonnet>=2.4.0',
-    #    'pandas>=0.24.2'
-    #    ],
-    #package_data={'curves' : [
-    #                    'lib/*.dll',
-    #                    'lib/*.pdb'
-    #                ]},
-    #include_package_data=True
+    ],
+    install_requires=[
+        'pythonnet>=2.4.0',
+        'pandas>=0.24.2'
+        ],
+    package_data={'cmdty_storage' : [
+                        'lib/*.dll',
+                        'lib/*.pdb'
+                    ]},
+    include_package_data=True
 )

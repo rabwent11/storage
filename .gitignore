@@ -330,7 +330,7 @@ ASALocalRun/
 .mfractor/
 
 # .NET assemblies built on copied to the Python wrapper project during build
-src/Cmdty.Storage.Python/storage/lib/*
+src/Cmdty.Storage.Python/cmdty_storage/lib/*
 
 # C# test results put here
 temp/

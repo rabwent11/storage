@@ -24,6 +24,12 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TargetFramework)' == 'net45'">
+    <ItemGroup>
+      <FilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\net45\*.dll" />
+      <FilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\net45\*.pdb" />
+    </ItemGroup>
+    <MakeDir Directories="..\Cmdty.Storage.Python\cmdty_storage\lib" />
+    <Copy SourceFiles="@(FilesToCopyForPython)" DestinationFolder="..\Cmdty.Storage.Python\cmdty_storage\lib" OverwriteReadOnlyFiles="true"/>
     <WriteLinesToFile File="..\Cmdty.Storage.Python\cmdty_storage\__version__.py" Lines="__version__ = '$(PythonVersion)'" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
