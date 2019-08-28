@@ -138,6 +138,26 @@ Task("Pack-NuGet")
 	DotNetCorePack("src/Cmdty.Storage/Cmdty.Storage.csproj", dotNetPackSettings);
 });	
 
+Task("Pack-Python")
+//    .IsDependentOn("Test-Python")
+    .IsDependentOn("Build")
+	.Does(setupContext =>
+{
+    CleanDirectory("src/Cmdty.Storage.Python/build");
+    CleanDirectory("src/Cmdty.Storage.Python/dist");
+    var originalWorkingDir = setupContext.Environment.WorkingDirectory;
+    string pythonProjDir = System.IO.Path.Combine(originalWorkingDir.ToString(), "src", "Cmdty.Storage.Python");
+    setupContext.Environment.WorkingDirectory = pythonProjDir;
+    try
+    {    
+        StartProcessThrowOnError("python", "setup.py", "sdist", "bdist_wheel");
+    }
+    finally
+    {
+        setupContext.Environment.WorkingDirectory = originalWorkingDir;
+    }
+});
+
 Task("Push-NuGetToCmdtyFeed")
     .IsDependentOn("Add-NuGetSource")
     .IsDependentOn("Pack-NuGet")
@@ -158,6 +178,18 @@ private string GetEnvironmentVariable(string envVariableName)
     if (string.IsNullOrEmpty(envVariableValue))
         throw new ApplicationException($"Environment variable '{envVariableName}' has not been set.");
     return envVariableValue;
+}
+
+private void StartProcessThrowOnError(string applicationName, params string[] processArgs)
+{
+    var argsBuilder = new ProcessArgumentBuilder();
+    foreach(string processArg in processArgs)
+    {
+        argsBuilder.Append(processArg);
+    }
+    int exitCode = StartProcess(applicationName, new ProcessSettings {Arguments = argsBuilder});
+    if (exitCode != 0)
+        throw new ApplicationException($"Starting {applicationName} in new process returned non-zero exit code of {exitCode}");
 }
 
 var publishNuGetTask = Task("Publish-NuGet")
