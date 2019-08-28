@@ -29,6 +29,7 @@ using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using JetBrains.Annotations;
+using MathNet.Numerics;
 
 namespace Cmdty.Storage
 {
@@ -74,7 +75,20 @@ namespace Cmdty.Storage
                 if (injectWithdrawRangeArray.Length < 2)
                     throw new ArgumentException($"Period {period} contains less than 2 inject/withdraw/inventory constraints.", nameof(injectWithdrawRanges));
 
-                IInjectWithdrawConstraint constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray);
+                IInjectWithdrawConstraint constraint;
+                if (injectWithdrawRangeArray.Length == 2 && 
+                    injectWithdrawRangeArray[0].InjectWithdrawRange.MinInjectWithdrawRate.AlmostEqual(
+                        injectWithdrawRangeArray[1].InjectWithdrawRange.MinInjectWithdrawRate, double.Epsilon) &&
+                    injectWithdrawRangeArray[0].InjectWithdrawRange.MaxInjectWithdrawRate.AlmostEqual(
+                        injectWithdrawRangeArray[1].InjectWithdrawRange.MaxInjectWithdrawRate, double.Epsilon))
+                {
+                    // Two rows which represent constant inject/withdraw constraints over all inventories
+                    constraint = new ConstantInjectWithdrawConstraint(injectWithdrawRangeArray[0].InjectWithdrawRange);
+                }
+                else
+                {
+                    constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray);
+                }
 
                 double minInventory = injectWithdrawRangeArray.Min(inventoryRange => inventoryRange.Inventory);
                 double maxInventory = injectWithdrawRangeArray.Max(inventoryRange => inventoryRange.Inventory);
@@ -86,7 +100,7 @@ namespace Cmdty.Storage
                 }
                 catch (ArgumentException) // TODO unit test
                 {
-                    throw new ArgumentException("Repeated periods found in inject/withdraw ranges", nameof(injectWithdrawRanges));
+                    throw new ArgumentException("Repeated periods found in inject/withdraw ranges.", nameof(injectWithdrawRanges));
                 }
             }
 
