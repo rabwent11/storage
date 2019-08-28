@@ -338,7 +338,7 @@ coverage.cobertura.xml
 
 # Files generate during distribution package creation
 src/Cmdty.Storage.Python/dist/*
-src/Cmdty.Storage.Python/storage.egg-info/*
+src/Cmdty.Storage.Python/cmdty_storage.egg-info/*
 src/Cmdty.Storage.Python/build/*
 src/Cmdty.Storage.Python/list/*
 
