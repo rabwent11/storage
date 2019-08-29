@@ -222,5 +222,159 @@ namespace Cmdty.Storage.Test
             return callOptionValue;
         }
 
+        [Fact(Skip = "Test in development and not passing.")]
+        public void Calculate_StorageWithForcedInjectAndWithdraw_NPvEqualsTrivialCalc()
+        {
+            var currentDate = new Day(2019, 8, 29);
+
+            var storageStart = new Day(2019, 12, 1);
+            var storageEnd = new Day(2020, 4, 1);
+
+            const double storageStartingInventory = 0.0;
+            const double minInventory = 0.0;
+            const double maxInventory = 10_000.0;
+
+            const double forcedInjectionRate = 211.5;
+            const int forcedInjectionNumDays = 15;
+            var forcedInjectionStart = new Day(2019, 12, 20);
+
+            const double injectionPerUnitCost = 1.23;
+            const double injectionCmdtyConsumed = 0.01;
+
+            const double forcedWithdrawalRate = 187.54;
+            const int forcedWithdrawalNumDays = 11;
+            var forcedWithdrawalStart = new Day(2020, 2, 5);
+
+            const double withdrawalPerUnitCost = 0.98;
+            const double withdrawalCmdtyConsumed = 0.015;
+            
+            (DoubleTimeSeries<Day> forwardCurve, DoubleTimeSeries<Day> spotVolCurve) = CreateDailyTestForwardAndSpotVolCurves(currentDate, storageEnd);
+            const double meanReversion = 16.5;
+            const double timeDelta = 1.0 / 365.0;
+            const double interestRate = 0.09;
+
+            TimeSeries<Month, Day> settlementDates = new TimeSeries<Month, Day>.Builder()
+            {
+                { new Month(2019, 12),  new Day(2020, 1, 20)},
+                { new Month(2020, 1),  new Day(2020, 2, 18)},
+                { new Month(2020, 2),  new Day(2020, 3, 21)},
+                { new Month(2020, 3),  new Day(2020, 4, 22)}
+            }.Build();
+
+            var injectWithdrawConstraints = new List<InjectWithdrawRangeByInventoryAndPeriod<Day>>
+            {
+                (period: storageStart, injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: minInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0)),
+                    (inventory: maxInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0))
+                }),
+                (period: forcedInjectionStart, injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: minInventory, (minInjectWithdrawRate: forcedInjectionRate, maxInjectWithdrawRate: forcedInjectionRate)),
+                    (inventory: maxInventory, (minInjectWithdrawRate: forcedInjectionRate, maxInjectWithdrawRate: forcedInjectionRate))
+                }),
+                (period: forcedInjectionStart.Offset(forcedInjectionNumDays), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: minInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0)),
+                    (inventory: maxInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0))
+                }),
+                (period: forcedWithdrawalStart, injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: minInventory, (minInjectWithdrawRate: -forcedWithdrawalRate, maxInjectWithdrawRate: -forcedWithdrawalRate)),
+                    (inventory: maxInventory, (minInjectWithdrawRate: -forcedWithdrawalRate, maxInjectWithdrawRate: -forcedWithdrawalRate))
+                }),
+                (period: forcedWithdrawalStart.Offset(forcedInjectionNumDays), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: minInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0)),
+                    (inventory: maxInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0))
+                }),
+            };
+
+            Day InjectionCostPaymentTerms(Day injectionDate)
+            {
+                return injectionDate.Offset(10);
+            }
+
+            Day WithdrawalCostPaymentTerms(Day withdrawalDate)
+            {
+                return withdrawalDate.Offset(4);
+            }
+            
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                .WithActiveTimePeriod(storageStart, storageEnd)
+                .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+                .WithPerUnitInjectionCost(injectionPerUnitCost, InjectionCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
+                .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .WithTerminalInventoryNpv((cmdtySpotPrice, inventory) => 0.0)
+                .Build();
+
+            TreeStorageValuationResults<Day> valuationResults = TreeStorageValuation<Day>.ForStorage(storage)
+                .WithStartingInventory(storageStartingInventory)
+                .ForCurrentPeriod(currentDate)
+                .WithForwardCurve(forwardCurve)
+                .WithOneFactorTrinomialTree(spotVolCurve, meanReversion, timeDelta)
+                .WithMonthlySettlement(settlementDates)
+                .WithDiscountFactorFunc(day => Math.Exp(-day.OffsetFrom(currentDate) / 365.0 * interestRate))
+                .WithFixedNumberOfPointsOnGlobalInventoryRange(100)
+                .WithLinearInventorySpaceInterpolation()
+                .WithNumericalTolerance(1E-10)
+                .Calculate();
+            
+            // Calculate the NPV Manually
+
+            // Period of forced injection
+            double injectionPv = 0.0;
+            for (int i = 0; i < forcedInjectionNumDays; i++)
+            {
+                Day injectionDate = forcedInjectionStart.Offset(i);
+                double forwardPrice = forwardCurve[injectionDate];
+
+                Day cmdtySettlementDate = settlementDates[Month.FromDateTime(injectionDate.Start)];
+                double cmdtyDiscountFactor =
+                    Act365ContCompoundDiscountFactor(currentDate, cmdtySettlementDate, interestRate);
+
+                Day injectionCostSettlementDate = InjectionCostPaymentTerms(injectionDate);
+                double injectCostDiscountFactor =
+                    Act365ContCompoundDiscountFactor(currentDate, injectionCostSettlementDate, interestRate);
+
+                double cmdtyBoughtPv = -forwardPrice * forcedInjectionRate * (1 + injectionCmdtyConsumed) * cmdtyDiscountFactor;
+                double injectCostPv = -injectionPerUnitCost * forcedInjectionRate * injectCostDiscountFactor;
+
+                injectionPv += cmdtyBoughtPv + injectCostPv;
+            }
+
+            // Period of forced withdrawal
+            double withdrawalPv = 0.0;
+            for (int i = 0; i < forcedWithdrawalNumDays; i++)
+            {
+                Day withdrawalDate = forcedWithdrawalStart.Offset(i);
+                double forwardPrice = forwardCurve[withdrawalDate];
+
+                Day cmdtySettlementDate = settlementDates[Month.FromDateTime(withdrawalDate.Start)];
+                double cmdtyDiscountFactor =
+                    Act365ContCompoundDiscountFactor(currentDate, cmdtySettlementDate, interestRate);
+
+                Day withdrawalCostSettlementDate = InjectionCostPaymentTerms(withdrawalDate);
+                double withdrawalCostDiscountFactor =
+                    Act365ContCompoundDiscountFactor(currentDate, withdrawalCostSettlementDate, interestRate);
+
+                double cmdtySoldPv = forwardPrice * forcedWithdrawalRate * (1 - withdrawalCmdtyConsumed) * cmdtyDiscountFactor;
+                double withdrawalCostPv = -withdrawalPerUnitCost * forcedWithdrawalRate * withdrawalCostDiscountFactor;
+
+                withdrawalPv += cmdtySoldPv + withdrawalCostPv;
+            }
+
+            double expectedNpv = injectionPv + withdrawalPv;
+
+            Assert.Equal(expectedNpv, valuationResults.NetPresentValue);
+        }
+
+        private static double Act365ContCompoundDiscountFactor(Day currentDate, Day paymentDate, double interestRate)
+        {
+            return Math.Exp(-paymentDate.OffsetFrom(currentDate) / 365.0 * interestRate);
+        }
+
     }
 }
