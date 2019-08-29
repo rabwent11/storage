@@ -25,7 +25,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MathNet.Numerics.Interpolation;
+// ReSharper disable PossibleMultipleEnumeration
 
 namespace Cmdty.Storage
 {
@@ -33,6 +35,17 @@ namespace Cmdty.Storage
     {
         public Func<double, double> CreateInterpolator(IEnumerable<double> xCoords, IEnumerable<double> yCoords)
         {
+            if (xCoords == null) throw new ArgumentNullException(nameof(xCoords));
+            if (yCoords == null) throw new ArgumentNullException(nameof(yCoords));
+            if (xCoords.Count() != yCoords.Count())
+                throw new ArgumentException("xCoords and yCoords must have the same number of elements.");
+
+            if (xCoords.Count() == 1) // Trivial case of a single point
+            {
+                double singleY = yCoords.Single();
+                return x => singleY;
+            }
+
             var cubicSpline = CubicSpline.InterpolateNatural(xCoords, yCoords);
             return cubicSpline.Interpolate;
         }

@@ -358,6 +358,11 @@ namespace Cmdty.Storage
         public interface IAddInjectionCost
         {
             IAddCmdtyConsumedOnInject WithPerUnitInjectionCost(double perVolumeUnitCost, Func<T, Day> cashFlowDate);
+            /// <summary>
+            /// Adds the inject cost rule.
+            /// </summary>
+            /// <param name="injectionCost">Function mapping from the period, inventory (before injection) and
+            /// injected volume to the cost cash flows incurred for injecting this volume.</param>
             IAddCmdtyConsumedOnInject WithInjectionCost(Func<T, double, double, IReadOnlyList<DomesticCashFlow>> injectionCost);
         }
 
@@ -371,6 +376,11 @@ namespace Cmdty.Storage
         public interface IAddWithdrawalCost
         {
             IAddCmdtyConsumedOnWithdraw WithPerUnitWithdrawalCost(double withdrawalCost, Func<T, Day> cashFlowDate);
+            /// <summary>
+            /// Adds the withdrawal cost rule.
+            /// </summary>
+            /// <param name="withdrawalCost">Function mapping from the period, inventory (before withdrawal) and
+            /// withdrawn volume to the cost cash flows incurred for withdrawing this volume.</param>
             IAddCmdtyConsumedOnWithdraw WithWithdrawalCost(Func<T, double, double, IReadOnlyList<DomesticCashFlow>> withdrawalCost);
         }
 
