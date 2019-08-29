@@ -111,6 +111,28 @@ Task("Test-C#")
     }
 });
 
+Task("Install-PythonDependencies")
+    .Does(() =>
+{
+    StartProcessThrowOnError("python", "-m pip install --upgrade pip");
+    StartProcessThrowOnError("pip", "install -r src/Cmdty.Storage.Python/requirements.txt");
+    StartProcessThrowOnError("pip", "install pytest");
+    StartProcessThrowOnError("pip", "install twine");
+    StartProcessThrowOnError("pip", "install -e src/Cmdty.Storage.Python");
+});
+
+var testPythonTask = Task("Test-Python")
+	.IsDependentOn("Test-C#")
+	.Does(() =>
+{
+    StartProcessThrowOnError("python", "-m pytest src/Cmdty.Storage.Python/tests --junitxml=junit/test-results.xml");
+});
+
+if (isRunningOnBuildServer)
+{
+    testPythonTask.IsDependentOn("Install-PythonDependencies");
+}
+
 Task("Build-Samples")
     .IsDependentOn("Add-NuGetSource")
 	.Does(() =>
@@ -139,7 +161,7 @@ Task("Pack-NuGet")
 });	
 
 Task("Pack-Python")
-//    .IsDependentOn("Test-Python")
+    .IsDependentOn("Test-Python")
     .IsDependentOn("Build")
 	.Does(setupContext =>
 {
@@ -216,9 +238,11 @@ else
 }
 
 Task("Default")
-	.IsDependentOn("Pack-NuGet");
+	.IsDependentOn("Pack-NuGet")
+    .IsDependentOn("Pack-Python");
 
 Task("CI")
-	.IsDependentOn("Push-NuGetToCmdtyFeed");
+	.IsDependentOn("Push-NuGetToCmdtyFeed")
+    .IsDependentOn("Pack-Python");
 
 RunTarget(target);

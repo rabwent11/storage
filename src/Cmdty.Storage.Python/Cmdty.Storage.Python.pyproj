@@ -44,6 +44,7 @@
   <ItemGroup>
     <Content Include="LICENSE.md" />
     <Content Include="README.md" />
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="storage\">
