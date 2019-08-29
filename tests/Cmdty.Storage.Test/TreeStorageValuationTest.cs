@@ -222,7 +222,7 @@ namespace Cmdty.Storage.Test
             return callOptionValue;
         }
 
-        [Fact(Skip = "Test in development and not passing.")]
+        [Fact]
         public void Calculate_StorageWithForcedInjectAndWithdraw_NPvEqualsTrivialCalc()
         {
             var currentDate = new Day(2019, 8, 29);
@@ -235,14 +235,14 @@ namespace Cmdty.Storage.Test
             const double maxInventory = 10_000.0;
 
             const double forcedInjectionRate = 211.5;
-            const int forcedInjectionNumDays = 15;
+            const int forcedInjectionNumDays = 20;
             var forcedInjectionStart = new Day(2019, 12, 20);
 
             const double injectionPerUnitCost = 1.23;
             const double injectionCmdtyConsumed = 0.01;
 
             const double forcedWithdrawalRate = 187.54;
-            const int forcedWithdrawalNumDays = 11;
+            const int forcedWithdrawalNumDays = 15;
             var forcedWithdrawalStart = new Day(2020, 2, 5);
 
             const double withdrawalPerUnitCost = 0.98;
@@ -283,7 +283,7 @@ namespace Cmdty.Storage.Test
                     (inventory: minInventory, (minInjectWithdrawRate: -forcedWithdrawalRate, maxInjectWithdrawRate: -forcedWithdrawalRate)),
                     (inventory: maxInventory, (minInjectWithdrawRate: -forcedWithdrawalRate, maxInjectWithdrawRate: -forcedWithdrawalRate))
                 }),
-                (period: forcedWithdrawalStart.Offset(forcedInjectionNumDays), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                (period: forcedWithdrawalStart.Offset(forcedWithdrawalNumDays), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
                 {
                     (inventory: minInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0)),
                     (inventory: maxInventory, (minInjectWithdrawRate: 0.0, maxInjectWithdrawRate: 0.0))
@@ -356,7 +356,7 @@ namespace Cmdty.Storage.Test
                 double cmdtyDiscountFactor =
                     Act365ContCompoundDiscountFactor(currentDate, cmdtySettlementDate, interestRate);
 
-                Day withdrawalCostSettlementDate = InjectionCostPaymentTerms(withdrawalDate);
+                Day withdrawalCostSettlementDate = WithdrawalCostPaymentTerms(withdrawalDate);
                 double withdrawalCostDiscountFactor =
                     Act365ContCompoundDiscountFactor(currentDate, withdrawalCostSettlementDate, interestRate);
 
@@ -368,7 +368,7 @@ namespace Cmdty.Storage.Test
 
             double expectedNpv = injectionPv + withdrawalPv;
 
-            Assert.Equal(expectedNpv, valuationResults.NetPresentValue);
+            Assert.Equal(expectedNpv, valuationResults.NetPresentValue, 10);
         }
 
         private static double Act365ContCompoundDiscountFactor(Day currentDate, Day paymentDate, double interestRate)
