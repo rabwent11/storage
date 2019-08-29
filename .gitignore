@@ -345,6 +345,9 @@ src/Cmdty.Storage.Python/list/*
 # Python version file generated during build
 src/Cmdty.Storage.Python/cmdty_storage/__version__.py
 
+# Virtual Environment
+src/Cmdty.Storage.Python/storage/*
+
 # Generated for Python test
 junit/
 

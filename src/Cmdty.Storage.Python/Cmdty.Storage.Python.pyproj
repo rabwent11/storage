@@ -12,6 +12,7 @@
     <OutputPath>.</OutputPath>
     <Name>Cmdty.Storage.Python</Name>
     <RootNamespace>Cmdty.Storage.Python</RootNamespace>
+    <InterpreterId>MSBuild|storage|$(MSBuildProjectFullPath)</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -43,6 +44,17 @@
   <ItemGroup>
     <Content Include="LICENSE.md" />
     <Content Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="storage\">
+      <Id>storage</Id>
+      <Version>3.6</Version>
+      <Description>storage (Python 3.6 (64-bit))</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
