@@ -21,5 +21,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-from cmdty_storage.__version__ import __version__
-from cmdty_storage.cmdty_storage import intrinsic_storage_val
+import unittest
+from cmdty_storage import intrinsic_storage_val
+from datetime import date
+
+class TestIntrinsic(unittest.TestCase):
+
+    def test_intrinsic(self):
+
+        intrinsic_val = intrinsic_storage_val('D', date(2019, 8, 28), date(2019, 9, 25), None, None, None, None, None)

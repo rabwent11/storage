@@ -23,13 +23,20 @@
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="cmdty_storage\" />
+    <Folder Include="tests\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="cmdty_storage\cmdty_storage.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="cmdty_storage\__init__.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="cmdty_storage\__version__.py" />
     <Compile Include="setup.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_cmdty_storage.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
