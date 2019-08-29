@@ -205,9 +205,10 @@ namespace Cmdty.Storage
             var cmdtyConsumedBuilder = new DoubleTimeSeries<T>.Builder(inventorySpace.Count);
 
             double inventoryLoop = startingInventory;
+            T startActiveStorage = inventorySpace.Start.Offset(-1);
             for (int i = 0; i < inventorySpace.Count; i++)
             {
-                T periodLoop = currentPeriod.Offset(i);
+                T periodLoop = startActiveStorage.Offset(i);
                 double cmdtyPrice = forwardCurve[periodLoop];
                 Func<double, double> continuationValueByInventory = storageValueByInventory[i];
                 (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = inventorySpace[periodLoop.Offset(1)];

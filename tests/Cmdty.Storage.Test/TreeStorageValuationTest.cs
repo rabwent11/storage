@@ -223,7 +223,7 @@ namespace Cmdty.Storage.Test
         }
 
         [Fact]
-        public void Calculate_StorageWithForcedInjectAndWithdraw_NPvEqualsTrivialCalc()
+        public void Calculate_StorageWithForcedInjectAndWithdraw_NpvEqualsTrivialIntrinsicCalc()
         {
             var currentDate = new Day(2019, 8, 29);
 
@@ -375,6 +375,105 @@ namespace Cmdty.Storage.Test
         {
             return Math.Exp(-paymentDate.OffsetFrom(currentDate) / 365.0 * interestRate);
         }
+
+        [Fact(Skip = "Trying to figure out why this isn't passing.")]
+        public void Calculate_DeepInTheMoney_NpvEqualsTrivialIntrinsicCalc()
+        {
+            var currentDate = new Day(2019, 8, 29);
+
+            var storageStart = new Day(2019, 12, 1);
+            var storageEnd = new Day(2020, 4, 1);
+
+            const double storageStartingInventory = 0.0;
+            const double minInventory = 0.0;
+            const double maxInventory = 100_000.0;
+
+            const double injectionPerUnitCost = 1.23;
+            const double injectionCmdtyConsumed = 0.01;
+
+            const double withdrawalPerUnitCost = 0.98;
+            const double withdrawalCmdtyConsumed = 0.015;
+
+            const double meanReversion = 16.5;
+            const double timeDelta = 1.0 / 365.0;
+
+            const double lowPrice = 23.87;
+            const double highPrice = 150.32;
+            const int numDaysAtHighPrice = 20;
+
+            const double injectionRate = 700.0;
+            const double withdrawalRate = 700.0;
+
+            Day dateToSwitchToHighForwardPrice = storageEnd.Offset(-numDaysAtHighPrice);
+
+            var forwardCurveBuilder = new TimeSeries<Day, double>.Builder(storageEnd - currentDate + 1);
+
+            foreach (Day day in currentDate.EnumerateTo(storageEnd))
+            {
+                double forwardPrice = day < dateToSwitchToHighForwardPrice ? lowPrice : highPrice;
+                forwardCurveBuilder.Add(day, forwardPrice);
+            }
+
+            TimeSeries<Day, double> forwardCurve = forwardCurveBuilder.Build();
+            DoubleTimeSeries<Day> spotVolCurve = CreateDailyTestForwardAndSpotVolCurves(currentDate, storageEnd).spotVolCurve;
+            
+            Day InjectionCostPaymentTerms(Day injectionDate)
+            {
+                return injectionDate.Offset(10);
+            }
+
+            Day WithdrawalCostPaymentTerms(Day withdrawalDate)
+            {
+                return withdrawalDate.Offset(4);
+            }
+
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                .WithActiveTimePeriod(storageStart, storageEnd)
+                .WithConstantInjectWithdrawRange(-withdrawalRate, injectionRate)
+                .WithConstantMinInventory(minInventory)
+                .WithConstantMaxInventory(maxInventory)
+                .WithPerUnitInjectionCost(injectionPerUnitCost, InjectionCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
+                .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .MustBeEmptyAtEnd()
+                .Build();
+
+            TreeStorageValuationResults<Day> valuationResults = TreeStorageValuation<Day>.ForStorage(storage)
+                .WithStartingInventory(storageStartingInventory)
+                .ForCurrentPeriod(currentDate)
+                .WithForwardCurve(forwardCurve)
+                .WithOneFactorTrinomialTree(spotVolCurve, meanReversion, timeDelta)
+                .WithCmdtySettlementRule(day => day)                     // No discounting 
+                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithFixedNumberOfPointsOnGlobalInventoryRange(100)
+                .WithLinearInventorySpaceInterpolation()
+                .WithNumericalTolerance(1E-10)
+                .Calculate();
+            
+            IntrinsicStorageValuationResults<Day> intrinsicResults = IntrinsicStorageValuation<Day>.ForStorage(storage)
+                .WithStartingInventory(storageStartingInventory)
+                .ForCurrentPeriod(currentDate)
+                .WithForwardCurve(forwardCurve)
+                .WithCmdtySettlementRule(day => day)                     // No discounting 
+                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithFixedGridSpacing(100)
+                .WithLinearInventorySpaceInterpolation()
+                .WithNumericalTolerance(1E-10)
+                .Calculate();
+
+
+            // Trivial intrinsic calc
+            double volumeCycled = numDaysAtHighPrice * withdrawalRate;
+            double withdrawPv = highPrice * volumeCycled * (1 - withdrawalCmdtyConsumed) - volumeCycled * withdrawalPerUnitCost;
+
+            double injectionPv = -lowPrice * volumeCycled * (1 + injectionCmdtyConsumed) - volumeCycled * injectionPerUnitCost;
+
+            double totalExpectedPv = withdrawPv + injectionPv;
+
+            Assert.Equal(totalExpectedPv, valuationResults.NetPresentValue);
+        }
+
 
     }
 }
