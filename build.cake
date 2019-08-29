@@ -117,6 +117,7 @@ Task("Install-PythonDependencies")
     StartProcessThrowOnError("python", "-m pip install --upgrade pip");
     StartProcessThrowOnError("pip", "install -r src/Cmdty.Storage.Python/requirements.txt");
     StartProcessThrowOnError("pip", "install pytest");
+    StartProcessThrowOnError("pip", "install wheel");
     StartProcessThrowOnError("pip", "install twine");
     StartProcessThrowOnError("pip", "install -e src/Cmdty.Storage.Python");
 });
