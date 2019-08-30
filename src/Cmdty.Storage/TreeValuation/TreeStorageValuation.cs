@@ -209,7 +209,6 @@ namespace Cmdty.Storage
                 Func<double, double>[] continuationValueByInventory = storageValueByInventory[backCounter + 1];
 
                 IReadOnlyList<TreeNode> thisStepTreeNodes = spotPriceTree[periodLoop];
-                IReadOnlyList<TreeNode> nextStepTreeNodes = spotPriceTree[periodLoop.Offset(1)]; // TODO get rid of once TreeNode has index property
                 storageValueByInventory[backCounter] = new Func<double, double>[thisStepTreeNodes.Count];
 
                 for (var priceLevelIndex = 0; priceLevelIndex < thisStepTreeNodes.Count; priceLevelIndex++)
@@ -222,8 +221,7 @@ namespace Cmdty.Storage
                         double inventory = inventorySpaceGrid[i];
                         storageValuesGrid[i] = OptimalDecisionAndValue(storage, periodLoop, inventory,
                                         nextStepInventorySpaceMin, nextStepInventorySpaceMax, treeNode,
-                                        continuationValueByInventory, settleDateRule, discountFactors, numericalTolerance,
-                                        nextStepTreeNodes).StorageNpv;
+                                        continuationValueByInventory, settleDateRule, discountFactors, numericalTolerance).StorageNpv;
                     }
 
                     storageValueByInventory[backCounter][priceLevelIndex] =
@@ -236,15 +234,13 @@ namespace Cmdty.Storage
             T startActiveStorage = inventorySpace.Start.Offset(-1);
             double storageNpv = 0;
             IReadOnlyList<TreeNode> startTreeNodes = spotPriceTree[startActiveStorage];
-            IReadOnlyList<TreeNode> secondStepTreeNodes = spotPriceTree[inventorySpace.Start];
             (double inventorySpaceMinStart, double inventorySpaceMaxStart) = inventorySpace[0];
             foreach (TreeNode treeNode in startTreeNodes)
             {
 
                 double storageNpvForThisPrice = OptimalDecisionAndValue(storage, startActiveStorage, startingInventory,
                             inventorySpaceMinStart, inventorySpaceMaxStart, treeNode,
-                            storageValueByInventory[0], settleDateRule, discountFactors, numericalTolerance,
-                            secondStepTreeNodes).StorageNpv;
+                            storageValueByInventory[0], settleDateRule, discountFactors, numericalTolerance).StorageNpv;
 
                 storageNpv += storageNpvForThisPrice * treeNode.Probability;
             }
@@ -254,9 +250,9 @@ namespace Cmdty.Storage
 
         private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) 
             OptimalDecisionAndValue(CmdtyStorage<T> storage, T periodLoop, double inventory,
-            double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, TreeNode treeNode,
-            Func<double, double>[] continuationValueByInventories, Func<T, Day> settleDateRule, Func<Day, double> discountFactors,
-            double numericalTolerance, IReadOnlyList<TreeNode> nextStepTreeNodes) // TODO get rid of nextStepTreeNodes and put index on TreeNode
+                    double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, TreeNode treeNode,
+                    Func<double, double>[] continuationValueByInventories, Func<T, Day> settleDateRule, 
+                    Func<Day, double> discountFactors, double numericalTolerance)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(periodLoop, inventory);
             double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory,
@@ -275,9 +271,7 @@ namespace Cmdty.Storage
 
                 foreach (NodeTransition transition in treeNode.Transitions)
                 {
-                    // TODO replace with index property on TreeNode
-                    int indexOfNextNode = nextStepTreeNodes.Select((value, index) => new { Value = value, Index = index })
-                            .Single(p => p.Value == transition.DestinationNode).Index;
+                    int indexOfNextNode = transition.DestinationNode.ValueLevelIndex;
                     double continuationValue = continuationValueByInventories[indexOfNextNode](inventoryAfterDecision);
                     expectedContinuationValue += continuationValue * transition.Probability;
                 }
