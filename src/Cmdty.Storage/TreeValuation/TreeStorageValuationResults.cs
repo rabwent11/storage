@@ -23,7 +23,11 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
+using System;
+using System.Collections.Generic;
+using Cmdty.Core.Trees;
 using Cmdty.TimePeriodValueTypes;
+using Cmdty.TimeSeries;
 
 namespace Cmdty.Storage
 {
@@ -31,14 +35,36 @@ namespace Cmdty.Storage
         where T : ITimePeriod<T>
     {
         public double NetPresentValue { get; }
+        public TimeSeries<T, IReadOnlyList<TreeNode>> Tree { get; }
+        public TimeSeries<T, IReadOnlyList<Func<double, double>>> StorageNpvByInventory { get; }
+        public TimeSeries<T, IReadOnlyList<double>> InventorySpaceGrids { get; }
+        public TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> StorageNpvs { get; }
+        public TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> InjectWithdrawDecisions { get; }
 
-        public TreeStorageValuationResults(double netPresentValue)
+        public TreeStorageValuationResults(double netPresentValue, TimeSeries<T, IReadOnlyList<TreeNode>> tree,
+                                TimeSeries<T, IReadOnlyList<Func<double, double>>> storageNpvByInventory,
+                                TimeSeries<T, IReadOnlyList<double>> inventorySpaceGrids,
+                                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> storageNpvs,
+                                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> injectWithdrawDecisions)
         {
             NetPresentValue = netPresentValue;
+            Tree = tree;
+            StorageNpvByInventory = storageNpvByInventory;
+            InventorySpaceGrids = inventorySpaceGrids;
+            StorageNpvs = storageNpvs;
+            InjectWithdrawDecisions = injectWithdrawDecisions;
         }
 
         // TODO ToString override
         // TODO Deconstruct method
+
+        public static TreeStorageValuationResults<T> CreateExpiredResults()
+        {
+            return new TreeStorageValuationResults<T>(0.0, TimeSeries<T, IReadOnlyList<TreeNode>>.Empty, 
+                TimeSeries<T, IReadOnlyList<Func<double, double>>>.Empty, TimeSeries<T, IReadOnlyList<double>>.Empty,
+                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>.Empty, 
+                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>.Empty);
+        }
 
     }
 }

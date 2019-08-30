@@ -140,7 +140,7 @@ namespace Cmdty.Storage
                 throw new ArgumentException("Inventory cannot be negative.", nameof(startingInventory));
 
             if (currentPeriod.CompareTo(storage.EndPeriod) > 0)
-                return new TreeStorageValuationResults<T>(0.0);
+                return TreeStorageValuationResults<T>.CreateExpiredResults();
 
             if (currentPeriod.Equals(storage.EndPeriod))
             {
@@ -148,21 +148,22 @@ namespace Cmdty.Storage
                 {
                     if (startingInventory > 0) // TODO allow some tolerance for floating point numerical error?
                         throw new InventoryConstraintsCannotBeFulfilledException("Storage must be empty at end, but inventory is greater than zero.");
-                    return new TreeStorageValuationResults<T>(0.0);
+                    return TreeStorageValuationResults<T>.CreateExpiredResults();
                 }
 
-                double terminalMinInventory = storage.MinInventory(storage.EndPeriod);
-                double terminalMaxInventory = storage.MaxInventory(storage.EndPeriod);
+                // TODO unit when current period equals end period
+                //double terminalMinInventory = storage.MinInventory(storage.EndPeriod);
+                //double terminalMaxInventory = storage.MaxInventory(storage.EndPeriod);
 
-                if (startingInventory < terminalMinInventory)
-                    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is lower than the minimum allowed in the end period.");
+                //if (startingInventory < terminalMinInventory)
+                //    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is lower than the minimum allowed in the end period.");
 
-                if (startingInventory > terminalMaxInventory)
-                    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is greater than the maximum allowed in the end period.");
+                //if (startingInventory > terminalMaxInventory)
+                //    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is greater than the maximum allowed in the end period.");
 
-                double cmdtyPrice = forwardCurve[storage.EndPeriod];
-                double npv = storage.TerminalStorageNpv(cmdtyPrice, startingInventory);
-                return new TreeStorageValuationResults<T>(npv);
+                //double cmdtyPrice = forwardCurve[storage.EndPeriod];
+                //double npv = storage.TerminalStorageNpv(cmdtyPrice, startingInventory);
+                //return new TreeStorageValuationResults<T>(npv);
             }
 
             TimeSeries<T, InventoryRange> inventorySpace = StorageHelper.CalculateInventorySpace(storage, startingInventory, currentPeriod);
@@ -178,8 +179,12 @@ namespace Cmdty.Storage
                 throw new ArgumentException("Forward curve does not extend until storage end period.", nameof(forwardCurve));
 
             // Perform backward induction
-            int numPeriods = inventorySpace.Count;
+            int numPeriods = inventorySpace.Count + 1; // +1 as inventorySpaceGrid doesn't contain first period
             var storageValueByInventory = new Func<double, double>[numPeriods][];
+            var inventorySpaceGrids = new double[numPeriods][];
+            var storageNpvs = new double[numPeriods][][];
+            var injectWithdrawDecisions = new double[numPeriods][][];
+
             TimeSeries<T, IReadOnlyList<TreeNode>> spotPriceTree = treeFactory(forwardCurve);
 
             // Calculate NPVs at end period
@@ -195,57 +200,82 @@ namespace Cmdty.Storage
             }
 
             // Loop back through other periods
-            int backCounter = inventorySpace.Count - 2;
+            T startActiveStorage = inventorySpace.Start.Offset(-1);
+            T[] periodsForResultsTimeSeries = startActiveStorage.EnumerateTo(inventorySpace.End).ToArray();
+
+            int backCounter = numPeriods - 2;
             IDoubleStateSpaceGridCalc gridCalc = gridCalcFactory(storage);
 
-            foreach (T periodLoop in inventorySpace.Indices.Reverse().Skip(1))
+            foreach (T periodLoop in periodsForResultsTimeSeries.Reverse().Skip(1))
             {
-                (double inventorySpaceMin, double inventorySpaceMax) = inventorySpace[periodLoop];
-                (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = inventorySpace[periodLoop.Offset(1)];
+                double[] inventorySpaceGrid;
+                if (periodLoop.Equals(startActiveStorage))
+                {
+                    inventorySpaceGrid = new[] {startingInventory};
+                }
+                else
+                {
+                    (double inventorySpaceMin, double inventorySpaceMax) = inventorySpace[periodLoop];
+                    inventorySpaceGrid = gridCalc.GetGridPoints(inventorySpaceMin, inventorySpaceMax)
+                                                    .ToArray();
+                }
 
-                double[] inventorySpaceGrid = gridCalc.GetGridPoints(inventorySpaceMin, inventorySpaceMax)
-                                            .ToArray();
+                (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = inventorySpace[periodLoop.Offset(1)];
 
                 Func<double, double>[] continuationValueByInventory = storageValueByInventory[backCounter + 1];
 
                 IReadOnlyList<TreeNode> thisStepTreeNodes = spotPriceTree[periodLoop];
                 storageValueByInventory[backCounter] = new Func<double, double>[thisStepTreeNodes.Count];
+                var storageNpvsByPriceLevelAndInventory = new double[thisStepTreeNodes.Count][];
+                var decisionVolumesByPriceLevelAndInventory = new double[thisStepTreeNodes.Count][];
 
                 for (var priceLevelIndex = 0; priceLevelIndex < thisStepTreeNodes.Count; priceLevelIndex++)
                 {
                     TreeNode treeNode = thisStepTreeNodes[priceLevelIndex];
                     var storageValuesGrid = new double[inventorySpaceGrid.Length];
+                    var decisionVolumesGrid = new double[inventorySpaceGrid.Length];
                     
                     for (int i = 0; i < inventorySpaceGrid.Length; i++)
                     {
                         double inventory = inventorySpaceGrid[i];
-                        storageValuesGrid[i] = OptimalDecisionAndValue(storage, periodLoop, inventory,
+                        (storageValuesGrid[i], decisionVolumesGrid[i], _) = 
+                                        OptimalDecisionAndValue(storage, periodLoop, inventory,
                                         nextStepInventorySpaceMin, nextStepInventorySpaceMax, treeNode,
-                                        continuationValueByInventory, settleDateRule, discountFactors, numericalTolerance).StorageNpv;
+                                        continuationValueByInventory, settleDateRule, discountFactors, numericalTolerance);
                     }
 
                     storageValueByInventory[backCounter][priceLevelIndex] =
                         interpolatorFactory.CreateInterpolator(inventorySpaceGrid, storageValuesGrid);
+                    storageNpvsByPriceLevelAndInventory[priceLevelIndex] = storageValuesGrid;
+                    decisionVolumesByPriceLevelAndInventory[priceLevelIndex] = decisionVolumesGrid;
                 }
+                inventorySpaceGrids[backCounter] = inventorySpaceGrid;
+                storageNpvs[backCounter] = storageNpvsByPriceLevelAndInventory;
+                injectWithdrawDecisions[backCounter] = decisionVolumesByPriceLevelAndInventory;
                 backCounter--;
             }
 
             // Calculate NPVs for first active period using current inventory
-            T startActiveStorage = inventorySpace.Start.Offset(-1);
             double storageNpv = 0;
             IReadOnlyList<TreeNode> startTreeNodes = spotPriceTree[startActiveStorage];
-            (double inventorySpaceMinStart, double inventorySpaceMaxStart) = inventorySpace[0];
-            foreach (TreeNode treeNode in startTreeNodes)
+
+            for (var i = 0; i < startTreeNodes.Count; i++)
             {
-
-                double storageNpvForThisPrice = OptimalDecisionAndValue(storage, startActiveStorage, startingInventory,
-                            inventorySpaceMinStart, inventorySpaceMaxStart, treeNode,
-                            storageValueByInventory[0], settleDateRule, discountFactors, numericalTolerance).StorageNpv;
-
-                storageNpv += storageNpvForThisPrice * treeNode.Probability;
+                TreeNode treeNode = startTreeNodes[i];
+                storageNpv += storageNpvs[0][i][0] * treeNode.Probability;
             }
 
-            return new TreeStorageValuationResults<T>(storageNpv);
+            var storageNpvByInventory =
+                new TimeSeries<T, IReadOnlyList<Func<double, double>>>(periodsForResultsTimeSeries, storageValueByInventory);
+            var inventorySpaceGridsTimeSeries =
+                new TimeSeries<T, IReadOnlyList<double>>(periodsForResultsTimeSeries, inventorySpaceGrids);
+            var storageNpvsTimeSeries =
+                new TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>(periodsForResultsTimeSeries, storageNpvs);
+            var injectWithdrawDecisionsTimeSeries =
+                new TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>(periodsForResultsTimeSeries, injectWithdrawDecisions);
+
+            return new TreeStorageValuationResults<T>(storageNpv, spotPriceTree, storageNpvByInventory, 
+                            inventorySpaceGridsTimeSeries, storageNpvsTimeSeries, injectWithdrawDecisionsTimeSeries);
         }
 
         private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) 
