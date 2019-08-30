@@ -122,12 +122,12 @@ namespace Cmdty.Storage
             TimeSeries<T, IReadOnlyList<TreeNode>> CreateIntrinsicTree(TimeSeries<T, double> forwardCurve)
             {
                 var treeNodes = new IReadOnlyList<TreeNode>[forwardCurve.Count];
-                treeNodes[forwardCurve.Count - 1] = new []{new TreeNode(forwardCurve[forwardCurve.Count - 1], 1.0, new NodeTransition[0])};
+                treeNodes[forwardCurve.Count - 1] = new []{new TreeNode(forwardCurve[forwardCurve.Count - 1], 1.0, 0, new NodeTransition[0])};
 
                 for (int i = forwardCurve.Count - 2; i >= 0; i--)
                 {
                     double forwardPrice = forwardCurve[i];
-                    treeNodes[i] = new[] {new TreeNode(forwardPrice, 1.0, 
+                    treeNodes[i] = new[] {new TreeNode(forwardPrice, 1.0, 0, 
                         new[] {new NodeTransition(1.0, treeNodes[i + 1][0])})};
                 }
                 return new TimeSeries<T, IReadOnlyList<TreeNode>>(forwardCurve.Indices, treeNodes);
