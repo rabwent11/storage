@@ -579,5 +579,53 @@ namespace Cmdty.Storage.Test
             Assert.Equal(totalExpectedPv, valuationResults.NetPresentValue, 8);
         }
 
+        [Fact]
+        public void Calculate_CurrentPeriodAfterEndPeriod_ResultsWithZeroNpvAndEmptyTimeSeries()
+        {
+            var storageStart = new Day(2019, 12, 1);
+            var storageEnd = new Day(2020, 4, 1);
+
+            var currentPeriod = storageEnd.Offset(1);
+
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                            .WithActiveTimePeriod(storageStart, storageEnd)
+                            .WithConstantInjectWithdrawRange(-12, 43.5)
+                            .WithZeroMinInventory()
+                            .WithConstantMaxInventory(1000.0)
+                            .WithPerUnitInjectionCost(1.0, day => day)
+                            .WithNoCmdtyConsumedOnInject()
+                            .WithPerUnitWithdrawalCost(2.0, day => day)
+                            .WithNoCmdtyConsumedOnWithdraw()
+                            .MustBeEmptyAtEnd()
+                            .Build();
+
+            DoubleTimeSeries<Day> forwardCurve = DoubleTimeSeries<Day>.Empty;
+            DoubleTimeSeries<Day> spotVolCurve = DoubleTimeSeries<Day>.Empty; 
+            
+            const double meanReversion = 16.5;
+            const double timeDelta = 1.0 / 365.0;
+
+            TreeStorageValuationResults<Day> valuationResults = TreeStorageValuation<Day>.ForStorage(storage)
+                            .WithStartingInventory(0.0)
+                            .ForCurrentPeriod(currentPeriod)
+                            .WithForwardCurve(forwardCurve)
+                            .WithOneFactorTrinomialTree(spotVolCurve, meanReversion, timeDelta)
+                            .WithCmdtySettlementRule(day => day) // No discounting 
+                            .WithDiscountFactorFunc(day => 1.0) // No discounting
+                            .WithFixedGridSpacing(100)
+                            .WithLinearInventorySpaceInterpolation()
+                            .WithNumericalTolerance(1E-10)
+                            .Calculate();
+
+            Assert.Equal(0.0, valuationResults.NetPresentValue);
+            Assert.True(valuationResults.Tree.IsEmpty);
+            Assert.True(valuationResults.StorageNpvByInventory.IsEmpty);
+            Assert.True(valuationResults.InventorySpaceGrids.IsEmpty);
+            Assert.True(valuationResults.StorageNpvs.IsEmpty);
+            Assert.True(valuationResults.InjectWithdrawDecisions.IsEmpty);
+            Assert.True(valuationResults.InventorySpace.IsEmpty);
+        }
+
+
     }
 }

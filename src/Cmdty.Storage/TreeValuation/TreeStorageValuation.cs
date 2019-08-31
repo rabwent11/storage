@@ -156,7 +156,7 @@ namespace Cmdty.Storage
             {
                 if (storage.MustBeEmptyAtEnd)
                 {
-                    if (startingInventory > 0) // TODO allow some tolerance for floating point numerical error?
+                    if (startingInventory > 0)
                         throw new InventoryConstraintsCannotBeFulfilledException("Storage must be empty at end, but inventory is greater than zero.");
                     return TreeStorageValuationResults<T>.CreateExpiredResults();
                 }
@@ -317,7 +317,7 @@ namespace Cmdty.Storage
                     ImmediateNpv: immediateNpvs[indexOfOptimalDecision]);
         }
 
-        private TreeSimulationResults<T> CalculateDecisionProfile(TreeStorageValuationResults<T> valuationResults, 
+        private TreeSimulationResults<T> SimulateDecisions(TreeStorageValuationResults<T> valuationResults, 
                                                 TimeSeries<T, int> spotPricePath)
         {
             double inventory = valuationResults.InventorySpaceGrids[0][0];
@@ -395,7 +395,7 @@ namespace Cmdty.Storage
 
             public TreeSimulationResults<T> SimulateDecisions(TimeSeries<T, int> spotPricePath)
             {
-                return _storageValuation.CalculateDecisionProfile(ValuationResults, spotPricePath);
+                return _storageValuation.SimulateDecisions(ValuationResults, spotPricePath);
             }
 
         }
