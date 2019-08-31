@@ -551,10 +551,10 @@ namespace Cmdty.Storage.Test
             var tree = decisionSimulator.ValuationResults.Tree;
             var intrinsicSpotPath = new TimeSeries<Day, int>(tree.Indices, tree.Data.Select(x => 0));
 
-            (DoubleTimeSeries<Day> decisionProfile, DoubleTimeSeries<Day> cmdtyVolumeConsumed, double storageNpv) 
-                = decisionSimulator.CalculateDecisionProfile(intrinsicSpotPath);
+            TreeSimulationResults<Day> simulateDecisions = decisionSimulator.SimulateDecisions(intrinsicSpotPath);
 
-            Assert.Equal(decisionSimulator.ValuationResults.NetPresentValue, storageNpv, 8);
+            Assert.Equal(decisionSimulator.ValuationResults.NetPresentValue, 
+                            simulateDecisions.StorageNpv, 8);
 
             IntrinsicStorageValuationResults<Day> intrinsicResults = IntrinsicStorageValuation<Day>.ForStorage(storage)
                 .WithStartingInventory(storageStartingInventory)

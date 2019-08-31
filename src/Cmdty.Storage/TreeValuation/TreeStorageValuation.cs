@@ -332,8 +332,8 @@ namespace Cmdty.Storage
                     ImmediateNpv: immediateNpvs[indexOfOptimalDecision]);
         }
 
-        private (DoubleTimeSeries<T> DecisionProfile, DoubleTimeSeries<T> CmdtyVolumeConsumed, double StorageNpv)
-                CalculateDecisionProfile(TreeStorageValuationResults<T> valuationResults, TimeSeries<T, int> spotPricePath)
+        private TreeSimulationResults<T> CalculateDecisionProfile(TreeStorageValuationResults<T> valuationResults, 
+                                                TimeSeries<T, int> spotPricePath)
         {
             double inventory = valuationResults.InventorySpaceGrids[0][0];
 
@@ -394,7 +394,7 @@ namespace Cmdty.Storage
             var decisionProfile = new DoubleTimeSeries<T>(indicesForResults, decisions);
             var cmdtyConsumed = new DoubleTimeSeries<T>(indicesForResults, cmdtyVolumeConsumedArray);
 
-            return (DecisionProfile: decisionProfile, CmdtyVolumeConsumed: cmdtyConsumed, StorageNpv: storageNpv);
+            return new TreeSimulationResults<T>(storageNpv, decisionProfile, cmdtyConsumed);
         }
 
         public sealed class DecisionSimulator
@@ -408,8 +408,7 @@ namespace Cmdty.Storage
                 _storageValuation = storageValuation;
             }
 
-            public (DoubleTimeSeries<T> DecisionProfile, DoubleTimeSeries<T> CmdtyVolumeConsumed, double StorageNpv)
-                                                CalculateDecisionProfile(TimeSeries<T, int> spotPricePath)
+            public TreeSimulationResults<T> SimulateDecisions(TimeSeries<T, int> spotPricePath)
             {
                 return _storageValuation.CalculateDecisionProfile(ValuationResults, spotPricePath);
             }
