@@ -337,36 +337,60 @@ namespace Cmdty.Storage
         {
             double inventory = valuationResults.InventorySpaceGrids[0][0];
 
-            // TODO check that spotPricePath indices start and end on correct dates
+            TimeSeries<T, IReadOnlyList<TreeNode>> tree = valuationResults.Tree;
+            // TODO put method on TimeSeries class which gets rid of this 2-step validation
+            if (spotPricePath.IsEmpty)
+                throw new ArgumentException("spotPricePath cannot be an empty Time Series.", nameof(spotPricePath));
+
+            if (!spotPricePath.Start.Equals(tree.Start))
+                throw new ArgumentException($"spotPricePath must start on {tree.Start}, the start period of the tree used for valuation.", nameof(spotPricePath));
+
+            if (spotPricePath.End.OffsetFrom(tree.End) < -1)
+                throw new ArgumentException($"spotPricePath cannot end earlier than 1 period before {tree.End}, the end period for the tree used for valuation.", nameof(spotPricePath));
+
+            TreeNode treeNode = tree[0][0];
             var decisions = new double[valuationResults.StorageNpvByInventory.Count - 1]; // -1 because StorageNpvByInventory included the end period on which a decision can't be made
             var cmdtyVolumeConsumedArray = new double[valuationResults.StorageNpvByInventory.Count - 1];
 
-            TreeNode treeNode = valuationResults.Tree[0][0];
             int i = 0;
             double storageNpv = 0.0;
-            foreach (T period in spotPricePath.Indices)
+            foreach (T period in tree.Indices.Take(tree.Count - 1))
             {
                 if (period.CompareTo(_storage.StartPeriod) >= 0)
                 {
+                    if (period.Equals(_storage.EndPeriod))
+                    {
+                        Func<double, double> storageNpvByInventory =
+                                        valuationResults.StorageNpvByInventory[period][treeNode.ValueLevelIndex];
+                        storageNpv += storageNpvByInventory(inventory);
+                    }
+                    else
+                    {
 
-                    T nextPeriod = period.Offset(1);
-                    IReadOnlyList<Func<double, double>> continuationValueByInventory = valuationResults.StorageNpvByInventory[nextPeriod];
-                    (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = valuationResults.InventorySpace[nextPeriod];
+                        T nextPeriod = period.Offset(1);
+                        IReadOnlyList<Func<double, double>> continuationValueByInventory =
+                            valuationResults.StorageNpvByInventory[nextPeriod];
+                        (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) =
+                            valuationResults.InventorySpace[nextPeriod];
 
-                    double thisStepNpv;
-                    (_, decisions[i], cmdtyVolumeConsumedArray[i], thisStepNpv) = 
-                                                OptimalDecisionAndValue(_storage, period, inventory, nextStepInventorySpaceMin,
-                                                            nextStepInventorySpaceMax, treeNode, continuationValueByInventory, _settleDateRule, 
-                                                            _discountFactors, _numericalTolerance);
-                    storageNpv += thisStepNpv;
-                    i++;
+                        double thisStepImmediateNpv;
+                        (_, decisions[i], cmdtyVolumeConsumedArray[i], thisStepImmediateNpv) =
+                            OptimalDecisionAndValue(_storage, period, inventory, nextStepInventorySpaceMin,
+                                nextStepInventorySpaceMax, treeNode, continuationValueByInventory, _settleDateRule,
+                                _discountFactors, _numericalTolerance);
+                        
+                        storageNpv += thisStepImmediateNpv;
+                        inventory += decisions[i];
+                        i++;
+                    }
                 }
 
                 int transitionIndex = spotPricePath[period];
                 treeNode = treeNode.Transitions[transitionIndex].DestinationNode;
             }
 
-            var indicesForResults = valuationResults.StorageNpvByInventory.Indices;
+            // TODO once val results decision is trimmed at end, use this for results indices
+            var indicesForResults = valuationResults.StorageNpvByInventory.Indices.Take(valuationResults.StorageNpvByInventory.Count - 1);
             var decisionProfile = new DoubleTimeSeries<T>(indicesForResults, decisions);
             var cmdtyConsumed = new DoubleTimeSeries<T>(indicesForResults, cmdtyVolumeConsumedArray);
 

@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using MathNet.Numerics.Distributions;
@@ -545,6 +546,15 @@ namespace Cmdty.Storage.Test
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
                 .CalculateDecisionSimulator();
+
+            // Calculate intrinsic decision profile
+            var tree = decisionSimulator.ValuationResults.Tree;
+            var intrinsicSpotPath = new TimeSeries<Day, int>(tree.Indices, tree.Data.Select(x => 0));
+
+            (DoubleTimeSeries<Day> decisionProfile, DoubleTimeSeries<Day> cmdtyVolumeConsumed, double storageNpv) 
+                = decisionSimulator.CalculateDecisionProfile(intrinsicSpotPath);
+
+            Assert.Equal(decisionSimulator.ValuationResults.NetPresentValue, storageNpv, 8);
 
             IntrinsicStorageValuationResults<Day> intrinsicResults = IntrinsicStorageValuation<Day>.ForStorage(storage)
                 .WithStartingInventory(storageStartingInventory)
