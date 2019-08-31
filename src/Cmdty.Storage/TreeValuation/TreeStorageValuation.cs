@@ -146,8 +146,6 @@ namespace Cmdty.Storage
             Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory, IInterpolatorFactory interpolatorFactory, 
             double numericalTolerance)
         {
-            // TODO think how to avoid repeated code in IntrinsicStorageValuation
-
             if (startingInventory < 0)
                 throw new ArgumentException("Inventory cannot be negative.", nameof(startingInventory));
 
@@ -162,20 +160,6 @@ namespace Cmdty.Storage
                         throw new InventoryConstraintsCannotBeFulfilledException("Storage must be empty at end, but inventory is greater than zero.");
                     return TreeStorageValuationResults<T>.CreateExpiredResults();
                 }
-
-                // TODO unit when current period equals end period
-                //double terminalMinInventory = storage.MinInventory(storage.EndPeriod);
-                //double terminalMaxInventory = storage.MaxInventory(storage.EndPeriod);
-
-                //if (startingInventory < terminalMinInventory)
-                //    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is lower than the minimum allowed in the end period.");
-
-                //if (startingInventory > terminalMaxInventory)
-                //    throw new InventoryConstraintsCannotBeFulfilledException("Current inventory is greater than the maximum allowed in the end period.");
-
-                //double cmdtyPrice = forwardCurve[storage.EndPeriod];
-                //double npv = storage.TerminalStorageNpv(cmdtyPrice, startingInventory);
-                //return new TreeStorageValuationResults<T>(npv);
             }
 
             TimeSeries<T, InventoryRange> inventorySpace = StorageHelper.CalculateInventorySpace(storage, startingInventory, currentPeriod);
