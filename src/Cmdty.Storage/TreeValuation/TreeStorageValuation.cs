@@ -128,6 +128,17 @@ namespace Cmdty.Storage
                     _interpolatorFactory, _numericalTolerance);
         }
 
+        DecisionSimulator ITreeCalculate<T>.CalculateDecisionSimulator()
+        {
+            var valuationResults = (this as ITreeCalculate<T>).Calculate();
+            return new DecisionSimulator(valuationResults, this);
+        }
+
+        double ITreeCalculate<T>.CalculateNpv()
+        {
+            return (this as ITreeCalculate<T>).Calculate().NetPresentValue;
+        }
+
         private static TreeStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, 
             TimeSeries<T, double> forwardCurve, Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> treeFactory, 
             CmdtyStorage<T> storage, Func<T, Day> settleDateRule, Func<Day, double> discountFactors, 
@@ -238,7 +249,7 @@ namespace Cmdty.Storage
                     for (int i = 0; i < inventorySpaceGrid.Length; i++)
                     {
                         double inventory = inventorySpaceGrid[i];
-                        (storageValuesGrid[i], decisionVolumesGrid[i], _) = 
+                        (storageValuesGrid[i], decisionVolumesGrid[i], _, _) = 
                                         OptimalDecisionAndValue(storage, periodLoop, inventory,
                                         nextStepInventorySpaceMin, nextStepInventorySpaceMax, treeNode,
                                         continuationValueByInventory, settleDateRule, discountFactors, numericalTolerance);
@@ -275,13 +286,15 @@ namespace Cmdty.Storage
                 new TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>(periodsForResultsTimeSeries, injectWithdrawDecisions);
 
             return new TreeStorageValuationResults<T>(storageNpv, spotPriceTree, storageNpvByInventory, 
-                            inventorySpaceGridsTimeSeries, storageNpvsTimeSeries, injectWithdrawDecisionsTimeSeries);
+                            inventorySpaceGridsTimeSeries, storageNpvsTimeSeries, injectWithdrawDecisionsTimeSeries,
+                            inventorySpace);
         }
 
-        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) 
+        // TODO create class on hold this tuple?
+        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction, double ImmediateNpv) 
             OptimalDecisionAndValue(CmdtyStorage<T> storage, T periodLoop, double inventory,
                     double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, TreeNode treeNode,
-                    Func<double, double>[] continuationValueByInventories, Func<T, Day> settleDateRule, 
+                    IReadOnlyList<Func<double, double>> continuationValueByInventories, Func<T, Day> settleDateRule, 
                     Func<Day, double> discountFactors, double numericalTolerance)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(periodLoop, inventory);
@@ -290,6 +303,7 @@ namespace Cmdty.Storage
 
             var valuesForDecisions = new double[decisionSet.Length];
             var cmdtyConsumedForDecisions = new double[decisionSet.Length];
+            var immediateNpvs = new double[decisionSet.Length];
             for (var j = 0; j < decisionSet.Length; j++)
             {
                 double decisionInjectWithdraw = decisionSet[j];
@@ -308,11 +322,74 @@ namespace Cmdty.Storage
 
                 valuesForDecisions[j] = immediateNpv + expectedContinuationValue;
                 cmdtyConsumedForDecisions[j] = cmdtyConsumed;
+                immediateNpvs[j] = immediateNpv;
             }
 
             (double storageNpv, int indexOfOptimalDecision) = StorageHelper.MaxValueAndIndex(valuesForDecisions);
 
-            return (StorageNpv: storageNpv, OptimalInjectWithdraw: decisionSet[indexOfOptimalDecision], CmdtyConsumedOnAction: cmdtyConsumedForDecisions[indexOfOptimalDecision]);
+            return (StorageNpv: storageNpv, OptimalInjectWithdraw: decisionSet[indexOfOptimalDecision], 
+                    CmdtyConsumedOnAction: cmdtyConsumedForDecisions[indexOfOptimalDecision],
+                    ImmediateNpv: immediateNpvs[indexOfOptimalDecision]);
+        }
+
+        private (DoubleTimeSeries<T> DecisionProfile, DoubleTimeSeries<T> CmdtyVolumeConsumed, double StorageNpv)
+                CalculateDecisionProfile(TreeStorageValuationResults<T> valuationResults, TimeSeries<T, int> spotPricePath)
+        {
+            double inventory = valuationResults.InventorySpaceGrids[0][0];
+
+            // TODO check that spotPricePath indices start and end on correct dates
+            var decisions = new double[valuationResults.StorageNpvByInventory.Count - 1]; // -1 because StorageNpvByInventory included the end period on which a decision can't be made
+            var cmdtyVolumeConsumedArray = new double[valuationResults.StorageNpvByInventory.Count - 1];
+
+            TreeNode treeNode = valuationResults.Tree[0][0];
+            int i = 0;
+            double storageNpv = 0.0;
+            foreach (T period in spotPricePath.Indices)
+            {
+                if (period.CompareTo(_storage.StartPeriod) >= 0)
+                {
+
+                    T nextPeriod = period.Offset(1);
+                    IReadOnlyList<Func<double, double>> continuationValueByInventory = valuationResults.StorageNpvByInventory[nextPeriod];
+                    (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = valuationResults.InventorySpace[nextPeriod];
+
+                    double thisStepNpv;
+                    (_, decisions[i], cmdtyVolumeConsumedArray[i], thisStepNpv) = 
+                                                OptimalDecisionAndValue(_storage, period, inventory, nextStepInventorySpaceMin,
+                                                            nextStepInventorySpaceMax, treeNode, continuationValueByInventory, _settleDateRule, 
+                                                            _discountFactors, _numericalTolerance);
+                    storageNpv += thisStepNpv;
+                    i++;
+                }
+
+                int transitionIndex = spotPricePath[period];
+                treeNode = treeNode.Transitions[transitionIndex].DestinationNode;
+            }
+
+            var indicesForResults = valuationResults.StorageNpvByInventory.Indices;
+            var decisionProfile = new DoubleTimeSeries<T>(indicesForResults, decisions);
+            var cmdtyConsumed = new DoubleTimeSeries<T>(indicesForResults, cmdtyVolumeConsumedArray);
+
+            return (DecisionProfile: decisionProfile, CmdtyVolumeConsumed: cmdtyConsumed, StorageNpv: storageNpv);
+        }
+
+        public sealed class DecisionSimulator
+        {
+            public TreeStorageValuationResults<T> ValuationResults { get; }
+            private readonly TreeStorageValuation<T> _storageValuation;
+
+            internal DecisionSimulator(TreeStorageValuationResults<T> valuationResults, TreeStorageValuation<T> storageValuation)
+            {
+                ValuationResults = valuationResults;
+                _storageValuation = storageValuation;
+            }
+
+            public (DoubleTimeSeries<T> DecisionProfile, DoubleTimeSeries<T> CmdtyVolumeConsumed, double StorageNpv)
+                                                CalculateDecisionProfile(TimeSeries<T, int> spotPricePath)
+            {
+                return _storageValuation.CalculateDecisionProfile(ValuationResults, spotPricePath);
+            }
+
         }
 
     }
@@ -389,6 +466,8 @@ namespace Cmdty.Storage
         where T : ITimePeriod<T>
     {
         TreeStorageValuationResults<T> Calculate();
+        TreeStorageValuation<T>.DecisionSimulator CalculateDecisionSimulator();
+        double CalculateNpv();
     }
 
 }

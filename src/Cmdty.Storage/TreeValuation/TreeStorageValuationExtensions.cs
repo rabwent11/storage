@@ -113,8 +113,7 @@ namespace Cmdty.Storage
                 OneFactorTrinomialTree.CreateTree(forwardCurve, meanReversion, spotVolatilityCurve, onePeriodTimeDelta));
         }
 
-        public static ITreeAddCmdtySettlementRule<T> WithIntrinsicTree<T>(
-            [NotNull] this ITreeAddTreeFactory<T> addTreeFactory, TimeSeries<T, double> spotVolatilityCurve)
+        public static ITreeAddCmdtySettlementRule<T> WithIntrinsicTree<T>([NotNull] this ITreeAddTreeFactory<T> addTreeFactory)
             where T : ITimePeriod<T>
         {
             if (addTreeFactory == null) throw new ArgumentNullException(nameof(addTreeFactory));

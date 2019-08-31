@@ -40,12 +40,14 @@ namespace Cmdty.Storage
         public TimeSeries<T, IReadOnlyList<double>> InventorySpaceGrids { get; }
         public TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> StorageNpvs { get; }
         public TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> InjectWithdrawDecisions { get; }
+        public TimeSeries<T, InventoryRange> InventorySpace { get; }
 
         public TreeStorageValuationResults(double netPresentValue, TimeSeries<T, IReadOnlyList<TreeNode>> tree,
                                 TimeSeries<T, IReadOnlyList<Func<double, double>>> storageNpvByInventory,
                                 TimeSeries<T, IReadOnlyList<double>> inventorySpaceGrids,
                                 TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> storageNpvs,
-                                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> injectWithdrawDecisions)
+                                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>> injectWithdrawDecisions,
+                                TimeSeries<T, InventoryRange> inventorySpace)
         {
             NetPresentValue = netPresentValue;
             Tree = tree;
@@ -53,6 +55,7 @@ namespace Cmdty.Storage
             InventorySpaceGrids = inventorySpaceGrids;
             StorageNpvs = storageNpvs;
             InjectWithdrawDecisions = injectWithdrawDecisions;
+            InventorySpace = inventorySpace;
         }
 
         // TODO ToString override
@@ -63,7 +66,8 @@ namespace Cmdty.Storage
             return new TreeStorageValuationResults<T>(0.0, TimeSeries<T, IReadOnlyList<TreeNode>>.Empty, 
                 TimeSeries<T, IReadOnlyList<Func<double, double>>>.Empty, TimeSeries<T, IReadOnlyList<double>>.Empty,
                 TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>.Empty, 
-                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>.Empty);
+                TimeSeries<T, IReadOnlyList<IReadOnlyList<double>>>.Empty,
+                TimeSeries<T, InventoryRange>.Empty);
         }
 
     }

@@ -474,6 +474,100 @@ namespace Cmdty.Storage.Test
             Assert.Equal(totalExpectedPv, valuationResults.NetPresentValue);
         }
 
+        // TODO this test fails when injectionRate and withdrawalRate are not multiples- investigate this
+        [Fact]
+        public void Calculate_DeepInTheMoneyWithIntrinsicTree_NpvEqualsTrivialIntrinsicCalc()
+        {
+            var currentDate = new Day(2019, 8, 29);
+
+            var storageStart = new Day(2019, 12, 1);
+            var storageEnd = new Day(2020, 4, 1);
+
+            const double storageStartingInventory = 0.0;
+            const double minInventory = 0.0;
+            const double maxInventory = 100_000.0;
+
+            const double injectionPerUnitCost = 1.23;
+            const double injectionCmdtyConsumed = 0.01;
+
+            const double withdrawalPerUnitCost = 0.98;
+            const double withdrawalCmdtyConsumed = 0.015;
+
+            const double lowPrice = 23.87;
+            const double highPrice = 150.32;
+            const int numDaysAtHighPrice = 20;
+
+            const double injectionRate = 400.0;
+            const double withdrawalRate = 800.0;
+
+            Day dateToSwitchToHighForwardPrice = storageEnd.Offset(-numDaysAtHighPrice);
+
+            var forwardCurveBuilder = new TimeSeries<Day, double>.Builder(storageEnd - currentDate + 1);
+
+            foreach (Day day in currentDate.EnumerateTo(storageEnd))
+            {
+                double forwardPrice = day < dateToSwitchToHighForwardPrice ? lowPrice : highPrice;
+                forwardCurveBuilder.Add(day, forwardPrice);
+            }
+
+            TimeSeries<Day, double> forwardCurve = forwardCurveBuilder.Build();
+
+            Day InjectionCostPaymentTerms(Day injectionDate)
+            {
+                return injectionDate.Offset(10);
+            }
+
+            Day WithdrawalCostPaymentTerms(Day withdrawalDate)
+            {
+                return withdrawalDate.Offset(4);
+            }
+
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                .WithActiveTimePeriod(storageStart, storageEnd)
+                .WithConstantInjectWithdrawRange(-withdrawalRate, injectionRate)
+                .WithConstantMinInventory(minInventory)
+                .WithConstantMaxInventory(maxInventory)
+                .WithPerUnitInjectionCost(injectionPerUnitCost, InjectionCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
+                .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .MustBeEmptyAtEnd()
+                .Build();
+
+            TreeStorageValuation<Day>.DecisionSimulator decisionSimulator = TreeStorageValuation<Day>.ForStorage(storage)
+                .WithStartingInventory(storageStartingInventory)
+                .ForCurrentPeriod(currentDate)
+                .WithForwardCurve(forwardCurve)
+                .WithIntrinsicTree()
+                .WithCmdtySettlementRule(day => day)                     // No discounting 
+                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithFixedGridSpacing(100)
+                .WithLinearInventorySpaceInterpolation()
+                .WithNumericalTolerance(1E-10)
+                .CalculateDecisionSimulator();
+
+            IntrinsicStorageValuationResults<Day> intrinsicResults = IntrinsicStorageValuation<Day>.ForStorage(storage)
+                .WithStartingInventory(storageStartingInventory)
+                .ForCurrentPeriod(currentDate)
+                .WithForwardCurve(forwardCurve)
+                .WithCmdtySettlementRule(day => day)                     // No discounting 
+                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithFixedGridSpacing(100)
+                .WithLinearInventorySpaceInterpolation()
+                .WithNumericalTolerance(1E-10)
+                .Calculate();
+
+
+            // Trivial intrinsic calc
+            double volumeCycled = numDaysAtHighPrice * withdrawalRate;
+            double withdrawPv = highPrice * volumeCycled * (1 - withdrawalCmdtyConsumed) - volumeCycled * withdrawalPerUnitCost;
+
+            double injectionPv = -lowPrice * volumeCycled * (1 + injectionCmdtyConsumed) - volumeCycled * injectionPerUnitCost;
+
+            double totalExpectedPv = withdrawPv + injectionPv;
+
+            Assert.Equal(totalExpectedPv, decisionSimulator.ValuationResults.NetPresentValue, 8);
+        }
 
     }
 }
