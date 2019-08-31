@@ -535,31 +535,11 @@ namespace Cmdty.Storage.Test
                 .MustBeEmptyAtEnd()
                 .Build();
 
-            (TreeStorageValuationResults<Day> valuationResults, ITreeDecisionSimulator<Day> decisionSimulator) 
-                                = TreeStorageValuation<Day>.ForStorage(storage)
+            TreeStorageValuationResults<Day> valuationResults = TreeStorageValuation<Day>.ForStorage(storage)
                 .WithStartingInventory(storageStartingInventory)
                 .ForCurrentPeriod(currentDate)
                 .WithForwardCurve(forwardCurve)
                 .WithIntrinsicTree()
-                .WithCmdtySettlementRule(day => day)                     // No discounting 
-                .WithDiscountFactorFunc(day => 1.0)         // No discounting
-                .WithFixedGridSpacing(100)
-                .WithLinearInventorySpaceInterpolation()
-                .WithNumericalTolerance(1E-10)
-                .CalculateWithDecisionSimulator();
-
-            // Calculate intrinsic decision profile
-            var tree = valuationResults.Tree;
-            var intrinsicSpotPath = new TimeSeries<Day, int>(tree.Indices, tree.Data.Select(x => 0));
-
-            TreeSimulationResults<Day> simulateDecisions = decisionSimulator.SimulateDecisions(intrinsicSpotPath);
-
-            Assert.Equal(valuationResults.NetPresentValue, simulateDecisions.StorageNpv, 8);
-
-            IntrinsicStorageValuationResults<Day> intrinsicResults = IntrinsicStorageValuation<Day>.ForStorage(storage)
-                .WithStartingInventory(storageStartingInventory)
-                .ForCurrentPeriod(currentDate)
-                .WithForwardCurve(forwardCurve)
                 .WithCmdtySettlementRule(day => day)                     // No discounting 
                 .WithDiscountFactorFunc(day => 1.0)         // No discounting
                 .WithFixedGridSpacing(100)
@@ -578,6 +558,124 @@ namespace Cmdty.Storage.Test
 
             Assert.Equal(totalExpectedPv, valuationResults.NetPresentValue, 8);
         }
+
+        [Fact]
+        public void CalculateWithDecisionSimulator_DeepInTheMoneyWithIntrinsicTree_NpvAndDecisionProfileEqualsTrivialIntrinsicCalc()
+        {
+            var currentDate = new Day(2019, 8, 29);
+
+            var storageStart = new Day(2019, 12, 1);
+            var storageEnd = new Day(2020, 4, 1);
+
+            const double storageStartingInventory = 0.0;
+            const double minInventory = 0.0;
+            const double maxInventory = 100_000.0;
+
+            const double injectionPerUnitCost = 1.23;
+            const double injectionCmdtyConsumed = 0.01;
+
+            const double withdrawalPerUnitCost = 0.98;
+            const double withdrawalCmdtyConsumed = 0.015;
+
+            const double lowPrice = 23.87;
+            const double highPrice = 150.32;
+            const int numDaysAtHighPrice = 20;
+
+            const double injectionRate = 400.0;
+            const double withdrawalRate = 800.0;
+
+            Day dateToSwitchToHighForwardPrice = storageEnd.Offset(-numDaysAtHighPrice);
+
+            var forwardCurveBuilder = new TimeSeries<Day, double>.Builder(storageEnd - currentDate + 1);
+
+            foreach (Day day in currentDate.EnumerateTo(storageEnd))
+            {
+                double forwardPrice = day < dateToSwitchToHighForwardPrice ? lowPrice : highPrice;
+                forwardCurveBuilder.Add(day, forwardPrice);
+            }
+
+            TimeSeries<Day, double> forwardCurve = forwardCurveBuilder.Build();
+
+            Day InjectionCostPaymentTerms(Day injectionDate)
+            {
+                return injectionDate.Offset(10);
+            }
+
+            Day WithdrawalCostPaymentTerms(Day withdrawalDate)
+            {
+                return withdrawalDate.Offset(4);
+            }
+
+            CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+                .WithActiveTimePeriod(storageStart, storageEnd)
+                .WithConstantInjectWithdrawRange(-withdrawalRate, injectionRate)
+                .WithConstantMinInventory(minInventory)
+                .WithConstantMaxInventory(maxInventory)
+                .WithPerUnitInjectionCost(injectionPerUnitCost, InjectionCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
+                .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
+                .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .MustBeEmptyAtEnd()
+                .Build();
+
+            (TreeStorageValuationResults<Day> valuationResults, ITreeDecisionSimulator<Day> decisionSimulator)
+                                = TreeStorageValuation<Day>.ForStorage(storage)
+                .WithStartingInventory(storageStartingInventory)
+                .ForCurrentPeriod(currentDate)
+                .WithForwardCurve(forwardCurve)
+                .WithIntrinsicTree()
+                .WithCmdtySettlementRule(day => day)                     // No discounting 
+                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithFixedGridSpacing(100)
+                .WithLinearInventorySpaceInterpolation()
+                .WithNumericalTolerance(1E-10)
+                .CalculateWithDecisionSimulator();
+
+            // Calculate intrinsic decision profile
+            var tree = valuationResults.Tree;
+            var intrinsicSpotPath = new TimeSeries<Day, int>(tree.Indices, tree.Data.Select(x => 0));
+
+            TreeSimulationResults<Day> simulateDecisions = decisionSimulator.SimulateDecisions(intrinsicSpotPath);
+            
+            // Trivial intrinsic calc
+            double volumeCycled = numDaysAtHighPrice * withdrawalRate;
+            double withdrawPv = highPrice * volumeCycled * (1 - withdrawalCmdtyConsumed) - volumeCycled * withdrawalPerUnitCost;
+
+            double injectionPv = -lowPrice * volumeCycled * (1 + injectionCmdtyConsumed) - volumeCycled * injectionPerUnitCost;
+
+            double totalExpectedPv = withdrawPv + injectionPv;
+
+            var intrinsicDecisionProfile = simulateDecisions.DecisionProfile;
+            Assert.Equal(storageStart, intrinsicDecisionProfile.Start);
+            Assert.Equal(storageEnd.Offset(-1), intrinsicDecisionProfile.End);
+
+            double totalVolumeInLowPricePeriod = 0;
+            foreach (Day day in storageStart.EnumerateTo(dateToSwitchToHighForwardPrice.Offset(-1)))
+            {
+                double decisionVolume = intrinsicDecisionProfile[day];
+                Assert.True(decisionVolume >= 0);
+                if (decisionVolume > 0)
+                {
+                    Assert.Equal(injectionRate, decisionVolume);
+                }
+                else
+                {
+                    Assert.Equal(0.0, decisionVolume);
+                }
+                totalVolumeInLowPricePeriod += decisionVolume;
+            }
+            Assert.Equal(volumeCycled, totalVolumeInLowPricePeriod);
+
+            foreach (Day day in dateToSwitchToHighForwardPrice.EnumerateTo(storageEnd.Offset(-1)))
+            {
+                Assert.Equal(-withdrawalRate, intrinsicDecisionProfile[day]);
+            }
+
+
+            Assert.Equal(totalExpectedPv, simulateDecisions.StorageNpv, 8);
+            Assert.Equal(totalExpectedPv, valuationResults.NetPresentValue, 8);
+        }
+
 
         [Fact]
         public void Calculate_CurrentPeriodAfterEndPeriod_ResultsWithZeroNpvAndEmptyTimeSeries()
