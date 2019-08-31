@@ -23,17 +23,14 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Cmdty.TimePeriodValueTypes;
+using Cmdty.TimeSeries;
 
 namespace Cmdty.Storage
 {
-    public interface ITreeDecisionSimulator
+    public interface ITreeDecisionSimulator<T>
+        where T : ITimePeriod<T>
     {
-
-
+        TreeSimulationResults<T> SimulateDecisions(TimeSeries<T, int> spotPricePath);
     }
 }

@@ -128,10 +128,11 @@ namespace Cmdty.Storage
                     _interpolatorFactory, _numericalTolerance);
         }
 
-        DecisionSimulator ITreeCalculate<T>.CalculateDecisionSimulator()
+        (TreeStorageValuationResults<T> ValuationResults, ITreeDecisionSimulator<T> DecisionSimulator) 
+                    ITreeCalculate<T>.CalculateWithDecisionSimulator()
         {
             var valuationResults = (this as ITreeCalculate<T>).Calculate();
-            return new DecisionSimulator(valuationResults, this);
+            return (valuationResults, new DecisionSimulator(valuationResults, this));
         }
 
         double ITreeCalculate<T>.CalculateNpv()
@@ -397,7 +398,7 @@ namespace Cmdty.Storage
             return new TreeSimulationResults<T>(storageNpv, decisionProfile, cmdtyConsumed);
         }
 
-        public sealed class DecisionSimulator
+        public sealed class DecisionSimulator : ITreeDecisionSimulator<T>
         {
             public TreeStorageValuationResults<T> ValuationResults { get; }
             private readonly TreeStorageValuation<T> _storageValuation;
@@ -489,7 +490,7 @@ namespace Cmdty.Storage
         where T : ITimePeriod<T>
     {
         TreeStorageValuationResults<T> Calculate();
-        TreeStorageValuation<T>.DecisionSimulator CalculateDecisionSimulator();
+        (TreeStorageValuationResults<T> ValuationResults, ITreeDecisionSimulator<T> DecisionSimulator) CalculateWithDecisionSimulator();
         double CalculateNpv();
     }
 

@@ -535,7 +535,8 @@ namespace Cmdty.Storage.Test
                 .MustBeEmptyAtEnd()
                 .Build();
 
-            TreeStorageValuation<Day>.DecisionSimulator decisionSimulator = TreeStorageValuation<Day>.ForStorage(storage)
+            (TreeStorageValuationResults<Day> valuationResults, ITreeDecisionSimulator<Day> decisionSimulator) 
+                                = TreeStorageValuation<Day>.ForStorage(storage)
                 .WithStartingInventory(storageStartingInventory)
                 .ForCurrentPeriod(currentDate)
                 .WithForwardCurve(forwardCurve)
@@ -545,16 +546,15 @@ namespace Cmdty.Storage.Test
                 .WithFixedGridSpacing(100)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
-                .CalculateDecisionSimulator();
+                .CalculateWithDecisionSimulator();
 
             // Calculate intrinsic decision profile
-            var tree = decisionSimulator.ValuationResults.Tree;
+            var tree = valuationResults.Tree;
             var intrinsicSpotPath = new TimeSeries<Day, int>(tree.Indices, tree.Data.Select(x => 0));
 
             TreeSimulationResults<Day> simulateDecisions = decisionSimulator.SimulateDecisions(intrinsicSpotPath);
 
-            Assert.Equal(decisionSimulator.ValuationResults.NetPresentValue, 
-                            simulateDecisions.StorageNpv, 8);
+            Assert.Equal(valuationResults.NetPresentValue, simulateDecisions.StorageNpv, 8);
 
             IntrinsicStorageValuationResults<Day> intrinsicResults = IntrinsicStorageValuation<Day>.ForStorage(storage)
                 .WithStartingInventory(storageStartingInventory)
@@ -576,7 +576,7 @@ namespace Cmdty.Storage.Test
 
             double totalExpectedPv = withdrawPv + injectionPv;
 
-            Assert.Equal(totalExpectedPv, decisionSimulator.ValuationResults.NetPresentValue, 8);
+            Assert.Equal(totalExpectedPv, valuationResults.NetPresentValue, 8);
         }
 
     }
