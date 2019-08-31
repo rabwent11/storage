@@ -10,6 +10,7 @@
     <RepositoryUrl>https://github.com/cmdty/storage</RepositoryUrl>
     <Description>Valuation and optimisation of commodity storage facilities.</Description>
     <PackageTags>commodities;trading;oil;gas;power;quantitative;finance</PackageTags>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <ItemGroup>
