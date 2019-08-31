@@ -645,7 +645,7 @@ namespace Cmdty.Storage.Test
 
             double totalExpectedPv = withdrawPv + injectionPv;
 
-            var intrinsicDecisionProfile = simulateDecisions.DecisionProfile;
+            DoubleTimeSeries<Day> intrinsicDecisionProfile = simulateDecisions.DecisionProfile;
             Assert.Equal(storageStart, intrinsicDecisionProfile.Start);
             Assert.Equal(storageEnd.Offset(-1), intrinsicDecisionProfile.End);
 
@@ -671,6 +671,23 @@ namespace Cmdty.Storage.Test
                 Assert.Equal(-withdrawalRate, intrinsicDecisionProfile[day]);
             }
 
+            DoubleTimeSeries<Day> cmdtyVolumeConsumed = simulateDecisions.CmdtyVolumeConsumed;
+            Assert.Equal(storageStart, cmdtyVolumeConsumed.Start);
+            Assert.Equal(storageEnd.Offset(-1), cmdtyVolumeConsumed.End);
+
+            for (int i = 0; i < cmdtyVolumeConsumed.Count; i++)
+            {
+                double cmdtyConsumed = cmdtyVolumeConsumed[i];
+                double decisionVolume = intrinsicDecisionProfile[i];
+                if (decisionVolume > 0) // Inject
+                {
+                    Assert.Equal(decisionVolume*injectionCmdtyConsumed, cmdtyConsumed);
+                }
+                else  // Withdraw
+                {
+                    Assert.Equal(-decisionVolume * withdrawalCmdtyConsumed, cmdtyConsumed);
+                }
+            }
 
             Assert.Equal(totalExpectedPv, simulateDecisions.StorageNpv, 8);
             Assert.Equal(totalExpectedPv, valuationResults.NetPresentValue, 8);
