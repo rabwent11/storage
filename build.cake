@@ -102,7 +102,7 @@ Task("Test-C#")
             project.ToString(),
             new DotNetCoreTestSettings()
             {
-//                ArgumentCustomization = args=>args.Append($"/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura"),
+                ArgumentCustomization = args=>args.Append($"/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura"),
                 Logger = "trx",
                 ResultsDirectory = testResultDir,
                 Configuration = configuration,
