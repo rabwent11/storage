@@ -47,6 +47,13 @@ steps:
       mergeTestResults: true
       testRunTitle: 'C# Unit Tests'
 
+  - task: PublishCodeCoverageResults@1
+    displayName: 'publish .NET coverage results'
+    condition: succeededOrFailed()
+    inputs:
+      codeCoverageTool: 'cobertura'
+      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.cobertura.xml'
+
   - task: TwineAuthenticate@0
     inputs:
       artifactFeeds: 'cmdty'
