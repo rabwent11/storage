@@ -46,6 +46,23 @@ Within the latest build select, Artifacts > drop, then download either Cmdty.Sto
 
 Examples of the Excel functions can be found in [samples/excel/storage_samples.xlsx](https://github.com/cmdty/storage/raw/master/samples/excel/storage_samples.xlsx).
 
+## Building
+Build scripts use [cake](https://github.com/cake-build/cake) and require [the .NET Core SDK](https://dotnet.microsoft.com/download) to be installed on the Windows machine performing the build.
+
+Run the following commands in a PowerShell console to clone and build the project:
+```
+> git clone https://github.com/cmdty/storage.git
+
+> cd storage
+
+> .\build.ps1 -Target Pack-NuGet
+
+```
+The result of this build will be saved into the artifacts directory:
+* The NuGet package.
+* 32-bit and 64-bit versions of the Excel add-in.
+
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
