@@ -102,7 +102,7 @@ namespace Cmdty.Storage.Excel
                         .WithForwardCurve(forwardCurve)
                         .WithOneFactorTrinomialTree(spotVolatilityCurve, meanReversion, timeDelta)
                         .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
-                        .WithDiscountFactorFunc(day => 1.0)
+                        .WithDiscountFactorFunc((presentDate, cashFlowDate) => 1.0)
                         .WithFixedNumberOfPointsOnGlobalInventoryRange(numGridPoints)
                         .WithLinearInventorySpaceInterpolation()
                         .WithNumericalTolerance(numericalTolerance)

@@ -44,7 +44,7 @@ namespace Cmdty.Storage
         private TimeSeries<T, double> _forwardCurve;
         private Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> _treeFactory;
         private Func<T, Day> _settleDateRule;
-        private Func<Day, double> _discountFactors;
+        private Func<Day, Day, double> _discountFactors;
         private Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
         private IInterpolatorFactory _interpolatorFactory;
         private double _numericalTolerance;
@@ -94,7 +94,7 @@ namespace Cmdty.Storage
             return this;
         }
 
-        ITreeAddInventoryGridCalculation<T> ITreeAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, double> discountFactors)
+        ITreeAddInventoryGridCalculation<T> ITreeAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, Day, double> discountFactors)
         {
             _discountFactors = discountFactors ?? throw new ArgumentNullException(nameof(discountFactors));
             return this;
@@ -142,7 +142,7 @@ namespace Cmdty.Storage
 
         private static TreeStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, 
             TimeSeries<T, double> forwardCurve, Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> treeFactory, 
-            CmdtyStorage<T> storage, Func<T, Day> settleDateRule, Func<Day, double> discountFactors, 
+            CmdtyStorage<T> storage, Func<T, Day> settleDateRule, Func<Day, Day, double> discountFactors, 
             Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory, IInterpolatorFactory interpolatorFactory, 
             double numericalTolerance)
         {
@@ -195,6 +195,10 @@ namespace Cmdty.Storage
                 storageValueByInventory[numPeriods - 1][i] = inventory => storage.TerminalStorageNpv(cmdtyPrice, inventory);
             }
 
+            // Calculate discount factor function
+            Day dayToDiscountTo = currentPeriod.First<Day>(); // TODO IMPORTANT, this needs to change
+            double DiscountToCurrentDay(Day day) => discountFactors(dayToDiscountTo, day);
+
             // Loop back through other periods
             T startActiveStorage = inventorySpace.Start.Offset(-1);
             T[] periodsForResultsTimeSeries = startActiveStorage.EnumerateTo(inventorySpace.End).ToArray();
@@ -237,7 +241,7 @@ namespace Cmdty.Storage
                         (storageValuesGrid[i], decisionVolumesGrid[i], _, _) = 
                                         OptimalDecisionAndValue(storage, periodLoop, inventory,
                                         nextStepInventorySpaceMin, nextStepInventorySpaceMax, treeNode,
-                                        continuationValueByInventory, settleDateRule, discountFactors, numericalTolerance);
+                                        continuationValueByInventory, settleDateRule, DiscountToCurrentDay, numericalTolerance);
                     }
 
                     storageValueByInventory[backCounter][priceLevelIndex] =
@@ -333,6 +337,10 @@ namespace Cmdty.Storage
             if (spotPricePath.End.OffsetFrom(tree.End) < -1)
                 throw new ArgumentException($"spotPricePath cannot end earlier than 1 period before {tree.End}, the end period for the tree used for valuation.", nameof(spotPricePath));
 
+            // Calculate discount factor function
+            Day dayToDiscountTo = spotPricePath.Start.First<Day>(); // TODO IMPORTANT, this needs to change
+            double DiscountToCurrentDay(Day day) => _discountFactors(dayToDiscountTo, day);
+
             TreeNode treeNode = tree[0][0];
             var decisions = new double[valuationResults.StorageNpvByInventory.Count - 1]; // -1 because StorageNpvByInventory included the end period on which a decision can't be made
             var cmdtyVolumeConsumedArray = new double[valuationResults.StorageNpvByInventory.Count - 1];
@@ -362,7 +370,7 @@ namespace Cmdty.Storage
                         (_, decisions[i], cmdtyVolumeConsumedArray[i], thisStepImmediateNpv) =
                             OptimalDecisionAndValue(_storage, period, inventory, nextStepInventorySpaceMin,
                                 nextStepInventorySpaceMax, treeNode, continuationValueByInventory, _settleDateRule,
-                                _discountFactors, _numericalTolerance);
+                                DiscountToCurrentDay, _numericalTolerance);
                         
                         storageNpv += thisStepImmediateNpv;
                         inventory += decisions[i];
@@ -449,7 +457,7 @@ namespace Cmdty.Storage
         /// Adds discount factor function.
         /// </summary>
         /// <param name="discountFactors">Function mapping from cash flow date to discount factor.</param>
-        ITreeAddInventoryGridCalculation<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
+        ITreeAddInventoryGridCalculation<T> WithDiscountFactorFunc(Func<Day, Day, double> discountFactors);
     }
 
     public interface ITreeAddInventoryGridCalculation<T>

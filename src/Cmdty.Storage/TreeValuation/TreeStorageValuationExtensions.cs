@@ -135,5 +135,21 @@ namespace Cmdty.Storage
             return addTreeFactory.WithTreeFactory(CreateIntrinsicTree);
         }
 
+        public static ITreeAddInventoryGridCalculation<T> WithAct365ContinuouslyCompoundedInterestRate<T>(
+            [NotNull] this ITreeAddDiscountFactorFunc<T> addDiscountFactorFunc, Func<Day, double> act365ContCompInterestRates)
+            where T : ITimePeriod<T>
+        {
+            if (addDiscountFactorFunc == null) throw new ArgumentNullException(nameof(addDiscountFactorFunc));
+
+            double DiscountFactor(Day presentDay, Day cashFlowDay)
+            {
+                if (cashFlowDay <= presentDay)
+                    return 1.0;
+                double interestRate = act365ContCompInterestRates(cashFlowDay);
+                return Math.Exp(-cashFlowDay.OffsetFrom(presentDay) / 365.0 * interestRate);
+            }
+
+            return addDiscountFactorFunc.WithDiscountFactorFunc(DiscountFactor);
+        }
     }
 }

@@ -164,7 +164,7 @@ namespace Cmdty.Storage.Test
                 .WithForwardCurve(forwardCurve)
                 .WithOneFactorTrinomialTree(spotVolCurve, meanReversion, timeDelta)
                 .WithMonthlySettlement(settlementDates)
-                .WithDiscountFactorFunc(day => Math.Exp(-day.OffsetFrom(currentDate) / 365.0 * interestRate))
+                .WithAct365ContinuouslyCompoundedInterestRate(day => interestRate) // Constant interest rate
                 .WithFixedNumberOfPointsOnGlobalInventoryRange(100)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
@@ -317,7 +317,7 @@ namespace Cmdty.Storage.Test
                 .WithForwardCurve(forwardCurve)
                 .WithOneFactorTrinomialTree(spotVolCurve, meanReversion, timeDelta)
                 .WithMonthlySettlement(settlementDates)
-                .WithDiscountFactorFunc(day => Math.Exp(-day.OffsetFrom(currentDate) / 365.0 * interestRate))
+                .WithAct365ContinuouslyCompoundedInterestRate(day => interestRate) // Constant interest rate
                 .WithFixedNumberOfPointsOnGlobalInventoryRange(100)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
@@ -446,7 +446,7 @@ namespace Cmdty.Storage.Test
                 .WithForwardCurve(forwardCurve)
                 .WithOneFactorTrinomialTree(spotVolCurve, meanReversion, timeDelta)
                 .WithCmdtySettlementRule(day => day)                     // No discounting 
-                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithDiscountFactorFunc((presentDate, cashFlowDate) => 1.0)
                 .WithFixedNumberOfPointsOnGlobalInventoryRange(100)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
@@ -540,8 +540,8 @@ namespace Cmdty.Storage.Test
                 .ForCurrentPeriod(currentDate)
                 .WithForwardCurve(forwardCurve)
                 .WithIntrinsicTree()
-                .WithCmdtySettlementRule(day => day)                     // No discounting 
-                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithCmdtySettlementRule(day => day)
+                .WithDiscountFactorFunc((presentDate, cashFlowDate) => 1.0)
                 .WithFixedGridSpacing(100)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
@@ -625,7 +625,7 @@ namespace Cmdty.Storage.Test
                 .WithForwardCurve(forwardCurve)
                 .WithIntrinsicTree()
                 .WithCmdtySettlementRule(day => day)                     // No discounting 
-                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithDiscountFactorFunc((presentDate, cashFlowDate) => 1.0)
                 .WithFixedGridSpacing(100)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
@@ -726,7 +726,7 @@ namespace Cmdty.Storage.Test
                             .WithForwardCurve(forwardCurve)
                             .WithOneFactorTrinomialTree(spotVolCurve, meanReversion, timeDelta)
                             .WithCmdtySettlementRule(day => day) // No discounting 
-                            .WithDiscountFactorFunc(day => 1.0) // No discounting
+                            .WithDiscountFactorFunc((presentDate, cashFlowDate) => 1.0)
                             .WithFixedGridSpacing(100)
                             .WithLinearInventorySpaceInterpolation()
                             .WithNumericalTolerance(1E-10)
