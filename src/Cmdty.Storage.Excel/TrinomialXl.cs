@@ -91,11 +91,14 @@ namespace Cmdty.Storage.Excel
             DoubleTimeSeries<T> forwardCurve = StorageExcelHelper.CreateDoubleTimeSeries<T>(forwardCurveIn, "Forward_curve");
             DoubleTimeSeries<T> spotVolatilityCurve = StorageExcelHelper.CreateDoubleTimeSeries<T>(spotVolatilityCurveIn, "Spot_volatility_curve");
 
-            // TODO input settlement dates and use interest rates
+            // TODO input settlement dates
             int numGridPoints =
                 StorageExcelHelper.DefaultIfExcelEmptyOrMissing<int>(numGlobalGridPointsIn, 100, "Num_global_grid_points");
 
             double timeDelta = 1.0 / 365.0; // TODO remove this hard coding
+
+            Func<Day, double> interpolatedInterestRates =
+                StorageExcelHelper.CreateLinearInterpolatedInterestRateFunc(interestRateCurve, ExcelArg.InterestRateCurve.Name);
 
             TreeStorageValuationResults<T> valuationResults = TreeStorageValuation<T>
                         .ForStorage(storage)
@@ -104,7 +107,7 @@ namespace Cmdty.Storage.Excel
                         .WithForwardCurve(forwardCurve)
                         .WithOneFactorTrinomialTree(spotVolatilityCurve, meanReversion, timeDelta)
                         .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
-                        .WithDiscountFactorFunc((presentDate, cashFlowDate) => 1.0)
+                        .WithAct365ContinuouslyCompoundedInterestRate(interpolatedInterestRates)
                         .WithFixedNumberOfPointsOnGlobalInventoryRange(numGridPoints)
                         .WithLinearInventorySpaceInterpolation()
                         .WithNumericalTolerance(numericalTolerance)

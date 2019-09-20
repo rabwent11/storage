@@ -24,11 +24,13 @@
 #endregion
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using ExcelDna.Integration;
+using MathNet.Numerics.Interpolation;
 
 namespace Cmdty.Storage.Excel
 {
@@ -145,7 +147,7 @@ namespace Cmdty.Storage.Excel
                 throw new ArgumentException(excelArgumentName + " has been incorrectly entered. Argument value should be of a range with 2 columns, the first containing dates, the second containing numbers.");
 
             if (excelValuesArray.GetLength(1) != 2)
-                throw new ArgumentException(excelArgumentName + " has been incorrectly entered. Argument value should be a range 2 columns.");
+                throw new ArgumentException(excelArgumentName + " has been incorrectly entered. Argument value should be a range with 2 columns.");
 
             var builder = new DoubleTimeSeries<T>.Builder();
 
@@ -157,7 +159,7 @@ namespace Cmdty.Storage.Excel
                 if (!(excelValuesArray[i, 1] is double doubleValue))
                     throw new ArgumentException($"Value in the second column of row {i} for argument {excelArgumentName} is not a number.");
 
-                DateTime curvePointDateTime = ObjectToDateTime(excelValuesArray[i, 0], $"Cannot create DateTime from value in second row of argument {excelArgumentName}.");
+                DateTime curvePointDateTime = ObjectToDateTime(excelValuesArray[i, 0], $"Cannot create DateTime from value in first row of argument {excelArgumentName}.");
                 T curvePointPeriod = TimePeriodFactory.FromDateTime<T>(curvePointDateTime);
 
                 builder.Add(curvePointPeriod, doubleValue);
@@ -166,6 +168,54 @@ namespace Cmdty.Storage.Excel
             return builder.Build();
         }
 
+        public static Func<Day, double> CreateLinearInterpolatedInterestRateFunc(object excelValues, string excelArgumentName)
+        {
+            if (excelValues is ExcelMissing || excelValues is ExcelEmpty)
+                throw new ArgumentException(excelArgumentName + " hasn't been specified.");
+
+            if (!(excelValues is object[,] excelValuesArray))
+                throw new ArgumentException(excelArgumentName + " has been incorrectly entered. Argument value should be of a range with 2 columns, the first containing dates, the second containing numbers.");
+
+            if (excelValuesArray.GetLength(1) != 2)
+                throw new ArgumentException(excelArgumentName + " has been incorrectly entered. Argument value should be a range with 2 columns.");
+
+            var interestRatePoints = new List<(Day Date, double InterestRate)>();
+
+            for (int i = 0; i < excelValuesArray.GetLength(0); i++)
+            {
+                if (excelValuesArray[i, 0] is ExcelEmpty || excelValuesArray[i, 0] is ExcelError)
+                    break;
+
+                if (!(excelValuesArray[i, 1] is double doubleValue))
+                    throw new ArgumentException($"Value in the second column of row {i} for argument {excelArgumentName} is not a number.");
+
+                DateTime curvePointDateTime = ObjectToDateTime(excelValuesArray[i, 0], $"Cannot create DateTime from value in first row of argument {excelArgumentName}.");
+
+                interestRatePoints.Add((Date: Day.FromDateTime(curvePointDateTime), InterestRate: doubleValue));
+            }
+
+            if (interestRatePoints.Count < 2)
+                throw new ArgumentException(excelArgumentName + " must contain at least two points.");
+
+            Day firstDate = interestRatePoints.Min(curvePoint => curvePoint.Date);
+            IEnumerable<double> maturitiesToInterpolate =
+                interestRatePoints.Select(curvePoint => curvePoint.Date.OffsetFrom(firstDate) / 365.0);
+
+            LinearSpline linearSpline = LinearSpline.Interpolate(maturitiesToInterpolate, interestRatePoints.Select(curvePoint => curvePoint.InterestRate));
+
+            Day lastDate = interestRatePoints.Max(curvePoint => curvePoint.Date);
+
+            double InterpolatedCurve(Day cashFlowDate)
+            {
+                if (cashFlowDate < firstDate || cashFlowDate > lastDate)
+                    throw new ArgumentException($"Interest rate for future cash flow {cashFlowDate} cannot be interpolated, as this date is outside of the bounds of the input rates curve.");
+                double maturity = (cashFlowDate - firstDate) / 365.0;
+                return linearSpline.Interpolate(maturity);
+            }
+            
+            return InterpolatedCurve;
+        }
+        
         private static double ObjectToDouble(object excelNumber, string messageOneFail)
         {
             if (!(excelNumber is double doubleNumber))
