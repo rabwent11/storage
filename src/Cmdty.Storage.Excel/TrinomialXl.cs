@@ -33,11 +33,13 @@ namespace Cmdty.Storage.Excel
     public static class TrinomialXl
     {
         [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageValueTrinomialTree),
+            Description = "Calculate the NPV of a commodity storage facility using backward induction methodology, and a one-factor trinomial " +
+                          "tree to model the spot price dynamics.",
             Category = AddIn.ExcelFunctionCategory, IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
         public static object StorageValueTrinomialTree(
-            DateTime valuationDate,
-            DateTime storageStart,
-            DateTime storageEnd,
+            [ExcelArgument(Name = ExcelArg.ValDate.Name, Description = ExcelArg.ValDate.Description)] DateTime valuationDate,
+            [ExcelArgument(Name = ExcelArg.StorageStart.Name, Description = ExcelArg.StorageStart.Description)] DateTime storageStart,
+            [ExcelArgument(Name = ExcelArg.StorageEnd.Name, Description = ExcelArg.StorageEnd.Description)] DateTime storageEnd,
             object injectWithdrawConstraints,
             double injectionCostRate,
             double cmdtyConsumedOnInjection,
@@ -47,7 +49,7 @@ namespace Cmdty.Storage.Excel
             object forwardCurve,
             object spotVolatilityCurve,
             double meanReversion,
-            object interestRateCurve,
+            [ExcelArgument(Name = ExcelArg.InterestRateCurve.Name, Description = ExcelArg.InterestRateCurve.Description)] object interestRateCurve,
             object numGlobalGridPoints, // TODO excel argument says default is 100
             object numericalTolerance,
             [ExcelArgument(Name = "Granularity")] object granularity)
