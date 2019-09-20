@@ -40,22 +40,21 @@ namespace Cmdty.Storage.Excel
             [ExcelArgument(Name = ExcelArg.ValDate.Name, Description = ExcelArg.ValDate.Description)] DateTime valuationDate,
             [ExcelArgument(Name = ExcelArg.StorageStart.Name, Description = ExcelArg.StorageStart.Description)] DateTime storageStart,
             [ExcelArgument(Name = ExcelArg.StorageEnd.Name, Description = ExcelArg.StorageEnd.Description)] DateTime storageEnd,
-            object injectWithdrawConstraints,
-            double injectionCostRate,
-            double cmdtyConsumedOnInjection,
-            double withdrawalCostRate,
-            double cmdtyConsumedOnWithdrawal,
-            double currentInventory,
-            object forwardCurve,
-            object spotVolatilityCurve,
-            double meanReversion,
+            [ExcelArgument(Name = ExcelArg.StorageConstraints.Name, Description = ExcelArg.StorageConstraints.Description)] object storageConstraints,
+            [ExcelArgument(Name = ExcelArg.InjectionCost.Name, Description = ExcelArg.InjectionCost.Description)] double injectionCostRate,
+            [ExcelArgument(Name = ExcelArg.CmdtyConsumedInject.Name, Description = ExcelArg.CmdtyConsumedInject.Description)] double cmdtyConsumedOnInjection,
+            [ExcelArgument(Name = ExcelArg.WithdrawalCost.Name, Description = ExcelArg.WithdrawalCost.Description)] double withdrawalCostRate,
+            [ExcelArgument(Name = ExcelArg.CmdtyConsumedWithdraw.Name, Description = ExcelArg.CmdtyConsumedWithdraw.Description)] double cmdtyConsumedOnWithdrawal,
+            [ExcelArgument(Name = ExcelArg.Inventory.Name, Description = ExcelArg.Inventory.Description)] double currentInventory,
+            [ExcelArgument(Name = ExcelArg.ForwardCurve.Name, Description = ExcelArg.ForwardCurve.Description)] object forwardCurve,
+            [ExcelArgument(Name = ExcelArg.SpotVolCurve.Name, Description = ExcelArg.SpotVolCurve.Description)] object spotVolatilityCurve,
+            [ExcelArgument(Name = ExcelArg.MeanReversion.Name, Description = ExcelArg.MeanReversion.Description)] double meanReversion,
             [ExcelArgument(Name = ExcelArg.InterestRateCurve.Name, Description = ExcelArg.InterestRateCurve.Description)] object interestRateCurve,
-            object numGlobalGridPoints, // TODO excel argument says default is 100
-            object numericalTolerance,
-            [ExcelArgument(Name = "Granularity")] object granularity)
+            [ExcelArgument(Name = ExcelArg.NumGridPoints.Name, Description = ExcelArg.NumGridPoints.Description)] object numGlobalGridPoints, // TODO excel argument says default is 100
+            [ExcelArgument(Name = ExcelArg.NumericalTolerance.Name, Description = ExcelArg.NumericalTolerance.Description)] object numericalTolerance) // TODO add granularity
         {
             return StorageExcelHelper.ExecuteExcelFunction(() =>
-                TrinomialStorageValuation<Day>(valuationDate, storageStart, storageEnd, injectWithdrawConstraints,
+                TrinomialStorageValuation<Day>(valuationDate, storageStart, storageEnd, storageConstraints,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal, currentInventory, forwardCurve, spotVolatilityCurve, 
                     meanReversion, interestRateCurve, numGlobalGridPoints, numericalTolerance).NetPresentValue);
