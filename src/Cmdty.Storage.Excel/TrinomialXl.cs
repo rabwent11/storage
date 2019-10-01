@@ -33,7 +33,7 @@ namespace Cmdty.Storage.Excel
     public static class TrinomialXl
     {
         [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageValueTrinomialTree),
-            Description = "Calculate the NPV of a commodity storage facility using backward induction methodology, and a one-factor trinomial " +
+            Description = "Calculates the NPV of a commodity storage facility using backward induction methodology, and a one-factor trinomial " +
                           "tree to model the spot price dynamics.",
             Category = AddIn.ExcelFunctionCategory, IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
         public static object StorageValueTrinomialTree(
@@ -60,6 +60,31 @@ namespace Cmdty.Storage.Excel
                     meanReversion, interestRateCurve, numGlobalGridPoints, numericalTolerance).NetPresentValue);
         }
 
+        [ExcelFunction(Name = AddIn.ExcelFunctionNamePrefix + nameof(StorageValueIntrinsic),
+            Description = "Calculated the intrinsic NPV of a commodity storage facility using backward induction methodology.",
+            Category = AddIn.ExcelFunctionCategory, IsThreadSafe = true, IsVolatile = false, IsExceptionSafe = true)]
+        public static object StorageValueIntrinsic(
+                [ExcelArgument(Name = ExcelArg.ValDate.Name, Description = ExcelArg.ValDate.Description)] DateTime valuationDate,
+                [ExcelArgument(Name = ExcelArg.StorageStart.Name, Description = ExcelArg.StorageStart.Description)] DateTime storageStart,
+                [ExcelArgument(Name = ExcelArg.StorageEnd.Name, Description = ExcelArg.StorageEnd.Description)] DateTime storageEnd,
+                [ExcelArgument(Name = ExcelArg.StorageConstraints.Name, Description = ExcelArg.StorageConstraints.Description)] object storageConstraints,
+                [ExcelArgument(Name = ExcelArg.InjectionCost.Name, Description = ExcelArg.InjectionCost.Description)] double injectionCostRate,
+                [ExcelArgument(Name = ExcelArg.CmdtyConsumedInject.Name, Description = ExcelArg.CmdtyConsumedInject.Description)] double cmdtyConsumedOnInjection,
+                [ExcelArgument(Name = ExcelArg.WithdrawalCost.Name, Description = ExcelArg.WithdrawalCost.Description)] double withdrawalCostRate,
+                [ExcelArgument(Name = ExcelArg.CmdtyConsumedWithdraw.Name, Description = ExcelArg.CmdtyConsumedWithdraw.Description)] double cmdtyConsumedOnWithdrawal,
+                [ExcelArgument(Name = ExcelArg.Inventory.Name, Description = ExcelArg.Inventory.Description)] double currentInventory,
+                [ExcelArgument(Name = ExcelArg.ForwardCurve.Name, Description = ExcelArg.ForwardCurve.Description)] object forwardCurve,
+                [ExcelArgument(Name = ExcelArg.InterestRateCurve.Name, Description = ExcelArg.InterestRateCurve.Description)] object interestRateCurve,
+                [ExcelArgument(Name = ExcelArg.NumGridPoints.Name, Description = ExcelArg.NumGridPoints.Description)] object numGlobalGridPoints, // TODO excel argument says default is 100
+                [ExcelArgument(Name = ExcelArg.NumericalTolerance.Name, Description = ExcelArg.NumericalTolerance.Description)] object numericalTolerance) // TODO add granularity
+        {
+            return StorageExcelHelper.ExecuteExcelFunction(() =>
+                TrinomialStorageValuationIntrinsic<Day>(valuationDate, storageStart, storageEnd, storageConstraints,
+                    injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
+                    cmdtyConsumedOnWithdrawal, currentInventory, forwardCurve, interestRateCurve, numGlobalGridPoints, 
+                    numericalTolerance).NetPresentValue);
+        }
+        
         private static TreeStorageValuationResults<T> TrinomialStorageValuation<T>(
                             DateTime valuationDateTime,
                             DateTime storageStartDateTime,
@@ -114,6 +139,57 @@ namespace Cmdty.Storage.Excel
 
             return valuationResults;
         }
+
+        private static TreeStorageValuationResults<T> TrinomialStorageValuationIntrinsic<T>(
+                    DateTime valuationDateTime,
+                    DateTime storageStartDateTime,
+                    DateTime storageEndDateTime,
+                    object injectWithdrawConstraints,
+                    double injectionCostRate,
+                    double cmdtyConsumedOnInjection,
+                    double withdrawalCostRate,
+                    double cmdtyConsumedOnWithdrawal,
+                    double currentInventory,
+                    object forwardCurveIn,
+                    object interestRateCurve,
+                    object numGlobalGridPointsIn,
+                    object numericalToleranceIn)
+            where T : ITimePeriod<T>
+        {
+            double numericalTolerance = StorageExcelHelper.DefaultIfExcelEmptyOrMissing(numericalToleranceIn, 1E-10,
+                            "Numerical_tolerance");
+
+            var storage = StorageExcelHelper.CreateCmdtyStorageFromExcelInputs<T>(storageStartDateTime,
+                storageEndDateTime, injectWithdrawConstraints, injectionCostRate, cmdtyConsumedOnInjection,
+                withdrawalCostRate, cmdtyConsumedOnWithdrawal, numericalTolerance);
+
+            T currentPeriod = TimePeriodFactory.FromDateTime<T>(valuationDateTime);
+
+            DoubleTimeSeries<T> forwardCurve = StorageExcelHelper.CreateDoubleTimeSeries<T>(forwardCurveIn, "Forward_curve");
+
+            // TODO input settlement dates
+            int numGridPoints =
+                StorageExcelHelper.DefaultIfExcelEmptyOrMissing<int>(numGlobalGridPointsIn, 100, "Num_global_grid_points");
+
+            Func<Day, double> interpolatedInterestRates =
+                StorageExcelHelper.CreateLinearInterpolatedInterestRateFunc(interestRateCurve, ExcelArg.InterestRateCurve.Name);
+
+            TreeStorageValuationResults<T> valuationResults = TreeStorageValuation<T>
+                        .ForStorage(storage)
+                        .WithStartingInventory(currentInventory)
+                        .ForCurrentPeriod(currentPeriod)
+                        .WithForwardCurve(forwardCurve)
+                        .WithIntrinsicTree()
+                        .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
+                        .WithAct365ContinuouslyCompoundedInterestRate(interpolatedInterestRates)
+                        .WithFixedNumberOfPointsOnGlobalInventoryRange(numGridPoints)
+                        .WithLinearInventorySpaceInterpolation()
+                        .WithNumericalTolerance(numericalTolerance)
+                        .Calculate();
+
+            return valuationResults;
+        }
+
 
     }
 }
