@@ -23,16 +23,21 @@
 
 import clr
 from System import DateTime
+from System.Collections.Generic import List
 from pathlib import Path
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
-from Cmdty.Storage import CmdtyStorage, IBuilder
+from Cmdty.Storage import CmdtyStorage, IBuilder, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, InjectWithdrawRange
 
 from collections import namedtuple
 
 ValuationResults = namedtuple('ValuationResults', 'npv, decision_profile')
+
+InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, min_rate, max_rate')
+
+InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
 
 
 def intrinsic_storage_val(freq, storage_start, storage_end, constraints, injection_cost, injection_consumption, 
@@ -72,6 +77,52 @@ def _create_storage_object(time_period_type, storage_start, storage_end, constra
 
     pass
 
+def create_storage(time_period_type, storage_start, storage_end, constraints,
+                   constant_injection_cost, constant_withdrawal_cost, 
+                   constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None):
+
+    if freq not in FREQ_TO_PERIOD_TYPE:
+        raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
+
+    time_period_type = FREQ_TO_PERIOD_TYPE[freq]
+
+    start_period = from_datetime_like(storage_start, time_period_type)
+    end_period = from_datetime_like(storage_end, time_period_type)
+
+    builder = IBuilder[time_period_type](CmdtyStorage[time_period_type].Builder)
+    
+    builder = builder.WithActiveTimePeriod(start_period, end_period)
+
+    net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]
+
+    for period, rates_by_inventory in constraints:
+        net_period = from_datetime_like(period, time_period_type)
+        net_rates_by_inventory = List[InjectWithdrawRangeByInventory]
+        for inventory, min_rate, max_rate in rates_by_inventory:
+            net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
+        net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
+    
+    builder = CmdtyStorage[time_period_type].IAddInjectWithdrawConstraints(builder)
+
+    builder.WithTimeAndInventoryVaryingInjectWithdrawRates(net_constraints)
+
+    CmdtyStorage[time_period_type].IAddInjectionCost(builder).WithPerUnitInjectionCost(constant_injection_cost, lambda dt: dt)
+    
+    if constant_pcnt_consumed_inject is not None:
+        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnInject(builder).WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
+    else:
+        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnInject(builder).WithNoCmdtyConsumedOnInject()
+
+    CmdtyStorage[time_period_type].IAddWithdrawalCost(builder).WithPerUnitWithdrawalCost(constant_withdrawal_cost, lambda dt: dt)
+
+    if constant_pcnt_consumed_withdraw is not None:
+        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnWithdraw(builder).WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
+    else:
+        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnWithdraw(builder).WithNoCmdtyConsumedOnWithdraw()
+    
+    CmdtyStorage[time_period_type].IAddTerminalStorageState(builder).MustBeEmptyAtEnd()
+    
+    return CmdtyStorage[time_period_type].IBuildCmdtyStorage(builder).Build()
 
 FREQ_TO_PERIOD_TYPE = {
         "15min" : QuarterHour,
