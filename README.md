@@ -9,10 +9,10 @@ Valuation and optimisation of commodity storage. Still in early stages of develo
 * [Overview](#overview)
 * [Models](#models)
 * [Getting Started](#getting-started)
-    * [Installing C# API](#Installing-C#-API)
+    * [Installing C# API](#installing-c-api)
     * [Installing Excel Add-In](#installing-excel-add-in)
 * [Building](#building)
-* [One Factor Trinomial Tree Model](#One-Factor-Trinomial-Tree-Method:-Critique-and-Rationale)
+* [One Factor Trinomial Tree Model](#one-factor-trinomial-tree-method-critique-and-rationale)
 * [License](#license)
 
 ## Overview
