@@ -30,6 +30,8 @@ from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, 
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 from Cmdty.Storage import CmdtyStorage, IBuilder, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, InjectWithdrawRange
+#from Cmdty.Storage.CmdtyStorage import IAddInjectWithdrawConstraints
+
 
 from collections import namedtuple
 
@@ -77,7 +79,7 @@ def _create_storage_object(time_period_type, storage_start, storage_end, constra
 
     pass
 
-def create_storage(time_period_type, storage_start, storage_end, constraints,
+def create_storage(freq, storage_start, storage_end, constraints,
                    constant_injection_cost, constant_withdrawal_cost, 
                    constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None):
 
@@ -93,16 +95,18 @@ def create_storage(time_period_type, storage_start, storage_end, constraints,
     
     builder = builder.WithActiveTimePeriod(start_period, end_period)
 
-    net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]
+    net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
 
     for period, rates_by_inventory in constraints:
         net_period = from_datetime_like(period, time_period_type)
-        net_rates_by_inventory = List[InjectWithdrawRangeByInventory]
+        net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
         for inventory, min_rate, max_rate in rates_by_inventory:
             net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
         net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
     
-    builder = CmdtyStorage[time_period_type].IAddInjectWithdrawConstraints(builder)
+    inject_withdraw_interface = CmdtyStorage[time_period_type].IAddInjectWithdrawConstraints
+    
+    builder = inject_withdraw_interface(builder)
 
     builder.WithTimeAndInventoryVaryingInjectWithdrawRates(net_constraints)
 

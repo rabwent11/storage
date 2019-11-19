@@ -22,4 +22,5 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 from cmdty_storage.__version__ import __version__
-from cmdty_storage.cmdty_storage import intrinsic_storage_val
+from cmdty_storage.cmdty_storage import intrinsic_storage_val, create_storage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
+
