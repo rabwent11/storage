@@ -9,9 +9,14 @@ trigger:
     - master
 
 pool:
-  vmImage: 'VS2017-Win2016'
+  vmImage: 'windows-2019'
 
 steps:
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      useGlobalJson: true
+
   - task: SonarCloudPrepare@1
     inputs:
       SonarCloud: 'SonarCloud'
