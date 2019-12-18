@@ -9,9 +9,10 @@ Valuation and optimisation of commodity storage. Still in early stages of develo
 * [Overview](#overview)
 * [Models](#models)
 * [Getting Started](#getting-started)
-    * [Installing C# API](#Installing-C#-API)
+    * [Installing C# API](#installing-c-api)
     * [Installing Excel Add-In](#installing-excel-add-in)
 * [Building](#building)
+* [One Factor Trinomial Tree Model](#one-factor-trinomial-tree-method-critique-and-rationale)
 * [License](#license)
 
 ## Overview
@@ -71,7 +72,6 @@ The result of this build will be saved into the artifacts directory:
 * The NuGet package.
 * 32-bit and 64-bit versions of the Excel add-in.
 
-<a name="one-factor-trinomial"></a>
 ## One-Factor Trinomial Tree Method: Critique and Rationale
 Currently this library only contains one model to calculate the extrinsic value of storage, the one-factor trinomial tree model. However, the author is aware thof the many shortcomings of this approach such as:
 * Modeling commodity price dynamics using a one-factor process does not imply volatilities and correlations that are particularly realistic. For example the one-factor process implies a correlation of 1 between all points on the forward curve. This is of particular concern for a product like storage, whose extrinsic value is derived from the relative movement of different parts of the forward curve.
