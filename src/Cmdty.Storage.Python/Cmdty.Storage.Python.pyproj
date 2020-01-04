@@ -12,7 +12,8 @@
     <OutputPath>.</OutputPath>
     <Name>Cmdty.Storage.Python</Name>
     <RootNamespace>Cmdty.Storage.Python</RootNamespace>
-    <InterpreterId>MSBuild|storage|$(MSBuildProjectFullPath)</InterpreterId>
+    <InterpreterId>MSBuild|storage-venv|$(MSBuildProjectFullPath)</InterpreterId>
+    <TestFramework>Pytest</TestFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -47,10 +48,10 @@
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Interpreter Include="storage\">
-      <Id>storage</Id>
+    <Interpreter Include="storage-venv\">
+      <Id>storage-venv</Id>
       <Version>3.6</Version>
-      <Description>storage (Python 3.6 (64-bit))</Description>
+      <Description>storage-venv (Python 3.6 (64-bit))</Description>
       <InterpreterPath>Scripts\python.exe</InterpreterPath>
       <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
