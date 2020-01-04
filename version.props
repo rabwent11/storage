@@ -2,7 +2,7 @@
   <PropertyGroup>
     <VersionPrefix>0.1.0</VersionPrefix>
     <PythonPreReleaseTextPart>a</PythonPreReleaseTextPart>
-    <PythonVersion Condition="'$(BuildNumber)' == ''">$(VersionPrefix)</PythonVersion>
-    <PythonVersion Condition="'$(BuildNumber)' != ''">$(VersionPrefix)$(PythonPreReleaseTextPart)$(BuildNumber)</PythonVersion>
+    <PythonVersion Condition="'$(PrereleaseNumber)' == ''">$(VersionPrefix)</PythonVersion>
+    <PythonVersion Condition="'$(PrereleaseNumber)' != ''">$(VersionPrefix)$(PythonPreReleaseTextPart)$(PrereleaseNumber)</PythonVersion>
   </PropertyGroup>
 </Project>
