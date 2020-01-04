@@ -146,11 +146,6 @@ var testPythonTask = Task("Test-Python")
     RunCommandInVirtualEnv("python -m pytest src/Cmdty.Storage.Python/tests --junitxml=junit/test-results.xml", vEnvActivatePath);
 });
 
-if (isRunningOnBuildServer)
-{
-    testPythonTask.IsDependentOn("Install-PythonDependencies");
-}
-
 Task("Build-Samples")
     .IsDependentOn("Add-NuGetSource")
 	.Does(() =>
