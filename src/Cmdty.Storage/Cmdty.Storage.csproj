@@ -16,6 +16,7 @@
   <ItemGroup>
     <PackageReference Include="Cmdty.Core" Version="0.1.0-beta2" />
     <PackageReference Include="Cmdty.Curves" Version="0.1.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.3.0" />
   </ItemGroup>
 
   <ItemGroup>

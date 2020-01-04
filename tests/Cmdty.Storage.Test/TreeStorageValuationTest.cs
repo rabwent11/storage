@@ -155,6 +155,8 @@ namespace Cmdty.Storage.Test
                 .WithNoCmdtyConsumedOnInject()
                 .WithWithdrawalCost(WithdrawalCost)
                 .WithNoCmdtyConsumedOnWithdraw()
+                .WithNoCmdtyInventoryLoss()
+                .WithNoCmdtyInventoryCost()
                 .WithTerminalInventoryNpv((cmdtyPrice, inventory) => 0.0) // Value in storage at end is worthless
                 .Build();
 
@@ -308,6 +310,8 @@ namespace Cmdty.Storage.Test
                 .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
                 .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
                 .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .WithNoCmdtyInventoryLoss()
+                .WithNoCmdtyInventoryCost()
                 .WithTerminalInventoryNpv((cmdtySpotPrice, inventory) => 0.0)
                 .Build();
 
@@ -437,6 +441,8 @@ namespace Cmdty.Storage.Test
                 .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
                 .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
                 .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .WithNoCmdtyInventoryLoss()
+                .WithNoCmdtyInventoryCost()
                 .MustBeEmptyAtEnd()
                 .Build();
 
@@ -532,6 +538,8 @@ namespace Cmdty.Storage.Test
                 .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
                 .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
                 .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .WithNoCmdtyInventoryLoss()
+                .WithNoCmdtyInventoryCost()
                 .MustBeEmptyAtEnd()
                 .Build();
 
@@ -615,6 +623,8 @@ namespace Cmdty.Storage.Test
                 .WithFixedPercentCmdtyConsumedOnInject(injectionCmdtyConsumed)
                 .WithPerUnitWithdrawalCost(withdrawalPerUnitCost, WithdrawalCostPaymentTerms)
                 .WithFixedPercentCmdtyConsumedOnWithdraw(withdrawalCmdtyConsumed)
+                .WithNoCmdtyInventoryLoss()
+                .WithNoCmdtyInventoryCost()
                 .MustBeEmptyAtEnd()
                 .Build();
 
@@ -711,6 +721,8 @@ namespace Cmdty.Storage.Test
                             .WithNoCmdtyConsumedOnInject()
                             .WithPerUnitWithdrawalCost(2.0, day => day)
                             .WithNoCmdtyConsumedOnWithdraw()
+                            .WithNoCmdtyInventoryLoss()
+                            .WithNoCmdtyInventoryCost()
                             .MustBeEmptyAtEnd()
                             .Build();
 

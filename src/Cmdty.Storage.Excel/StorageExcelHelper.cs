@@ -113,6 +113,8 @@ namespace Cmdty.Storage.Excel
                     .WithFixedPercentCmdtyConsumedOnInject(cmdtyConsumedOnInjection)
                     .WithPerUnitWithdrawalCost(withdrawalCostRate, withdrawalDate => withdrawalDate.First<Day>())
                     .WithFixedPercentCmdtyConsumedOnWithdraw(cmdtyConsumedOnWithdrawal)
+                    .WithNoCmdtyInventoryLoss()
+                    .WithNoCmdtyInventoryCost()
                     .MustBeEmptyAtEnd()
                     .Build();
 

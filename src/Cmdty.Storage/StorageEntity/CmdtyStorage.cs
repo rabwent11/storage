@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Cmdty.TimePeriodValueTypes;
 using JetBrains.Annotations;
 
@@ -43,8 +44,10 @@ namespace Cmdty.Storage
         private readonly Func<T, double, double, double> _injectCmdtyConsumed;
         private readonly Func<T, double, double, IReadOnlyList<DomesticCashFlow>> _withdrawalCashFlows;
         private readonly Func<T, double, double, double> _withdrawCmdtyConsumed;
-
+        private readonly Func<T, double, double> _cmdtyInventoryLoss;
+        private readonly Func<T, double, IReadOnlyList<DomesticCashFlow>> _cmdtyInventoryCost;
         private readonly Func<double, double, double> _terminalStorageValue;
+
         public bool MustBeEmptyAtEnd { get; }
 
         private CmdtyStorage(T startPeriod,
@@ -57,7 +60,9 @@ namespace Cmdty.Storage
                             Func<double, double, double> terminalStorageValue,
                             bool mustBeEmptyAtEnd,
                             Func<T, double, double, double> injectCmdtyConsumed,
-                            Func<T, double, double, double> withdrawCmdtyConsumed)
+                            Func<T, double, double, double> withdrawCmdtyConsumed,
+                            Func<T, double, double> cmdtyInventoryLoss,
+                            Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost)
         {
             StartPeriod = startPeriod;
             EndPeriod = endPeriod;
@@ -70,6 +75,8 @@ namespace Cmdty.Storage
             MustBeEmptyAtEnd = mustBeEmptyAtEnd;
             _injectCmdtyConsumed = injectCmdtyConsumed;
             _withdrawCmdtyConsumed = withdrawCmdtyConsumed;
+            _cmdtyInventoryLoss = cmdtyInventoryLoss;
+            _cmdtyInventoryCost = cmdtyInventoryCost;
         }
 
         public T StartPeriod { get; }
@@ -144,10 +151,23 @@ namespace Cmdty.Storage
             return _terminalStorageValue(cmdtyPrice, finalInventory);
         }
 
+        public double CmdtyInventoryLoss([NotNull] T period, double inventory)
+        {
+            if (period == null) throw new ArgumentNullException(nameof(period));
+            return _cmdtyInventoryLoss(period, inventory);
+        }
+
+        public IReadOnlyList<DomesticCashFlow> CmdtyInventoryCost([NotNull] T period, double inventory)
+        {
+            if (period == null) throw new ArgumentNullException(nameof(period));
+            return _cmdtyInventoryCost(period, inventory);
+        }
+
         public static IBuilder<T> Builder => new StorageBuilder();
 
         private sealed class StorageBuilder : IBuilder<T>, IAddInjectWithdrawConstraints, IAddMaxInventory, IAddMinInventory, IAddInjectionCost, 
-                    IAddWithdrawalCost, IAddTerminalStorageState, IBuildCmdtyStorage, IAddCmdtyConsumedOnInject, IAddCmdtyConsumedOnWithdraw
+                    IAddWithdrawalCost, IAddTerminalStorageState, IBuildCmdtyStorage, IAddCmdtyConsumedOnInject, IAddCmdtyConsumedOnWithdraw,
+                    IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost
         {
             private T _startPeriod;
             private T _endPeriod;
@@ -160,7 +180,12 @@ namespace Cmdty.Storage
             private bool _mustBeEmptyAtEnd;
             private Func<T, double, double, double> _injectCmdtyConsumed;
             private Func<T, double, double, double> _withdrawCmdtyConsumed;
-            
+            private Func<T, double, double> _cmdtyInventoryLoss;
+            private Func<T, double, IReadOnlyList<DomesticCashFlow>> _cmdtyInventoryCost;
+
+            // ReSharper disable once StaticMemberInGenericType
+            private static readonly IReadOnlyList<DomesticCashFlow> EmptyCashFlows = ImmutableArray<DomesticCashFlow>.Empty;
+
             IAddInjectWithdrawConstraints IBuilder<T>.WithActiveTimePeriod(T start, T end)
             {
                 if (start.CompareTo(end) >= 0)
@@ -291,8 +316,9 @@ namespace Cmdty.Storage
                 }
 
                 return new CmdtyStorage<T>(_startPeriod, _endPeriod, _injectWithdrawConstraints, maxInventory, 
-                            _minInventory, _injectionCashFlows, _withdrawalCashFlows, terminalStorageValue, _mustBeEmptyAtEnd, 
-                            _injectCmdtyConsumed, _withdrawCmdtyConsumed);
+                        _minInventory, _injectionCashFlows, _withdrawalCashFlows, terminalStorageValue, _mustBeEmptyAtEnd, 
+                        _injectCmdtyConsumed, _withdrawCmdtyConsumed, _cmdtyInventoryLoss,
+                        _cmdtyInventoryCost);
             }
 
             IAddWithdrawalCost IAddCmdtyConsumedOnInject.WithNoCmdtyConsumedOnInject()
@@ -314,27 +340,58 @@ namespace Cmdty.Storage
                 return this;
             }
 
-            IAddTerminalStorageState IAddCmdtyConsumedOnWithdraw.WithNoCmdtyConsumedOnWithdraw()
+            IAddCmdtyInventoryLoss IAddCmdtyConsumedOnWithdraw.WithNoCmdtyConsumedOnWithdraw()
             {
                 _withdrawCmdtyConsumed = (period, inventory, withdrawnVolume) => 0.0;
                 return this;
             }
 
-            IAddTerminalStorageState IAddCmdtyConsumedOnWithdraw.WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed)
+            IAddCmdtyInventoryLoss IAddCmdtyConsumedOnWithdraw.WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed)
             {
                 _withdrawCmdtyConsumed = (period, inventory, withdrawnVolume) => percentCmdtyConsumed * Math.Abs(withdrawnVolume);
                 return this;
             }
 
-            IAddTerminalStorageState IAddCmdtyConsumedOnWithdraw.WithCmdtyConsumedOnWithdraw(
+            IAddCmdtyInventoryLoss IAddCmdtyConsumedOnWithdraw.WithCmdtyConsumedOnWithdraw(
                                 [NotNull] Func<T, double, double, double> volumeOfCmdtyConsumed)
             {
                 _withdrawCmdtyConsumed = volumeOfCmdtyConsumed ?? throw new ArgumentNullException(nameof(volumeOfCmdtyConsumed));
                 return this;
             }
 
-        }
+            IAddCmdtyInventoryCost IAddCmdtyInventoryLoss.WithCmdtyInventoryLoss([NotNull] Func<T, double, double> cmdtyInventoryLoss)
+            {
+                _cmdtyInventoryLoss = cmdtyInventoryLoss ?? throw new ArgumentNullException(nameof(cmdtyInventoryLoss));
+                return this;
+            }
 
+            IAddCmdtyInventoryCost IAddCmdtyInventoryLoss.WithNoCmdtyInventoryLoss()
+            {
+                _cmdtyInventoryLoss = (period, inventory) => 0.0;
+                return this;
+            }
+
+            IAddCmdtyInventoryCost IAddCmdtyInventoryLoss.WithFixedPercentCmdtyInventoryLoss(double percentCmdtyInventoryLoss)
+            {
+                _cmdtyInventoryLoss = (period, inventory) => inventory * percentCmdtyInventoryLoss;
+                return this;
+            }
+
+            IAddTerminalStorageState IAddCmdtyInventoryCost.WithCmdtyInventoryCost(
+                [NotNull] Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost)
+            {
+                _cmdtyInventoryCost = cmdtyInventoryCost ?? throw new ArgumentNullException(nameof(cmdtyInventoryCost));
+                return this;
+            }
+
+            IAddTerminalStorageState IAddCmdtyInventoryCost.WithNoCmdtyInventoryCost()
+            {
+                _cmdtyInventoryCost = (period, inventory) => EmptyCashFlows;
+                return this;
+            }
+
+        }
+        
         public interface IAddInjectWithdrawConstraints
         {
             IAddMinInventory WithTimeDependentInjectWithdrawRange(Func<T, InjectWithdrawRange> injectWithdrawRangeByPeriod);
@@ -386,9 +443,22 @@ namespace Cmdty.Storage
 
         public interface IAddCmdtyConsumedOnWithdraw
         {
-            IAddTerminalStorageState WithNoCmdtyConsumedOnWithdraw();
-            IAddTerminalStorageState WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed);
-            IAddTerminalStorageState WithCmdtyConsumedOnWithdraw(Func<T, double, double, double> volumeOfCmdtyConsumed);
+            IAddCmdtyInventoryLoss WithNoCmdtyConsumedOnWithdraw();
+            IAddCmdtyInventoryLoss WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed);
+            IAddCmdtyInventoryLoss WithCmdtyConsumedOnWithdraw(Func<T, double, double, double> volumeOfCmdtyConsumed);
+        }
+
+        public interface IAddCmdtyInventoryLoss
+        {
+            IAddCmdtyInventoryCost WithCmdtyInventoryLoss(Func<T, double, double> cmdtyInventoryLoss);
+            IAddCmdtyInventoryCost WithNoCmdtyInventoryLoss();
+            IAddCmdtyInventoryCost WithFixedPercentCmdtyInventoryLoss(double percentCmdtyInventoryLoss);
+        }
+
+        public interface IAddCmdtyInventoryCost
+        {
+            IAddTerminalStorageState WithCmdtyInventoryCost(Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost);
+            IAddTerminalStorageState WithNoCmdtyInventoryCost();
         }
 
         public interface IAddTerminalStorageState
