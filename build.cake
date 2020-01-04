@@ -111,22 +111,39 @@ Task("Test-C#")
     }
 });
 
-Task("Install-PythonDependencies")
+string vEnvPath = System.IO.Path.Combine("src", "Cmdty.Storage.Python", "storage-venv");
+string vEnvActivatePath = System.IO.Path.Combine(vEnvPath, "Scripts", "activate.bat");
+
+Task("Create-VirtualEnv")
     .Does(() =>
 {
-    StartProcessThrowOnError("python", "-m pip install --upgrade pip");
-    StartProcessThrowOnError("pip", "install -r src/Cmdty.Storage.Python/requirements.txt");
-    StartProcessThrowOnError("pip", "install pytest");
-    StartProcessThrowOnError("pip", "install wheel");
-    StartProcessThrowOnError("pip", "install twine");
-    StartProcessThrowOnError("pip", "install -e src/Cmdty.Storage.Python");
+    if (System.IO.File.Exists(vEnvActivatePath))
+    {
+        Information("storage-venv Virtual Environment already exists, so no need to create.");
+    }
+    else
+    {
+        Information("Creating storage-venv Virtual Environment.");
+        StartProcessThrowOnError("python", "-m venv " + vEnvPath);
+    }
+});
+
+Task("Install-VirtualEnvDependencies")
+	.IsDependentOn("Create-VirtualEnv")
+    .Does(() =>
+{
+    RunCommandInVirtualEnv("python -m pip install --upgrade pip", vEnvActivatePath);
+    RunCommandInVirtualEnv("pip install pytest", vEnvActivatePath);
+    RunCommandInVirtualEnv("pip install -r src/Cmdty.Storage.Python/requirements.txt", vEnvActivatePath);
+    RunCommandInVirtualEnv("pip install -e src/Cmdty.Storage.Python", vEnvActivatePath);
 });
 
 var testPythonTask = Task("Test-Python")
+    .IsDependentOn("Install-VirtualEnvDependencies")
 	.IsDependentOn("Test-C#")
 	.Does(() =>
 {
-    StartProcessThrowOnError("python", "-m pytest src/Cmdty.Storage.Python/tests --junitxml=junit/test-results.xml");
+    RunCommandInVirtualEnv("python -m pytest src/Cmdty.Storage.Python/tests --junitxml=junit/test-results.xml", vEnvActivatePath);
 });
 
 if (isRunningOnBuildServer)
@@ -199,6 +216,14 @@ private void StartProcessThrowOnError(string applicationName, params string[] pr
     int exitCode = StartProcess(applicationName, new ProcessSettings {Arguments = argsBuilder});
     if (exitCode != 0)
         throw new ApplicationException($"Starting {applicationName} in new process returned non-zero exit code of {exitCode}");
+}
+
+private void RunCommandInVirtualEnv(string command, string vEnvActivatePath)
+{
+    Information("Running command in venv: " + command);
+    string fullCommand = $"/k {vEnvActivatePath} & {command} & deactivate & exit";
+    Information("Command to execute: " + fullCommand);
+    StartProcessThrowOnError("cmd", $"/k {vEnvActivatePath} & {command} & deactivate & exit");
 }
 
 var publishNuGetTask = Task("Publish-NuGet")

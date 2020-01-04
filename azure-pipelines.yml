@@ -25,6 +25,18 @@ steps:
       projectKey: 'storage'
       projectName: 'storage'
 
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.6'
+    displayName: "Use Python 3.6"
+
+  - script: |
+        pip install virtualenv
+        pip install twine
+        pip install setuptools
+        pip install wheel
+    displayName: 'Install Python packages: virtualenv, twine, setuptools and wheel'
+
   - task: PowerShell@2
     displayName: 'Run Cake PowerShell Bootstrapper'
     inputs:
