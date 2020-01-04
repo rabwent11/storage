@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Cmdty.Core" Version="0.1.0-beta2" />
-    <PackageReference Include="Cmdty.Curves" Version="0.1.0-beta1" />
+    <PackageReference Include="Cmdty.Curves" Version="0.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,5 +33,9 @@
     <Copy SourceFiles="@(FilesToCopyForPython)" DestinationFolder="..\Cmdty.Storage.Python\cmdty_storage\lib" OverwriteReadOnlyFiles="true" />
     <WriteLinesToFile File="..\Cmdty.Storage.Python\cmdty_storage\__version__.py" Lines="__version__ = '$(PythonVersion)'" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
+
+  <ItemGroup>
+    <None Remove="Cmdty.Storage.csproj.DotSettings" />
+  </ItemGroup>
 
 </Project>
