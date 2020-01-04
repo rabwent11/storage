@@ -256,7 +256,8 @@ namespace Cmdty.Storage
                         double injectWithdrawVolume, double cmdtyPrice, Func<double, double> continuationValueInterpolated, 
                         Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
         {
-            double inventoryAfterDecision = inventory + injectWithdrawVolume;
+            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
+            double inventoryAfterDecision = inventory + injectWithdrawVolume - inventoryLoss;
             double continuationFutureNpv = continuationValueInterpolated(inventoryAfterDecision);
             // TODO use StorageHelper.StorageImmediateNpvForDecision
 
@@ -265,11 +266,14 @@ namespace Cmdty.Storage
 
             double injectWithdrawNpv = -injectWithdrawVolume * cmdtyPrice * discountFactorFromCmdtySettlement;
 
-            IReadOnlyList<DomesticCashFlow> storageCostCashFlows = injectWithdrawVolume > 0.0
+            IReadOnlyList<DomesticCashFlow> inventoryCostCashFlows = storage.CmdtyInventoryCost(period, inventory);
+            double inventoryCostNpv = inventoryCostCashFlows.Sum(cashFlow => cashFlow.Amount * discountFactors(cashFlow.Date));
+
+            IReadOnlyList<DomesticCashFlow> decisionCostCashFlows = injectWithdrawVolume > 0.0
                     ? storage.InjectionCost(period, inventory, injectWithdrawVolume)
                     : storage.WithdrawalCost(period, inventory, -injectWithdrawVolume);
 
-            double storageCostNpv = storageCostCashFlows.Sum(cashFlow => cashFlow.Amount * discountFactors(cashFlow.Date));
+            double decisionCostNpv = decisionCostCashFlows.Sum(cashFlow => cashFlow.Amount * discountFactors(cashFlow.Date));
 
             double cmdtyUsedForInjectWithdrawVolume = injectWithdrawVolume > 0.0
                 ? storage.CmdtyVolumeConsumedOnInject(period, inventory, injectWithdrawVolume)
@@ -278,7 +282,7 @@ namespace Cmdty.Storage
             // Note that calculations assume that decision volumes do NOT include volumes consumed, and that these volumes are purchased in the market
             double cmdtyUsedForInjectWithdrawNpv = -cmdtyUsedForInjectWithdrawVolume * cmdtyPrice * discountFactorFromCmdtySettlement;
 
-            double storageNpv = continuationFutureNpv + injectWithdrawNpv - storageCostNpv + cmdtyUsedForInjectWithdrawNpv;
+            double storageNpv = continuationFutureNpv + injectWithdrawNpv - decisionCostNpv + cmdtyUsedForInjectWithdrawNpv - inventoryCostNpv;
 
             return (StorageNpv: storageNpv, CmdtyConsumed: cmdtyUsedForInjectWithdrawVolume);
         }
