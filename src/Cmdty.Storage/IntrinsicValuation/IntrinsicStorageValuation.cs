@@ -36,22 +36,22 @@ namespace Cmdty.Storage
             IIntrinsicAddCmdtySettlementRule<T>, IIntrinsicAddDiscountFactorFunc<T>, IIntrinsicAddInventoryGridCalculation<T>, IIntrinsicAddNumericalTolerance<T>, IIntrinsicAddInterpolator<T>, IIntrinsicCalculate<T>
         where T : ITimePeriod<T>
     {
-        private readonly CmdtyStorage<T> _storage;
+        private readonly ICmdtyStorage<T> _storage;
         private double _startingInventory;
         private T _currentPeriod;
         private TimeSeries<T, double> _forwardCurve;
         private Func<T, Day> _settleDateRule;
         private Func<Day, double> _discountFactors;
-        private Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
+        private Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
         private IInterpolatorFactory _interpolatorFactory;
         private double _numericalTolerance;
 
-        private IntrinsicStorageValuation([NotNull] CmdtyStorage<T> storage)
+        private IntrinsicStorageValuation([NotNull] ICmdtyStorage<T> storage)
         {
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
         }
 
-        public static IIntrinsicAddStartingInventory<T> ForStorage([NotNull] CmdtyStorage<T> storage)
+        public static IIntrinsicAddStartingInventory<T> ForStorage([NotNull] ICmdtyStorage<T> storage)
         {
             return new IntrinsicStorageValuation<T>(storage);
         }
@@ -91,7 +91,7 @@ namespace Cmdty.Storage
         }
 
         IIntrinsicAddInterpolator<T> IIntrinsicAddInventoryGridCalculation<T>
-                    .WithStateSpaceGridCalculation([NotNull] Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory)
+                    .WithStateSpaceGridCalculation([NotNull] Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory)
         {
             _gridCalcFactory = gridCalcFactory ?? throw new ArgumentNullException(nameof(gridCalcFactory));
             return this;
@@ -118,8 +118,8 @@ namespace Cmdty.Storage
         }
 
         private static IntrinsicStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory,
-                TimeSeries<T, double> forwardCurve, CmdtyStorage<T> storage, Func<T, Day> settleDateRule,
-                Func<Day, double> discountFactors, Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory,
+                TimeSeries<T, double> forwardCurve, ICmdtyStorage<T> storage, Func<T, Day> settleDateRule,
+                Func<Day, double> discountFactors, Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory,
                 IInterpolatorFactory interpolatorFactory, double numericalTolerance)
         {
             if (startingInventory < 0)
@@ -229,7 +229,7 @@ namespace Cmdty.Storage
             return new IntrinsicStorageValuationResults<T>(storageNpv, decisionProfileBuilder.Build(), cmdtyConsumedBuilder.Build());
         }
 
-        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) OptimalDecisionAndValue(CmdtyStorage<T> storage, T periodLoop, double inventory,
+        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) OptimalDecisionAndValue(ICmdtyStorage<T> storage, T periodLoop, double inventory,
             double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, double cmdtyPrice,
             Func<double, double> continuationValueByInventory, Func<T, Day> settleDateRule, Func<Day, double> discountFactors, 
             double numericalTolerance)
@@ -252,7 +252,7 @@ namespace Cmdty.Storage
         }
 
 
-        private static (double StorageNpv, double CmdtyConsumed) StorageValueForDecision(CmdtyStorage<T> storage, T period, double inventory,
+        private static (double StorageNpv, double CmdtyConsumed) StorageValueForDecision(ICmdtyStorage<T> storage, T period, double inventory,
                         double injectWithdrawVolume, double cmdtyPrice, Func<double, double> continuationValueInterpolated, 
                         Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
         {
@@ -329,7 +329,7 @@ namespace Cmdty.Storage
     public interface IIntrinsicAddInventoryGridCalculation<T>
         where T : ITimePeriod<T>
     {
-        IIntrinsicAddInterpolator<T> WithStateSpaceGridCalculation(Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory);
+        IIntrinsicAddInterpolator<T> WithStateSpaceGridCalculation(Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory);
     }
 
     public interface IIntrinsicAddInterpolator<T>

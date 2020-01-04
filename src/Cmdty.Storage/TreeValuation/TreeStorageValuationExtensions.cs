@@ -67,7 +67,7 @@ namespace Cmdty.Storage
             if (numGridPointsOverGlobalInventoryRange < 3)
                 throw new ArgumentException($"Parameter {nameof(numGridPointsOverGlobalInventoryRange)} value must be at least 3.", nameof(numGridPointsOverGlobalInventoryRange));
 
-            IDoubleStateSpaceGridCalc GridCalcFactory(CmdtyStorage<T> storage)
+            IDoubleStateSpaceGridCalc GridCalcFactory(ICmdtyStorage<T> storage)
             {
                 T[] storagePeriods = storage.StartPeriod.EnumerateTo(storage.EndPeriod).ToArray();
 

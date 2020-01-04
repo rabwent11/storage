@@ -34,8 +34,7 @@ namespace Cmdty.Storage
     /// <summary>
     /// Represents ownership of a commodity storage facility, either virtual or physical.
     /// </summary>
-    public sealed class CmdtyStorage<T>
-        where T : ITimePeriod<T>
+    public sealed class CmdtyStorage<T> : ICmdtyStorage<T> where T : ITimePeriod<T>
     {
         private readonly Func<T, IInjectWithdrawConstraint> _injectWithdrawConstraints;
         private readonly Func<T, double> _maxInventory;

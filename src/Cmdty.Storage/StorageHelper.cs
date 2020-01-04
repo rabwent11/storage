@@ -35,7 +35,7 @@ namespace Cmdty.Storage
     public static class StorageHelper
     {
 
-        public static TimeSeries<T, InventoryRange> CalculateInventorySpace<T>(CmdtyStorage<T> storage, double startingInventory, T currentPeriod)
+        public static TimeSeries<T, InventoryRange> CalculateInventorySpace<T>(ICmdtyStorage<T> storage, double startingInventory, T currentPeriod)
             where T : ITimePeriod<T>
         {
             if (currentPeriod.CompareTo(storage.EndPeriod) > 0) // TODO should condition be >= 0?
@@ -195,7 +195,7 @@ namespace Cmdty.Storage
 
         // TODO use this in IntrinsicStorageValuation
         public static (double ImmediateNpv, double CmdtyConsumed) 
-            StorageImmediateNpvForDecision<T>(CmdtyStorage<T> storage, T period, double inventory,
+            StorageImmediateNpvForDecision<T>(ICmdtyStorage<T> storage, T period, double inventory,
                 double injectWithdrawVolume, double cmdtyPrice, Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
             where T : ITimePeriod<T>
         {

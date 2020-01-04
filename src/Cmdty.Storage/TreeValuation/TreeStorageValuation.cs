@@ -38,23 +38,23 @@ namespace Cmdty.Storage
             ITreeAddInventoryGridCalculation<T>, ITreeAddInterpolator<T>, ITreeAddNumericalTolerance<T>, ITreeCalculate<T>
         where T : ITimePeriod<T>
     {
-        private readonly CmdtyStorage<T> _storage;
+        private readonly ICmdtyStorage<T> _storage;
         private double _startingInventory;
         private T _currentPeriod;
         private TimeSeries<T, double> _forwardCurve;
         private Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> _treeFactory;
         private Func<T, Day> _settleDateRule;
         private Func<Day, Day, double> _discountFactors;
-        private Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
+        private Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
         private IInterpolatorFactory _interpolatorFactory;
         private double _numericalTolerance;
 
-        private TreeStorageValuation([NotNull] CmdtyStorage<T> storage)
+        private TreeStorageValuation([NotNull] ICmdtyStorage<T> storage)
         {
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
         }
 
-        public static ITreeAddStartingInventory<T> ForStorage([NotNull] CmdtyStorage<T> storage)
+        public static ITreeAddStartingInventory<T> ForStorage([NotNull] ICmdtyStorage<T> storage)
         {
             return new TreeStorageValuation<T>(storage);
         }
@@ -101,7 +101,7 @@ namespace Cmdty.Storage
         }
 
         ITreeAddInterpolator<T> ITreeAddInventoryGridCalculation<T>.WithStateSpaceGridCalculation(
-            Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory)
+            Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory)
         {
             _gridCalcFactory = gridCalcFactory ?? throw new ArgumentNullException(nameof(gridCalcFactory));
             return this;
@@ -142,8 +142,8 @@ namespace Cmdty.Storage
 
         private static TreeStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory, 
             TimeSeries<T, double> forwardCurve, Func<TimeSeries<T, double>, TimeSeries<T, IReadOnlyList<TreeNode>>> treeFactory, 
-            CmdtyStorage<T> storage, Func<T, Day> settleDateRule, Func<Day, Day, double> discountFactors, 
-            Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory, IInterpolatorFactory interpolatorFactory, 
+            ICmdtyStorage<T> storage, Func<T, Day> settleDateRule, Func<Day, Day, double> discountFactors, 
+            Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory, IInterpolatorFactory interpolatorFactory, 
             double numericalTolerance)
         {
             if (startingInventory < 0)
@@ -281,7 +281,7 @@ namespace Cmdty.Storage
 
         // TODO create class on hold this tuple?
         private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction, double ImmediateNpv) 
-            OptimalDecisionAndValue(CmdtyStorage<T> storage, T period, double inventory,
+            OptimalDecisionAndValue(ICmdtyStorage<T> storage, T period, double inventory,
                     double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, TreeNode treeNode,
                     IReadOnlyList<Func<double, double>> continuationValueByInventories, Func<T, Day> settleDateRule, 
                     Func<Day, double> discountFactors, double numericalTolerance)
@@ -471,7 +471,7 @@ namespace Cmdty.Storage
     public interface ITreeAddInventoryGridCalculation<T>
         where T : ITimePeriod<T>
     {
-        ITreeAddInterpolator<T> WithStateSpaceGridCalculation(Func<CmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory);
+        ITreeAddInterpolator<T> WithStateSpaceGridCalculation(Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory);
     }
 
     public interface ITreeAddInterpolator<T>
