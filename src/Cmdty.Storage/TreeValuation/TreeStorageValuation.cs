@@ -281,25 +281,31 @@ namespace Cmdty.Storage
 
         // TODO create class on hold this tuple?
         private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction, double ImmediateNpv) 
-            OptimalDecisionAndValue(CmdtyStorage<T> storage, T periodLoop, double inventory,
+            OptimalDecisionAndValue(CmdtyStorage<T> storage, T period, double inventory,
                     double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, TreeNode treeNode,
                     IReadOnlyList<Func<double, double>> continuationValueByInventories, Func<T, Day> settleDateRule, 
                     Func<Day, double> discountFactors, double numericalTolerance)
         {
-            InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(periodLoop, inventory);
+            InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(period, inventory);
             double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory,
                                             nextStepInventorySpaceMin, nextStepInventorySpaceMax, numericalTolerance);
 
             var valuesForDecisions = new double[decisionSet.Length];
             var cmdtyConsumedForDecisions = new double[decisionSet.Length];
             var immediateNpvs = new double[decisionSet.Length];
+
+            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
+            IReadOnlyList<DomesticCashFlow> inventoryCostCashFlows = storage.CmdtyInventoryCost(period, inventory);
+            double inventoryCostNpv = inventoryCostCashFlows.Sum(cashFlow => cashFlow.Amount * discountFactors(cashFlow.Date));
+
             for (var j = 0; j < decisionSet.Length; j++)
             {
                 double decisionInjectWithdraw = decisionSet[j];
-                (double immediateNpv, double cmdtyConsumed) = StorageHelper.StorageImmediateNpvForDecision(storage, periodLoop, inventory,
+                (double immediateNpv, double cmdtyConsumed) = StorageHelper.StorageImmediateNpvForDecision(storage, period, inventory,
                                                 decisionInjectWithdraw, treeNode.Value, settleDateRule, discountFactors);
+                immediateNpv -= inventoryCostNpv;
                 // Expected continuation value
-                double inventoryAfterDecision = inventory + decisionInjectWithdraw;
+                double inventoryAfterDecision = inventory + decisionInjectWithdraw - inventoryLoss;
                 double expectedContinuationValue = 0.0;
 
                 foreach (NodeTransition transition in treeNode.Transitions)
