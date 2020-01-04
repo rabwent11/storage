@@ -377,9 +377,11 @@ namespace Cmdty.Storage
                             OptimalDecisionAndValue(_storage, period, inventory, nextStepInventorySpaceMin,
                                 nextStepInventorySpaceMax, treeNode, continuationValueByInventory, _settleDateRule,
                                 DiscountToCurrentDay, _numericalTolerance);
-                        
+
+                        double inventoryLoss = _storage.CmdtyInventoryLoss(period, inventory);
+
                         storageNpv += thisStepImmediateNpv;
-                        inventory += decisions[i];
+                        inventory += decisions[i] - inventoryLoss;
                         i++;
                     }
                 }
