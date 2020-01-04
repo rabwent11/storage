@@ -29,7 +29,7 @@ steps:
     displayName: 'Run Cake PowerShell Bootstrapper'
     inputs:
       filePath: 'build.ps1'
-      arguments: '-Verbosity Diagnostic -Target CI -PrereleaseNumber=$(Build.BuildNumber)'
+      arguments: '-Verbosity Diagnostic -PrereleaseNumber=$(Build.BuildNumber)'
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
@@ -81,6 +81,14 @@ steps:
       Contents: artifacts/**
       TargetFolder: $(Build.ArtifactStagingDirectory)
       flattenFolders: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Publish NuGet package to cmdty feed
+    inputs:
+      command: 'push'
+      packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+      nuGetFeedType: 'internal'
+      publishVstsFeed: '18c506cf-ff39-47d5-8884-0ea703f25523'
 
   - task: PublishBuildArtifacts@1
     displayName: 'publish artifacts'
