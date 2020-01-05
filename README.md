@@ -24,6 +24,7 @@ Calculations take into account many of the complex features of physical storage 
 * Forced injection/withdrawal, as can be enforced by regulatory or physical constraints.
 * Commodity consumed on injection/withdrawal, for example where natural gas is consumed by the motors that power injection into storage.
 * Time dependent minimum and maximum inventory, necessary if different notional volumes of a storage facility are leased for different consecutive years.
+* Optional time and inventory dependent loss of commodity in storage. For example this assumption is necessary for electricity storage which isn't 100% efficient.
 * Ability to constrain the storage to be empty at the end of it's life, or specify a value of commodity inventory left in storage.
 
 ## Models
