@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage{amsmath}
+\usepackage{amssymb} % for "\mathbb" macro
 \usepackage[round]{natbib}
 \usepackage{url}
 \usepackage{hyperref}
@@ -14,7 +15,6 @@
 \maketitle
 
 \section{Introduction}
-
 Define $v_i$ as the decision volume of commodity injected or withdrawn from storage at time
 $t_i$. To clarify, positive value of $v_i$ denotes injection into storage, increasing the
 inventory, where as a negative value denotes the volume withdrawn. The admissible values
@@ -84,7 +84,7 @@ Define $p(v_i, t_i)$ as the net present (discounted) cash flows resulting from d
 volume $v_i$ at time $t_i$.
 
 \begin{equation}
-    p(v_i, t_i) = (\mu(t_i, V_i, v_i) + v_i) s_i d(c(t_i)) - \pi(t_i, V_i, v_i)
+    p(v_i, t_i, V_i) = (\mu(t_i, V_i, v_i) + v_i) s_i d(c(t_i)) - \pi(t_i, V_i, v_i)
 \end{equation}
 
 Where:
@@ -105,22 +105,30 @@ Where:
     this in practice is the cost of running motors which facilitate injection or withdrawal.
 \end{itemize}
 
-- NPV from inject/withdraw, equals decision volume, adjusted for lost volume,
-times cmdty forward price, discounted.
+The optimal value of the storage at time $t_i$ with inventory $V_i$ can be written as:
 
-- NPV from inject/withdraw cost.
+\begin{equation}
+    \Omega(t_i, V_i) =  \sup_{\+v \in \Phi} \mathbb{E}^Q \biggl[\sum^n_{j=i}p(v_j, t_j, V_j) \biggr]
+\end{equation}
 
-- NPV from inventory cost.
-
-- Terminal cmdty NPV function.
+Where $\mathbb{E}^Q$ is the expectation operator under the risk-neutral measure, $\+v$ is 
+an adapted decision strategy consisting of $\mathcal{F}_{t_i}$ adapted $v_i$ at each time step, 
+and $\Phi$ is the set of all feasible decision volume vectors, given the storage 
+constraints presented above.
 
 \bigskip
+From above %TODO reference the equation
+we can see that the storage pricing problem effectively comes down to finding the optimal 
+decision strategy. This can be solved using Dynamic Programming. First writing the recursive
+Bellman equation.
 
-Valuation Theory.
+\begin{equation}
+    \Omega(t_i, V_i) = \max_{v_i} \biggl\{ p(v_i, t_i) + \mathbb{E}^Q \biggl[
+        \Omega(t_{i+1}, V_i + v_i) - L(t_i, V_i) \biggr] \biggr\}
+\end{equation}
+% TODO make expectation conditional? Conditional on a vector of Markov variables?
 
-- Optimal value as risk-neutral expectation for NPVs.
-
-- Bellman equation.
+\bigskip
 
 \bigskip
 
