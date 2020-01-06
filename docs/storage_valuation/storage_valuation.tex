@@ -32,11 +32,24 @@ which results in a higher maximum withdrawal rate, and lower maximum withdrawal 
 
 \bigskip
 
-The inventory $V_i$ can be defined as the sum of all decision volumes $v_i$
+The inventory $V_i$ can be defined recursively as:
 
 \begin{equation}
-    V_i = \sum{v_i}
+    V_i = V_{i-1} + v_{i-1} - L(t_{i-1}, V_{i-1}) 
 \end{equation}
+
+Where $L(t_{i-1}, V_{i-1})$ is the inventory loss, as a function of time and inventory, 
+evaluated for the previous time period. An alternative representation of inventory is 
+as a summation:
+
+\begin{equation}
+    V_i = V_{start} + \sum\limits^{i-1}_{j=0} {(v_{j} - L(t_j, V_j))}
+\end{equation}
+
+$V_{start}$ is the inventory at the inception. This is necessary in the case where storage
+capacity is purchased or leased with some amount of commodity inventory in place.
+
+\bigskip
 
 $V_i$ is itself constrained to be within $V_{min}$ and $V_{max}$, the minimum and maximum
 inventory functions.
@@ -65,8 +78,6 @@ Mathematical constraints.
 
 - Set of admissible decision volumes which adhere to constraints.
 
-- Definition of inventory. Sum of decision volume, minus volume consumed on,
- decision, minus inventory loss.
 
 
 \bigskip
