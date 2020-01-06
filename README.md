@@ -11,6 +11,9 @@ Valuation and optimisation of commodity storage. Still in early stages of develo
 * [Getting Started](#getting-started)
     * [Installing C# API](#installing-c-api)
     * [Installing Excel Add-In](#installing-excel-add-in)
+* [Using the C# API](#using-the-c-api)
+    * [Creating the Storage Object](#creating-the-storage-object)
+    * [Calculating the Intrinsic Value](#calculating-the-intrinsic-value)
 * [Building](#building)
 * [One Factor Trinomial Tree Model](#one-factor-trinomial-tree-method-critique-and-rationale)
 * [License](#license)
@@ -39,7 +42,7 @@ Both approaches solve the optimsation problem using backward induction across a 
 ### Installing C# API
 For use from C# install the NuGet package Cmdty.Storage.
 ```
-PM> Install-Package Cmdty.Storage -Version 0.1.0-beta1
+PM> Install-Package Cmdty.Storage -Version 0.1.0-beta2
 ```
 
 ### Installing Excel Add-In
@@ -56,6 +59,107 @@ Within the latest build select, Artifacts > drop, then download either Cmdty.Sto
     * Press the OK button to close the two dialogue boxes.
 
 Examples of the Excel functions can be found in [samples/excel/storage_samples.xlsx](https://github.com/cmdty/storage/raw/master/samples/excel/storage_samples.xlsx).
+
+## Using the C# API
+
+### Creating the Storage Object
+In order for storage capacity to be valued, first an instance of the class CmdtyStorage 
+needs to be created. The code sample below shows how the fluent builder API can be used
+to achieve this.
+
+``` c#
+const double constantMaxInjectRate = 5.26;
+const double constantMaxWithdrawRate = 14.74;
+const double constantMaxInventory = 1100.74;
+const double constantMinInventory = 0.0;
+const double constantInjectionCost = 0.48;
+const double constantWithdrawalCost = 0.74;
+
+CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+    .WithActiveTimePeriod(new Day(2019, 9, 1), new Day(2019, 10, 1))
+    .WithConstantInjectWithdrawRange(-constantMaxWithdrawRate, constantMaxInjectRate)
+    .WithConstantMinInventory(constantMinInventory)
+    .WithConstantMaxInventory(constantMaxInventory)
+    .WithPerUnitInjectionCost(constantInjectionCost, injectionDate => injectionDate)
+    .WithNoCmdtyConsumedOnInject()
+    .WithPerUnitWithdrawalCost(constantWithdrawalCost, withdrawalDate => withdrawalDate)
+    .WithNoCmdtyConsumedOnWithdraw()
+    .WithNoCmdtyInventoryLoss()
+    .WithNoCmdtyInventoryCost()
+    .MustBeEmptyAtEnd()
+    .Build();
+```
+
+The above example is quite simple, with most parameters being constant, but much more complicated storage objects can be created. Once the Cmdty.Storage package has been installed,
+a good way to discover the flexibility in the API is to look at the IntelliSense suggestions in
+Visual Studio.
+
+### Calculating the Intrinsic Value
+The following example shows how to calculate the intrinsic value of the storage, including
+the optimal intrinsic inject/withdraw decision profile.
+
+``` c#
+var currentPeriod = new Day(2019, 9, 15);
+const double lowerForwardPrice = 56.6;
+const double forwardSpread = 87.81;
+double higherForwardPrice = lowerForwardPrice + forwardSpread;
+
+var forwardCurveBuilder = new TimeSeries<Day, double>.Builder();
+
+foreach (var day in new Day(2019, 9, 15).EnumerateTo(new Day(2019, 9, 22)))
+{
+    forwardCurveBuilder.Add(day, lowerForwardPrice);
+}
+
+foreach (var day in new Day(2019, 9, 23).EnumerateTo(new Day(2019, 10, 1)))
+{
+    forwardCurveBuilder.Add(day, higherForwardPrice);
+}
+
+const double startingInventory = 50.0;
+
+IntrinsicStorageValuationResults<Day> valuationResults = IntrinsicStorageValuation<Day>
+    .ForStorage(storage)
+    .WithStartingInventory(startingInventory)
+    .ForCurrentPeriod(currentPeriod)
+    .WithForwardCurve(forwardCurveBuilder.Build())
+    .WithCmdtySettlementRule(day => day.First<Month>().Offset(1).First<Day>().Offset(5))
+    .WithDiscountFactorFunc(day => 1.0)
+    .WithFixedGridSpacing(10.0)
+    .WithLinearInventorySpaceInterpolation()
+    .WithNumericalTolerance(1E-12)
+    .Calculate();
+
+Console.WriteLine("Calculated intrinsic storage NPV: " + valuationResults.NetPresentValue.ToString("F2"));
+Console.WriteLine();
+Console.WriteLine("Decision profile:");
+Console.WriteLine(valuationResults.DecisionProfile.FormatData("F2", -1));
+```
+
+When run, the above code prints the following to the console.
+
+```
+Calculated intrinsic storage NPV: 10827.21
+
+Decision profile:
+Count = 16
+2019-09-15  5.26
+2019-09-16  5.26
+2019-09-17  5.26
+2019-09-18  5.26
+2019-09-19  5.26
+2019-09-20  5.26
+2019-09-21  5.26
+2019-09-22  5.26
+2019-09-23  -14.74
+2019-09-24  -14.74
+2019-09-25  0.00
+2019-09-26  -14.74
+2019-09-27  -14.74
+2019-09-28  -14.74
+2019-09-29  -14.74
+2019-09-30  -3.64
+```
 
 ## Building
 Build scripts use [cake](https://github.com/cake-build/cake) and require [the .NET Core SDK](https://dotnet.microsoft.com/download) to be installed on the Windows machine performing the build.

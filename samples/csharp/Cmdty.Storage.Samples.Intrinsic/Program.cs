@@ -31,23 +31,25 @@ namespace Cmdty.Storage.Samples.Intrinsic
 {
     class Program
     {
-        private const double ConstantMaxInjectRate = 5.26;
-        private const double ConstantMaxWithdrawRate = 14.74;
-        private const double ConstantMaxInventory = 1100.74;
-        private const double ConstantMinInventory = 0.0;
-        private const double ConstantInjectionCost = 0.48;
-        private const double ConstantWithdrawalCost = 0.74;
+
 
         static void Main(string[] args)
         {
+            const double constantMaxInjectRate = 5.26;
+            const double constantMaxWithdrawRate = 14.74;
+            const double constantMaxInventory = 1100.74;
+            const double constantMinInventory = 0.0;
+            const double constantInjectionCost = 0.48;
+            const double constantWithdrawalCost = 0.74;
+
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                 .WithActiveTimePeriod(new Day(2019, 9, 1), new Day(2019, 10, 1))
-                .WithConstantInjectWithdrawRange(-ConstantMaxWithdrawRate, ConstantMaxInjectRate)
-                .WithConstantMinInventory(ConstantMinInventory)
-                .WithConstantMaxInventory(ConstantMaxInventory)
-                .WithPerUnitInjectionCost(ConstantInjectionCost, injectionDate => injectionDate)
+                .WithConstantInjectWithdrawRange(-constantMaxWithdrawRate, constantMaxInjectRate)
+                .WithConstantMinInventory(constantMinInventory)
+                .WithConstantMaxInventory(constantMaxInventory)
+                .WithPerUnitInjectionCost(constantInjectionCost, injectionDate => injectionDate)
                 .WithNoCmdtyConsumedOnInject()
-                .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)
+                .WithPerUnitWithdrawalCost(constantWithdrawalCost, withdrawalDate => withdrawalDate)
                 .WithNoCmdtyConsumedOnWithdraw()
                 .WithNoCmdtyInventoryLoss()
                 .WithNoCmdtyInventoryCost()
