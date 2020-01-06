@@ -79,10 +79,31 @@ Mathematical constraints.
 - Set of admissible decision volumes which adhere to constraints.
 
 
+\section{Cash Flows}
+Define $p(v_i, t_i)$ as the net present (discounted) cash flows resulting from decision
+volume $v_i$ at time $t_i$.
 
-\bigskip
+\begin{equation}
+    p(v_i, t_i) = (\mu(t_i, V_i, v_i) + v_i) s_i d(c(t_i)) - \pi(t_i, V_i, v_i)
+\end{equation}
 
-Cash flows.
+Where:
+\begin{itemize}
+    \item $s_i$ is the spot commodity price at time $t_i$.
+    \item $c(t_i)$ is the commodity settlement time function which maps from the 
+    time that commodity was delivered to the time that payment is made. In European
+    energy markets this is usually a formulaic date in the next month.
+    \item $d$ is the discount factor function. Encorporating current market risk-free
+    interest rates, this function maps from a time of a cash flow to the present value
+    of one unit of money. Any cash flow at future time $t$ can be multiplied by $d(t)$
+    in order calculate the present value of this cash flow.
+    \item $\mu(t_i, V_i, v_i)$ is the volume of commodity consumed (not added to inventory)
+    by the storage facility, as a function of time, inventory and decision volume. In practice
+    this term is relevant for energy storage where some quantity of the energy commodity
+    is consumed in order to power the motors used to get the commodity into or out of storage.
+    \item $\pi(t_i, V_i, v_i)$ is the NPV of any other costs which are generated. An example of
+    this in practice is the cost of running motors which facilitate injection or withdrawal.
+\end{itemize}
 
 - NPV from inject/withdraw, equals decision volume, adjusted for lost volume,
 times cmdty forward price, discounted.
