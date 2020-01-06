@@ -49,6 +49,8 @@ namespace Cmdty.Storage.Samples.Intrinsic
                 .WithNoCmdtyConsumedOnInject()
                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)
                 .WithNoCmdtyConsumedOnWithdraw()
+                .WithNoCmdtyInventoryLoss()
+                .WithNoCmdtyInventoryCost()
                 .MustBeEmptyAtEnd()
                 .Build();
 
@@ -80,7 +82,9 @@ namespace Cmdty.Storage.Samples.Intrinsic
                 .WithForwardCurve(forwardCurveBuilder.Build())
                 .WithCmdtySettlementRule(day => day.First<Month>().Offset(1).First<Day>().Offset(5))
                 .WithDiscountFactorFunc(day => 1.0)
-                .WithGridSpacing(10.0)
+                .WithFixedGridSpacing(10.0)
+                .WithLinearInventorySpaceInterpolation()
+                .WithNumericalTolerance(1E-12)
                 .Calculate();
 
             Console.WriteLine("Calculated intrinsic storage NPV: " + valuationResults.NetPresentValue.ToString("F2"));

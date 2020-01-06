@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cmdty.Storage" Version="0.1.0-alpha2019082613" />
+    <PackageReference Include="Cmdty.Storage" Version="0.1.0-alpha2020010602" />
   </ItemGroup>
 
 </Project>
