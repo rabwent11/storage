@@ -1,0 +1,103 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage[round]{natbib}
+\usepackage{url}
+\usepackage{hyperref}
+
+\title{Valuation of Commodity Storage}
+\author{Jake C. Fowler}
+\date{January 2020}
+
+\begin{document}
+\newcommand{\+}[1]{\ensuremath{\mathbf{#1}}}
+
+\maketitle
+
+\section{Introduction}
+
+Define $v_i$ as the decision volume of commodity injected or withdrawn from storage at time
+$t_i$. To clarify, positive value of $v_i$ denotes injection into storage, increasing the
+inventory, where as a negative value denotes the volume withdrawn. The admissible values
+of $v_i$ are restricted by the minimum and maximum inject/withdraw rate functions
+$v_{min}$ and $v_{max}$.
+
+\begin{equation}
+    v_i \in [v_{min}(t_i, V_i), v_{max}(t_i, V_i)]
+\end{equation}
+
+Note that $v_{min}$ and $v_{max}$ are both functions of time and $V_i$, which represents the
+inventory in storage at time $t_i$. Inventory-varying injection and withdrawal rates are commonly
+seen in natural gas storage, where higher storage cavern pressue results from higher inventory,
+which results in a higher maximum withdrawal rate, and lower maximum withdrawal rate.
+
+\bigskip
+
+The inventory $V_i$ can be defined as the sum of all decision volumes $v_i$
+
+\begin{equation}
+    V_i = \sum{v_i}
+\end{equation}
+
+$V_i$ is itself constrained to be within $V_{min}$ and $V_{max}$, the minimum and maximum
+inventory functions.
+
+\begin{equation}
+    V_i \in [V_{min}(t_i), V_{max}(t_i)]
+\end{equation}
+
+Commonly $V_{min}$ will evaluate to zero for all time periods, but examples
+where non-zero minimum inventory is needed include when regulations require a minimum
+level of inventory is held, as is seen for natural gas storage in some European countries.
+Two possible reasons why $V_{max}$ need to be functions of time are:
+\begin{itemize}
+    \item Storage could be leased for consecutive time periods, but for different notional
+    volumes.
+    \item The terms of leased storage commonly stipulate that the storage must be empty
+    at the time that the leased capacity ends.
+\end{itemize}
+
+
+Mathematical constraints.
+
+- Set of decision times.
+
+- Decision volume (inject/withdraw) for each time.
+
+- Set of admissible decision volumes which adhere to constraints.
+
+- Definition of inventory. Sum of decision volume, minus volume consumed on,
+ decision, minus inventory loss.
+
+
+\bigskip
+
+Cash flows.
+
+- NPV from inject/withdraw, equals decision volume, adjusted for lost volume,
+times cmdty forward price, discounted.
+
+- NPV from inject/withdraw cost.
+
+- NPV from inventory cost.
+
+- Terminal cmdty NPV function.
+
+\bigskip
+
+Valuation Theory.
+
+- Optimal value as risk-neutral expectation for NPVs.
+
+- Bellman equation.
+
+\bigskip
+
+Valuation In Practice.
+
+- Bang-bang assumption: reduce the decision volume set.
+
+- Discretise the set of inventories at which the Bellman equation is evaluated.
+
+- Problem then boils down to calculating the expectation.
+
+\end{document}
