@@ -123,18 +123,51 @@ decision strategy. This can be solved using Dynamic Programming. First writing t
 Bellman equation.
 
 \begin{equation}
-    \Omega(t_i, V_i) = \max_{v_i} \biggl\{ p(v_i, t_i) + \mathbb{E}^Q \biggl[
-        \Omega(t_{i+1}, V_i + v_i) - L(t_i, V_i) \biggr] \biggr\}
+    \label{eq:bellman}
+    \Omega(t_i, V_i) = \max_{v_i \in [v_{min}, v_{max}]} \biggl\{ p(v_i, t_i) + \mathbb{E}^Q \biggl[
+        \Omega(t_{i+1}, V_i + v_i - L(t_i, V_i)) \biggr] \biggr\}
 \end{equation}
 % TODO make expectation conditional? Conditional on a vector of Markov variables?
+Where the time and inventory dependence of $v_{min}$ and $v_{max}$ has been omitted to lighten notation.
+The intuition behind this formula is that at every time step the optimal decision volume $v_i$ 
+is the one which maximises the sum of current and discounted future expected cash flows 
+conditional upon the decision.
+Hence, calculating the value involves recursively solving \ref{eq:bellman}, start at
+the end date of the storage facility and moving back in time, at each time step calculating the
+optimal decision as a function of the previously calculated values at the next time step.
+
+\subsection{Valuation In Practice}
+In order to implement the valuation calculation using \ref{eq:bellman} approximations need
+to be made.
+
+\subsubsection{Bang-Bang Exercise Strategy}
+One problematic assumption in \ref{eq:bellman} is that the set of all permissible values of
+$v_{min}$ is $[v_{min}(t_i, V_i), v_{max}(t_i, V_i)]$. The practical implemenation involves
+evaluating the part of \ref{eq:bellman} inside the curly brackets for all permissible values,
+picking the value of $v_i$ for which this evaluates to the highest value. However, assuming
+$v_{min}(t_i, V_i) < v_{max}(t_i, V_i)$, there are an infinite number of permissible values for
+$v_i$ making this impractical to implement. The approximating solution is to assume a 
+"Bang-Bang" exercise strategy, this being that the decision is either to inject to storage
+at the maximum rate, withdraw at the maximum rate, or do nothing. Expressing this mathematically:
+
+\begin{equation}
+    \label{eq:bb-dcsn-set}
+    v_i \in \{v_{min}(t_i, V_i), 0, v_{max}(t_i, V_i)\}
+\end{equation}
+
+If either $v_{min}(t_i, V_i) > 0$ or $v_{max}(t_i, V_i) < 0$ then the 0 element is removed 
+from \ref{eq:bb-dcsn-set} as it is no longer in the real set of permisible values.
 
 \bigskip
 
-\bigskip
+Using a "Bang-Bang" exercise strategy is an approximation, hence the decision stategy that
+this results in could be suboptimal, giving a lower value for the storage than it's true
+value. However, several studies have shown that this assumption is a realistic one, and that
+even if the set of permissible values for $v_i$ includes a larger number of elements, the
+optimal strategy will be very close to the "Bang-Bang" strategy, and hence the calculated 
+storage value will be not far from the true optimal value.
+To do: provide references.
 
-Valuation In Practice.
-
-- Bang-bang assumption: reduce the decision volume set.
 
 - Discretise the set of inventories at which the Bellman equation is evaluated.
 
