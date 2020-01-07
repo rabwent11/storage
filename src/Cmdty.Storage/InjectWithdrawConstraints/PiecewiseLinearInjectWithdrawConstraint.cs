@@ -72,7 +72,7 @@ namespace Cmdty.Storage
         }
 
         public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound,
-            double currentPeriodMinInventory, double currentPeriodMaxInventory)
+                                                double currentPeriodMinInventory, double currentPeriodMaxInventory)
         {
             var currentPeriodInjectWithdrawRangeAtMaxInventory = GetInjectWithdrawRange(currentPeriodMaxInventory);
 
@@ -83,6 +83,7 @@ namespace Cmdty.Storage
                 nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMaxInventory)
             {
                 // No need to solve root as next period inventory space can be reached from the current period max inventory
+                // TODO review and test whether this block is necessary
                 return currentPeriodMaxInventory;
             }
 
@@ -118,9 +119,52 @@ namespace Cmdty.Storage
         }
 
         public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound,
-            double currentPeriodMinInventory, double currentPeriodMaxInventory)
+                                                double currentPeriodMinInventory, double currentPeriodMaxInventory)
         {
-            throw new NotImplementedException();
+            var currentPeriodInjectWithdrawRangeAtMinInventory = GetInjectWithdrawRange(currentPeriodMinInventory);
+
+            double nextPeriodMaxInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodInjectWithdrawRangeAtMinInventory.MaxInjectWithdrawRate;
+            double nextPeriodMinInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodInjectWithdrawRangeAtMinInventory.MinInjectWithdrawRate;
+
+            if (nextPeriodMinInventoryFromThisPeriodMinInventory <= nextPeriodInventorySpaceUpperBound &&
+                nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMinInventory)
+            {
+                // No need to solve root as next period inventory space can be reached from the current period min inventory
+                // TODO review and test whether this block is necessary
+                return currentPeriodMinInventory;
+            }
+
+            // Search for inventory bracket
+            // TODO could this be made more efficient using binary search?
+            double bracketLowerInventory = _injectWithdrawRanges[0].Inventory;
+            double bracketLowerInventoryAfterInject= nextPeriodMaxInventoryFromThisPeriodMinInventory;
+
+            for (int i = 1; i < _injectWithdrawRanges.Length; i++)
+            {
+                var bracketUpperDecisionRange = _injectWithdrawRanges[i];
+                double bracketUpperInventory = bracketUpperDecisionRange.Inventory;
+                double bracketUpperInventoryAfterInject = bracketUpperInventory +
+                                            bracketUpperDecisionRange.InjectWithdrawRange.MaxInjectWithdrawRate;
+
+                if (bracketLowerInventoryAfterInject <= nextPeriodInventorySpaceLowerBound &&
+                    nextPeriodInventorySpaceLowerBound <= bracketUpperInventoryAfterInject)
+                {
+                    // TODO refactor this into shared static method for solving linear equation?
+                    // Calculate m (gradient) and c (constant) coefficients of linear equation y = mx + c, where x is inventory this period, and y is inventory in the next period after max injection
+                    double gradient = (bracketUpperInventoryAfterInject - bracketLowerInventoryAfterInject) /
+                                      (bracketUpperInventory - bracketLowerInventory);
+                    double constant = bracketLowerInventoryAfterInject - gradient * bracketLowerInventory;
+
+                    // Solve for x, where y know, i.e. x = (y - c) / m
+                    double inventorySpaceLower = (nextPeriodInventorySpaceLowerBound - constant) / gradient;
+                    return inventorySpaceLower;
+                }
+
+                bracketLowerInventoryAfterInject = bracketUpperInventoryAfterInject;
+                bracketLowerInventory = bracketUpperInventory;
+            }
+
+            throw new ApplicationException("Storage inventory constraints cannot be satisfied.");
         }
     }
 }
