@@ -133,8 +133,9 @@ The intuition behind this formula is that at every time step the optimal decisio
 is the one which maximises the sum of current and discounted future expected cash flows 
 conditional upon the decision.
 Hence, calculating the value involves recursively solving \ref{eq:bellman}, start at
-the end date of the storage facility and moving back in time, at each time step calculating the
-optimal decision as a function of the previously calculated values at the next time step.
+the end date of the storage facility and using backward induction to move back in time, 
+at each time step calculating the optimal decision as a function of the previously 
+calculated values at the next time step.
 
 \subsection{Valuation In Practice}
 In order to implement the valuation calculation using \ref{eq:bellman} approximations need
@@ -166,11 +167,64 @@ value. However, several studies have shown that this assumption is a realistic o
 even if the set of permissible values for $v_i$ includes a larger number of elements, the
 optimal strategy will be very close to the "Bang-Bang" strategy, and hence the calculated 
 storage value will be not far from the true optimal value.
-To do: provide references.
+%To do: provide references on bang-bang.
+
+\subsubsection{Inventory Space Grid}
+During backward induction \ref{eq:bellman} will need to be solved for specific 
+values of the inventory $V_i$. Clearly this cannot be done for all valid values of 
+$V_i$ as there are infinite number of such values.
+In practice, at each time step $t_i$ a discrete grid of values within 
+$[V_{min}(t_i), V_{max}(t_i)]$ is chosen, and \ref{eq:bb-dcsn-set} is solved at each
+of these. 
+
+\bigskip
+The decision of the precise elements of the inventory space grid at which \ref{eq:bellman}
+is evaluated is somewhat arbitrary. In practice, the following points need to be kept
+in mind.
+\begin{itemize}
+    \item It should span the entire set of admissible inventories, i.e. the minimum
+    value at $t_i$ should be $V_{min}(t_i)$, and the maximum value $V_{max}(t_i)$.
+    \item A higher number of elements, should lead to a more accurate (less suboptimal)
+    valuation, but will take longer to run. In practice some experimentation is required
+    to choose a grid spacing sufficiently fine to give an accurate result, but without 
+    taking too long to calculate. This will be somewhat complicated by the fact that 
+    different storage configurations will behave differently.
+\end{itemize}
+
+\bigskip
+In the Cmdty.Storage library C\# core API the calculation of this grid is abstracted 
+away to the IDoubleStateSpaceGridCalc interface allowing an extension point where the 
+client code to provide it's own implemenation. An implementation of this is provided
+which calculates the grid with a fixed spacing between elements.
+
+\bigskip
+The calculation of an inventory grid with superior qualities is potentially an interesting 
+area of future study. The aim is find a good trade-off between a low number of points
+on this grid, in order to have low computation time, whilst maintaining a good level
+of accuracy such that the NPV calculated is not too suboptimal.
+% To do, look into Warin work and Semi-Lagrangian
+
+\subsubsection{Continuation Value Interpolation}
+Solving \ref{eq:bellman} involves the calculating of $\mathbb{E}^Q \biggl[
+\Omega(t_{i+1}, V_i + v_i - L(t_i, V_i)) \biggr]$
+the expected value of the storage at the next time step, give the specific decision volume
+$v_i$ chosen. In literature this value is often referred to as the "continuation value".
+During the backward induction, the continuation will always have 
+been previously calculated. However, as described in the previous section, these values 
+will only have been calculated at specific values of $V_i$ on the inventory space grid.
+It is unlikely however, that the continuation value for the inventory equal to exactly 
+$V_i + v_i - L(t_i, V_i)$ will have been calculated. This necessitates some sort of 
+approximation. 
+
+- Continuation value interpolation. 
+- Inventory space reduction.
+\bigskip
+\bigskip
 
 
-- Discretise the set of inventories at which the Bellman equation is evaluated.
 
 - Problem then boils down to calculating the expectation.
+
+- Intrinsic Valuation
 
 \end{document}
