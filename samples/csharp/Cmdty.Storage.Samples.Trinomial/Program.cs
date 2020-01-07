@@ -24,6 +24,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 
@@ -33,18 +34,30 @@ namespace Cmdty.Storage.Samples.Trinomial
     {
         static void Main(string[] args)
         {
-            const double constantMaxInjectRate = 5.26;
-            const double constantMaxWithdrawRate = 14.74;
-            const double constantMaxInventory = 1100.74;
-            const double constantMinInventory = 0.0;
             const double constantInjectionCost = 0.48;
             const double constantWithdrawalCost = 0.74;
 
+            var injectWithdrawConstraints = new List<InjectWithdrawRangeByInventoryAndPeriod<Day>>
+            {
+                (period: new Day(2019, 9, 1), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: 0.0, (minInjectWithdrawRate: -44.85, maxInjectWithdrawRate: 56.8)), // Inventory empty, highest injection rate
+                    (inventory: 100.0, (minInjectWithdrawRate: -45.01, maxInjectWithdrawRate: 54.5)),
+                    (inventory: 300.0, (minInjectWithdrawRate: -45.78, maxInjectWithdrawRate: 52.01)),
+                    (inventory: 600.0, (minInjectWithdrawRate: -46.17, maxInjectWithdrawRate: 51.9)),
+                    (inventory: 800.0, (minInjectWithdrawRate: -46.99, maxInjectWithdrawRate: 50.8)),
+                    (inventory: 1000.0, (minInjectWithdrawRate: -47.12, maxInjectWithdrawRate: 50.01)) // Inventory full, highest withdrawal rate
+                }),
+                (period: new Day(2019, 9, 20), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+                {
+                    (inventory: 0.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06)),  // Constant inject/withdraw rates require 2 rows to be provided
+                    (inventory: 600.0, (minInjectWithdrawRate: -130.0, maxInjectWithdrawRate: 133.06))
+                })
+            };
+
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                 .WithActiveTimePeriod(new Day(2019, 9, 1), new Day(2019, 10, 1))
-                .WithConstantInjectWithdrawRange(-constantMaxWithdrawRate, constantMaxInjectRate)
-                .WithConstantMinInventory(constantMinInventory)
-                .WithConstantMaxInventory(constantMaxInventory)
+                .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
                 .WithPerUnitInjectionCost(constantInjectionCost, injectionDate => injectionDate)
                 .WithNoCmdtyConsumedOnInject()
                 .WithPerUnitWithdrawalCost(constantWithdrawalCost, withdrawalDate => withdrawalDate)
