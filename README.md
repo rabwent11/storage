@@ -13,6 +13,8 @@ Valuation and optimisation of commodity storage.
     * [Installing Excel Add-In](#installing-excel-add-in)
 * [Using the C# API](#using-the-c-api)
     * [Creating the Storage Object](#creating-the-storage-object)
+        * [Storage with Constant Parameters](#storage-with-constant-parameters)
+        * [Storage with Time and Inventory Varying Inject/Withdraw Rates](#storage-with-time-and-inventory-varying-injectwithdraw-rates)
     * [Calculating the Intrinsic Value](#calculating-the-intrinsic-value)
 * [Building](#building)
 * [One Factor Trinomial Tree Model](#one-factor-trinomial-tree-method-critique-and-rationale)
