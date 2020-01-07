@@ -3,7 +3,7 @@
 ![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/cmdty/github/2)
 [![NuGet](https://img.shields.io/nuget/v/cmdty.storage.svg)](https://www.nuget.org/packages/Cmdty.Storage/)
 
-Valuation and optimisation of commodity storage. Still in early stages of development.
+Valuation and optimisation of commodity storage.
 
 ### Table of Contents
 * [Overview](#overview)
@@ -64,8 +64,13 @@ Examples of the Excel functions can be found in [samples/excel/storage_samples.x
 
 ### Creating the Storage Object
 In order for storage capacity to be valued, first an instance of the class CmdtyStorage 
-needs to be created. The code sample below shows how the fluent builder API can be used
-to achieve this.
+needs to be created. The code samples below shows how the fluent builder API can be used
+to achieve this. Once the Cmdty.Storage package has been installed,
+a good way to discover the flexibility in the API is to look at the IntelliSense suggestions in
+Visual Studio.
+
+#### Storage with Constant Parameters
+The code below shows simple storage facility with constant parameters.
 
 ``` c#
 const double constantMaxInjectRate = 5.26;
@@ -90,9 +95,49 @@ CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
     .Build();
 ```
 
-The above example is quite simple, with most parameters being constant, but much more complicated storage objects can be created. Once the Cmdty.Storage package has been installed,
-a good way to discover the flexibility in the API is to look at the IntelliSense suggestions in
-Visual Studio.
+#### Storage with Time and Inventory Varying Inject/Withdraw Rates
+The code below shows how to create a more complicated storage object with injection/withdrawal 
+rates being dependent on time and the inventory level.This is much more respresentative of real 
+physical storage capacity.
+
+``` c#
+const double constantInjectionCost = 0.48;
+const double constantWithdrawalCost = 0.74;
+
+var injectWithdrawConstraints = new List<InjectWithdrawRangeByInventoryAndPeriod<Day>>
+{
+    (period: new Day(2019, 9, 1), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+    {
+        (inventory: 0.0, (minInjectWithdrawRate: -44.85, maxInjectWithdrawRate: 56.8)), // Inventory empty, highest injection rate
+        (inventory: 100.0, (minInjectWithdrawRate: -45.01, maxInjectWithdrawRate: 54.5)),
+        (inventory: 300.0, (minInjectWithdrawRate: -45.78, maxInjectWithdrawRate: 52.01)),
+        (inventory: 600.0, (minInjectWithdrawRate: -46.17, maxInjectWithdrawRate: 51.9)),
+        (inventory: 800.0, (minInjectWithdrawRate: -46.99, maxInjectWithdrawRate: 50.8)),
+        (inventory: 1000.0, (minInjectWithdrawRate: -47.12, maxInjectWithdrawRate: 50.01)) // Inventory full, highest withdrawal rate
+    }),
+    (period: new Day(2019, 9, 20), injectWithdrawRanges: new List<InjectWithdrawRangeByInventory>
+    {
+        (inventory: 0.0, (minInjectWithdrawRate: -31.41, maxInjectWithdrawRate: 48.33)), // Inventory empty, highest injection rate
+        (inventory: 100.0, (minInjectWithdrawRate: -31.85, maxInjectWithdrawRate: 43.05)),
+        (inventory: 300.0, (minInjectWithdrawRate: -31.68, maxInjectWithdrawRate: 41.22)),
+        (inventory: 600.0, (minInjectWithdrawRate: -32.78, maxInjectWithdrawRate: 40.08)),
+        (inventory: 800.0, (minInjectWithdrawRate: -33.05, maxInjectWithdrawRate: 39.74)),
+        (inventory: 1000.0, (minInjectWithdrawRate: -34.80, maxInjectWithdrawRate: 38.51)) // Inventory full, highest withdrawal rate
+    })
+};
+
+CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
+    .WithActiveTimePeriod(new Day(2019, 9, 1), new Day(2019, 10, 1))
+    .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+    .WithPerUnitInjectionCost(constantInjectionCost, injectionDate => injectionDate)
+    .WithNoCmdtyConsumedOnInject()
+    .WithPerUnitWithdrawalCost(constantWithdrawalCost, withdrawalDate => withdrawalDate)
+    .WithNoCmdtyConsumedOnWithdraw()
+    .WithNoCmdtyInventoryLoss()
+    .WithNoCmdtyInventoryCost()
+    .MustBeEmptyAtEnd()
+    .Build();
+```
 
 ### Calculating the Intrinsic Value
 The following example shows how to calculate the intrinsic value of the storage, including
