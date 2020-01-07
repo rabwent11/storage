@@ -27,7 +27,7 @@ using System;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 
-namespace Cmdty.Storage.Samples.Intrinsic
+namespace Cmdty.Storage.Samples.Trinomial
 {
     class Program
     {
@@ -73,24 +73,55 @@ namespace Cmdty.Storage.Samples.Intrinsic
                 forwardCurveBuilder.Add(day, higherForwardPrice);
             }
 
+            TimeSeries<Month, Day> cmdtySettlementDates = new TimeSeries<Month, Day>.Builder
+                {
+                    {new Month(2019, 9), new Day(2019, 10, 20) }
+                }.Build();
+
+            const double interestRate = 0.025;
+
+            // Trinomial tree model parameters
+            const double spotPriceMeanReversion = 5.5;
+            const double onePeriodTimeStep = 1.0 / 365.0;
+
+            TimeSeries<Day, double> spotVolatility = new TimeSeries<Day, double>.Builder
+                {
+                    {new Day(2019, 9, 15),  0.975},
+                    {new Day(2019, 9, 16),  0.97},
+                    {new Day(2019, 9, 17),  0.96},
+                    {new Day(2019, 9, 18),  0.91},
+                    {new Day(2019, 9, 19),  0.89},
+                    {new Day(2019, 9, 20),  0.895},
+                    {new Day(2019, 9, 21),  0.891},
+                    {new Day(2019, 9, 22),  0.89},
+                    {new Day(2019, 9, 23),  0.875},
+                    {new Day(2019, 9, 24),  0.872},
+                    {new Day(2019, 9, 25),  0.871},
+                    {new Day(2019, 9, 26),  0.870},
+                    {new Day(2019, 9, 27),  0.869},
+                    {new Day(2019, 9, 28),  0.868},
+                    {new Day(2019, 9, 29),  0.867},
+                    {new Day(2019, 9, 30),  0.866},
+                    {new Day(2019, 10, 1),  0.8655}
+                }.Build();
+
             const double startingInventory = 50.0;
 
-            IntrinsicStorageValuationResults<Day> valuationResults = IntrinsicStorageValuation<Day>
+            TreeStorageValuationResults<Day> valuationResults = TreeStorageValuation<Day>
                 .ForStorage(storage)
                 .WithStartingInventory(startingInventory)
                 .ForCurrentPeriod(currentPeriod)
                 .WithForwardCurve(forwardCurveBuilder.Build())
-                .WithCmdtySettlementRule(day => day.First<Month>().Offset(1).First<Day>().Offset(5)) // Commodity is settled on the 5th day of the next month
-                .WithDiscountFactorFunc(day => 1.0) // Assumes to discounting
+                .WithOneFactorTrinomialTree(spotVolatility, spotPriceMeanReversion, onePeriodTimeStep)
+                .WithMonthlySettlement(cmdtySettlementDates)
+                .WithAct365ContinuouslyCompoundedInterestRate(settleDate => interestRate)
                 .WithFixedGridSpacing(10.0)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-12)
                 .Calculate();
 
-            Console.WriteLine("Calculated intrinsic storage NPV: " + valuationResults.NetPresentValue.ToString("F2"));
+            Console.WriteLine("Calculated storage NPV: " + valuationResults.NetPresentValue.ToString("F2"));
             Console.WriteLine();
-            Console.WriteLine("Decision profile:");
-            Console.WriteLine(valuationResults.DecisionProfile.FormatData("F2", -1));
 
             Console.WriteLine("Press any key to exit");
             Console.ReadKey();
