@@ -15,7 +15,9 @@ Valuation and optimisation of commodity storage.
     * [Creating the Storage Object](#creating-the-storage-object)
         * [Storage with Constant Parameters](#storage-with-constant-parameters)
         * [Storage with Time and Inventory Varying Inject/Withdraw Rates](#storage-with-time-and-inventory-varying-injectwithdraw-rates)
-    * [Calculating the Intrinsic Value](#calculating-the-intrinsic-value)
+    * [Calculating Optimal Storage Value](#calculating-optimal-storage-value)
+        * [Calculating the Intrinsic Value](#calculating-the-intrinsic-value)
+        * [Calculating the Extrinsic Value: One-Factor Trinomial Tree](#calculating-the-extrinsic-value-one-factor-trinomial-tree)
 * [Building](#building)
 * [One Factor Trinomial Tree Model](#one-factor-trinomial-tree-method-critique-and-rationale)
 * [License](#license)
@@ -141,7 +143,9 @@ CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
     .Build();
 ```
 
-### Calculating the Intrinsic Value
+### Calculating Optimal Storage Value
+
+#### Calculating the Intrinsic Value
 The following example shows how to calculate the intrinsic value of the storage, including
 the optimal intrinsic inject/withdraw decision profile.
 
@@ -206,6 +210,86 @@ Count = 16
 2019-09-28  -14.74
 2019-09-29  -14.74
 2019-09-30  -3.64
+```
+
+#### Calculating the Extrinsic Value: One-Factor Trinomial Tree
+The code sample below shows how to calculate the optimal storage value, including extrinsic
+option value, using a one-factor trinomial tree model.
+
+``` c#
+var currentPeriod = new Day(2019, 9, 15);
+
+const double lowerForwardPrice = 56.6;
+const double forwardSpread = 87.81;
+
+double higherForwardPrice = lowerForwardPrice + forwardSpread;
+
+var forwardCurveBuilder = new TimeSeries<Day, double>.Builder();
+
+foreach (var day in new Day(2019, 9, 15).EnumerateTo(new Day(2019, 9, 22)))
+{
+    forwardCurveBuilder.Add(day, lowerForwardPrice);
+}
+
+foreach (var day in new Day(2019, 9, 23).EnumerateTo(new Day(2019, 10, 1)))
+{
+    forwardCurveBuilder.Add(day, higherForwardPrice);
+}
+
+TimeSeries<Month, Day> cmdtySettlementDates = new TimeSeries<Month, Day>.Builder
+    {
+        {new Month(2019, 9), new Day(2019, 10, 20) }
+    }.Build();
+
+const double interestRate = 0.025;
+
+// Trinomial tree model parameters
+const double spotPriceMeanReversion = 5.5;
+const double onePeriodTimeStep = 1.0 / 365.0;
+
+TimeSeries<Day, double> spotVolatility = new TimeSeries<Day, double>.Builder
+    {
+        {new Day(2019, 9, 15),  0.975},
+        {new Day(2019, 9, 16),  0.97},
+        {new Day(2019, 9, 17),  0.96},
+        {new Day(2019, 9, 18),  0.91},
+        {new Day(2019, 9, 19),  0.89},
+        {new Day(2019, 9, 20),  0.895},
+        {new Day(2019, 9, 21),  0.891},
+        {new Day(2019, 9, 22),  0.89},
+        {new Day(2019, 9, 23),  0.875},
+        {new Day(2019, 9, 24),  0.872},
+        {new Day(2019, 9, 25),  0.871},
+        {new Day(2019, 9, 26),  0.870},
+        {new Day(2019, 9, 27),  0.869},
+        {new Day(2019, 9, 28),  0.868},
+        {new Day(2019, 9, 29),  0.867},
+        {new Day(2019, 9, 30),  0.866},
+        {new Day(2019, 10, 1),  0.8655}
+    }.Build();
+
+const double startingInventory = 50.0;
+
+TreeStorageValuationResults<Day> valuationResults = TreeStorageValuation<Day>
+    .ForStorage(storage)
+    .WithStartingInventory(startingInventory)
+    .ForCurrentPeriod(currentPeriod)
+    .WithForwardCurve(forwardCurveBuilder.Build())
+    .WithOneFactorTrinomialTree(spotVolatility, spotPriceMeanReversion, onePeriodTimeStep)
+    .WithMonthlySettlement(cmdtySettlementDates)
+    .WithAct365ContinuouslyCompoundedInterestRate(settleDate => interestRate)
+    .WithFixedGridSpacing(10.0)
+    .WithLinearInventorySpaceInterpolation()
+    .WithNumericalTolerance(1E-12)
+    .Calculate();
+
+Console.WriteLine("Calculated storage NPV: " + valuationResults.NetPresentValue.ToString("F2"));
+```
+
+The above code prints the following.
+
+```
+Calculated storage NPV: 24809.48
 ```
 
 ## Building
