@@ -90,7 +90,7 @@ namespace Cmdty.Storage
             // TODO could this be made more efficient using binary search?
             double bracketUpperInventory = _injectWithdrawRanges[_injectWithdrawRanges.Length - 1].Inventory;
             double bracketUpperInventoryAfterWithdraw = nextPeriodMinInventoryFromThisPeriodMaxInventory;
-            for (int i = _injectWithdrawRanges.Length - 2; i >= 0; i++)
+            for (int i = _injectWithdrawRanges.Length - 2; i >= 0; i--)
             {
                 var bracketLowerDecisionRange = _injectWithdrawRanges[i];
                 double bracketLowerInventory = bracketLowerDecisionRange.Inventory;
