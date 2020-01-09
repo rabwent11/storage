@@ -150,8 +150,32 @@ namespace Cmdty.Storage.Test
         }
 
 
+        [Fact]
+        public void GetInjectWithdrawRange_InventoryDependentInjectWithdrawRate_EqualToInputsAtInventoryPillars()
+        {
+            var injectWithdrawalRanges = new List<InjectWithdrawRangeByInventory>
+            {
+                (inventory: 0.0, (minInjectWithdrawRate: -44.85, maxInjectWithdrawRate: 56.8)), // Inventory empty, highest injection rate
+                (inventory: 100.0, (minInjectWithdrawRate: -45.01, maxInjectWithdrawRate: 54.5)),
+                (inventory: 300.0, (minInjectWithdrawRate: -45.78, maxInjectWithdrawRate: 52.01)),
+                (inventory: 600.0, (minInjectWithdrawRate: -46.17, maxInjectWithdrawRate: 51.9)),
+                (inventory: 800.0, (minInjectWithdrawRate: -46.99, maxInjectWithdrawRate: 50.8)),
+                (inventory: 1000.0, (minInjectWithdrawRate: -47.12, maxInjectWithdrawRate: 50.01)) // Inventory full, highest withdrawal rate
+            };
+
+            var linearInjectWithdrawConstraint = new PiecewiseLinearInjectWithdrawConstraint(injectWithdrawalRanges);
+
+            foreach ((double inventoryPillar, InjectWithdrawRange inputInjectWithdrawRange) in injectWithdrawalRanges)
+            {
+                InjectWithdrawRange outputInjectWithdrawRange =
+                    linearInjectWithdrawConstraint.GetInjectWithdrawRange(inventoryPillar);
+                Assert.Equal(inputInjectWithdrawRange.MinInjectWithdrawRate, outputInjectWithdrawRange.MinInjectWithdrawRate);
+                Assert.Equal(inputInjectWithdrawRange.MaxInjectWithdrawRate, outputInjectWithdrawRange.MaxInjectWithdrawRate);
+            }
+
+        }
+
         // TODO tests of correctness of GetInjectWithdrawRange:
-        //      - Manually perform linear interpolation
         //      - Values at pillars
 
     }
