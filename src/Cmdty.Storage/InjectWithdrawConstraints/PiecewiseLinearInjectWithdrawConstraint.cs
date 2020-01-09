@@ -83,12 +83,10 @@ namespace Cmdty.Storage
                 nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMaxInventory)
             {
                 // No need to solve root as next period inventory space can be reached from the current period max inventory
-                // TODO review and test whether this block is necessary
                 return currentPeriodMaxInventory;
             }
 
             // Search for inventory bracket
-            // TODO could this be made more efficient using binary search?
             double bracketUpperInventory = _injectWithdrawRanges[_injectWithdrawRanges.Length - 1].Inventory;
             double bracketUpperInventoryAfterWithdraw = nextPeriodMinInventoryFromThisPeriodMaxInventory;
             for (int i = _injectWithdrawRanges.Length - 2; i >= 0; i--)
@@ -126,12 +124,10 @@ namespace Cmdty.Storage
                 nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMinInventory)
             {
                 // No need to solve root as next period inventory space can be reached from the current period min inventory
-                // TODO review and test whether this block is necessary
                 return currentPeriodMinInventory;
             }
 
             // Search for inventory bracket
-            // TODO could this be made more efficient using binary search?
             double bracketLowerInventory = _injectWithdrawRanges[0].Inventory;
             double bracketLowerInventoryAfterInject= nextPeriodMaxInventoryFromThisPeriodMinInventory;
 
