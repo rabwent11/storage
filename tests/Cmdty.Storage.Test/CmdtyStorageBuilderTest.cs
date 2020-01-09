@@ -93,7 +93,7 @@ namespace Cmdty.Storage.Test
 
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                                 .WithActiveTimePeriod(new Day(2019, 10, 1), new Day(2019, 11, 1))
-                                .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+                                .WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial(injectWithdrawConstraints)
                                 .WithPerUnitInjectionCost(ConstantInjectionCost, injectionDate => injectionDate)
                                 .WithNoCmdtyConsumedOnInject()
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)
@@ -153,7 +153,7 @@ namespace Cmdty.Storage.Test
 
             CmdtyStorage<Day> storage = CmdtyStorage<Day>.Builder
                                 .WithActiveTimePeriod(new Day(2019, 10, 1), new Day(2019, 11, 1))
-                                .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints)
+                                .WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial(injectWithdrawConstraints)
                                 .WithPerUnitInjectionCost(ConstantInjectionCost, injectionDate => injectionDate)
                                 .WithNoCmdtyConsumedOnInject()
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)

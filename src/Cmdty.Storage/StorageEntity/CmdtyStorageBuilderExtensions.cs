@@ -44,7 +44,7 @@ namespace Cmdty.Storage
             return builder.WithInjectWithdrawConstraint(constantInjectWithdrawConstraint);
         }
 
-        public static CmdtyStorage<T>.IAddMinInventory WithInventoryDependentInjectWithdrawRange<T>([NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
+        public static CmdtyStorage<T>.IAddMinInventory WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial<T>([NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
                             IEnumerable<InjectWithdrawRangeByInventory> injectWithdrawRanges,
                             double newtonRaphsonAccuracy = 1E-10, int newtonRaphsonMaxNumIterations = 100, 
                             int newtonRaphsonSubdivision = 20)
@@ -56,7 +56,8 @@ namespace Cmdty.Storage
             return builder.WithInjectWithdrawConstraint(polynomialInjectWithdrawConstraint);
         }
 
-        public static CmdtyStorage<T>.IAddInjectionCost WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
+        // TODO think of shorter name
+        public static CmdtyStorage<T>.IAddInjectionCost WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial<T>(
                     [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
                     [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges, 
                     double newtonRaphsonAccuracy = 1E-10, int newtonRaphsonMaxNumIterations = 100, int newtonRaphsonSubdivision = 20)
@@ -64,7 +65,37 @@ namespace Cmdty.Storage
         {
             if (builder == null) throw new ArgumentNullException(nameof(builder));
             if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
+            
+            IInjectWithdrawConstraint ConstraintFactory(InjectWithdrawRangeByInventory[] injectWithdrawRangeArray) 
+                => new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray, newtonRaphsonAccuracy, newtonRaphsonMaxNumIterations, newtonRaphsonSubdivision);
+            
+            var addInjectionCost = AddInjectWithdrawRanges(builder, injectWithdrawRanges, ConstraintFactory);
 
+            return addInjectionCost;
+        }
+
+        // TODO think of shorter name
+        public static CmdtyStorage<T>.IAddInjectionCost WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear<T>(
+            [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
+            [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges)
+            where T : ITimePeriod<T>
+        {
+            if (builder == null) throw new ArgumentNullException(nameof(builder));
+            if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
+
+            IInjectWithdrawConstraint ConstraintFactory(InjectWithdrawRangeByInventory[] injectWithdrawRangeArray)
+                => new PiecewiseLinearInjectWithdrawConstraint(injectWithdrawRangeArray);
+
+            CmdtyStorage<T>.IAddInjectionCost addInjectionCost = AddInjectWithdrawRanges(builder, injectWithdrawRanges, ConstraintFactory);
+
+            return addInjectionCost;
+        }
+
+        private static CmdtyStorage<T>.IAddInjectionCost AddInjectWithdrawRanges<T>(
+            CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
+            IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges, 
+            Func<InjectWithdrawRangeByInventory[], IInjectWithdrawConstraint> constraintFactory) where T : ITimePeriod<T>
+        {
             var injectWithdrawSortedList = new SortedList<T, IInjectWithdrawConstraint>();
             var inventoryRangeList = new List<InventoryRange>();
 
@@ -74,13 +105,14 @@ namespace Cmdty.Storage
                     throw new ArgumentException("Null Period in collection.", nameof(injectWithdrawRanges));
                 if (injectWithdrawRange == null)
                     throw new ArgumentException("Null InjectWithdrawRanges in collection.", nameof(injectWithdrawRange));
-
-                var injectWithdrawRangeArray = injectWithdrawRange.ToArray();
+                
+                InjectWithdrawRangeByInventory[] injectWithdrawRangeArray = injectWithdrawRange.ToArray();
                 if (injectWithdrawRangeArray.Length < 2)
-                    throw new ArgumentException($"Period {period} contains less than 2 inject/withdraw/inventory constraints.", nameof(injectWithdrawRanges));
+                    throw new ArgumentException($"Period {period} contains less than 2 inject/withdraw/inventory constraints.",
+                        nameof(injectWithdrawRanges));
 
                 IInjectWithdrawConstraint constraint;
-                if (injectWithdrawRangeArray.Length == 2 && 
+                if (injectWithdrawRangeArray.Length == 2 &&
                     injectWithdrawRangeArray[0].InjectWithdrawRange.MinInjectWithdrawRate.AlmostEqual(
                         injectWithdrawRangeArray[1].InjectWithdrawRange.MinInjectWithdrawRate, double.Epsilon) &&
                     injectWithdrawRangeArray[0].InjectWithdrawRange.MaxInjectWithdrawRate.AlmostEqual(
@@ -91,8 +123,7 @@ namespace Cmdty.Storage
                 }
                 else
                 {
-                    constraint = new PolynomialInjectWithdrawConstraint(injectWithdrawRangeArray, newtonRaphsonAccuracy, 
-                                                    newtonRaphsonMaxNumIterations, newtonRaphsonSubdivision);
+                    constraint = constraintFactory(injectWithdrawRangeArray);
                 }
 
                 double minInventory = injectWithdrawRangeArray.Min(inventoryRange => inventoryRange.Inventory);
@@ -105,7 +136,8 @@ namespace Cmdty.Storage
                 }
                 catch (ArgumentException) // TODO unit test
                 {
-                    throw new ArgumentException("Repeated periods found in inject/withdraw ranges.", nameof(injectWithdrawRanges));
+                    throw new ArgumentException("Repeated periods found in inject/withdraw ranges.",
+                        nameof(injectWithdrawRanges));
                 }
             }
 
@@ -134,6 +166,7 @@ namespace Cmdty.Storage
                     inventoryRangeLoop = inventoryRangeList[sortedListCounter];
                     sortedListCounter++;
                 }
+
                 timeSeriesInjectWithdrawValues[arrayCounter] = constraintLoop;
                 timeSeriesInventoryRangeValues[arrayCounter] = inventoryRangeLoop;
 
@@ -141,7 +174,8 @@ namespace Cmdty.Storage
                 arrayCounter++;
             } while (periodLoop.CompareTo(lastPeriod) <= 0);
 
-            var injectWithdrawTimeSeries = new TimeSeries<T, IInjectWithdrawConstraint>(firstPeriod, timeSeriesInjectWithdrawValues);
+            var injectWithdrawTimeSeries =
+                new TimeSeries<T, IInjectWithdrawConstraint>(firstPeriod, timeSeriesInjectWithdrawValues);
             var inventoryRangeTimeSeries = new TimeSeries<T, InventoryRange>(firstPeriod, timeSeriesInventoryRangeValues);
 
             IInjectWithdrawConstraint GetInjectWithdrawConstraint(T period)
@@ -151,7 +185,8 @@ namespace Cmdty.Storage
                 return injectWithdrawTimeSeries[period];
             }
 
-            CmdtyStorage<T>.IAddMinInventory addMinInventory = builder.WithInjectWithdrawConstraint(GetInjectWithdrawConstraint);
+            CmdtyStorage<T>.IAddMinInventory
+                addMinInventory = builder.WithInjectWithdrawConstraint(GetInjectWithdrawConstraint);
 
             double GetMinInventory(T period)
             {
@@ -168,8 +203,9 @@ namespace Cmdty.Storage
                     return inventoryRangeTimeSeries[inventoryRangeTimeSeries.End].MaxInventory;
                 return inventoryRangeTimeSeries[period].MaxInventory;
             }
-            
-            return addMaxInventory.WithMaxInventory(GetMaxInventory);
+
+            CmdtyStorage<T>.IAddInjectionCost addInjectionCost = addMaxInventory.WithMaxInventory(GetMaxInventory);
+            return addInjectionCost;
         }
 
     }

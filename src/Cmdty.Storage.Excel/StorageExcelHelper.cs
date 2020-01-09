@@ -108,7 +108,7 @@ namespace Cmdty.Storage.Excel
 
             CmdtyStorage<T> storage = CmdtyStorage<T>.Builder
                     .WithActiveTimePeriod(storageStart, storageEnd)
-                    .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints, newtonRaphsonAccuracy)
+                    .WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial(injectWithdrawConstraints, newtonRaphsonAccuracy)
                     .WithPerUnitInjectionCost(injectionCostRate, injectionDate => injectionDate.First<Day>())
                     .WithFixedPercentCmdtyConsumedOnInject(cmdtyConsumedOnInjection)
                     .WithPerUnitWithdrawalCost(withdrawalCostRate, withdrawalDate => withdrawalDate.First<Day>())
