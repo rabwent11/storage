@@ -70,6 +70,7 @@ namespace Cmdty.Storage.Excel
         public static CmdtyStorage<T> CreateCmdtyStorageFromExcelInputs<T>(DateTime storageStartDateTime,
             DateTime storageEndDateTime,
             object injectWithdrawConstraintsIn,
+            string injectWithdrawInterpolationIn,
             double injectionCostRate,
             double cmdtyConsumedOnInjection,
             double withdrawalCostRate,
@@ -106,9 +107,23 @@ namespace Cmdty.Storage.Excel
                 injectWithdrawConstraints.Add(new InjectWithdrawRangeByInventoryAndPeriod<T>(period, injectWithdrawByInventory));
             }
 
+            InterpolationType interpolationType;
+            if (injectWithdrawInterpolationIn == "PiecewiseLinear")
+            {
+                interpolationType = InterpolationType.PiecewiseLinear;
+            }
+            else if (injectWithdrawInterpolationIn == "Polynomial")
+            {
+                interpolationType = InterpolationType.PolynomialWithParams(newtonRaphsonAccuracy);
+            }
+            else
+            {
+                throw new ArgumentException($"Value of Inject_withdraw_interpolation '{injectWithdrawInterpolationIn}' not recognised. Must be either 'PiecewiseLinear' or 'Polynomial'.");
+            }
+
             CmdtyStorage<T> storage = CmdtyStorage<T>.Builder
                     .WithActiveTimePeriod(storageStart, storageEnd)
-                    .WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial(injectWithdrawConstraints, newtonRaphsonAccuracy)
+                    .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints, interpolationType)
                     .WithPerUnitInjectionCost(injectionCostRate, injectionDate => injectionDate.First<Day>())
                     .WithFixedPercentCmdtyConsumedOnInject(cmdtyConsumedOnInjection)
                     .WithPerUnitWithdrawalCost(withdrawalCostRate, withdrawalDate => withdrawalDate.First<Day>())

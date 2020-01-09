@@ -41,6 +41,7 @@ namespace Cmdty.Storage.Excel
             [ExcelArgument(Name = ExcelArg.StorageStart.Name, Description = ExcelArg.StorageStart.Description)] DateTime storageStart,
             [ExcelArgument(Name = ExcelArg.StorageEnd.Name, Description = ExcelArg.StorageEnd.Description)] DateTime storageEnd,
             [ExcelArgument(Name = ExcelArg.StorageConstraints.Name, Description = ExcelArg.StorageConstraints.Description)] object storageConstraints,
+            [ExcelArgument(Name = ExcelArg.InjectWithdrawInterpolation.Name, Description = ExcelArg.InjectWithdrawInterpolation.Description)] string injectWithdrawInterpolation,
             [ExcelArgument(Name = ExcelArg.InjectionCost.Name, Description = ExcelArg.InjectionCost.Description)] double injectionCostRate,
             [ExcelArgument(Name = ExcelArg.CmdtyConsumedInject.Name, Description = ExcelArg.CmdtyConsumedInject.Description)] double cmdtyConsumedOnInjection,
             [ExcelArgument(Name = ExcelArg.WithdrawalCost.Name, Description = ExcelArg.WithdrawalCost.Description)] double withdrawalCostRate,
@@ -54,7 +55,7 @@ namespace Cmdty.Storage.Excel
             [ExcelArgument(Name = ExcelArg.NumericalTolerance.Name, Description = ExcelArg.NumericalTolerance.Description)] object numericalTolerance) // TODO add granularity
         {
             return StorageExcelHelper.ExecuteExcelFunction(() =>
-                TrinomialStorageValuation<Day>(valuationDate, storageStart, storageEnd, storageConstraints,
+                TrinomialStorageValuation<Day>(valuationDate, storageStart, storageEnd, storageConstraints, injectWithdrawInterpolation,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal, currentInventory, forwardCurve, spotVolatilityCurve, 
                     meanReversion, interestRateCurve, numGlobalGridPoints, numericalTolerance).NetPresentValue);
@@ -68,6 +69,7 @@ namespace Cmdty.Storage.Excel
                 [ExcelArgument(Name = ExcelArg.StorageStart.Name, Description = ExcelArg.StorageStart.Description)] DateTime storageStart,
                 [ExcelArgument(Name = ExcelArg.StorageEnd.Name, Description = ExcelArg.StorageEnd.Description)] DateTime storageEnd,
                 [ExcelArgument(Name = ExcelArg.StorageConstraints.Name, Description = ExcelArg.StorageConstraints.Description)] object storageConstraints,
+                [ExcelArgument(Name = ExcelArg.InjectWithdrawInterpolation.Name, Description = ExcelArg.InjectWithdrawInterpolation.Description)] string injectWithdrawInterpolation,
                 [ExcelArgument(Name = ExcelArg.InjectionCost.Name, Description = ExcelArg.InjectionCost.Description)] double injectionCostRate,
                 [ExcelArgument(Name = ExcelArg.CmdtyConsumedInject.Name, Description = ExcelArg.CmdtyConsumedInject.Description)] double cmdtyConsumedOnInjection,
                 [ExcelArgument(Name = ExcelArg.WithdrawalCost.Name, Description = ExcelArg.WithdrawalCost.Description)] double withdrawalCostRate,
@@ -79,7 +81,7 @@ namespace Cmdty.Storage.Excel
                 [ExcelArgument(Name = ExcelArg.NumericalTolerance.Name, Description = ExcelArg.NumericalTolerance.Description)] object numericalTolerance) // TODO add granularity
         {
             return StorageExcelHelper.ExecuteExcelFunction(() =>
-                TrinomialStorageValuationIntrinsic<Day>(valuationDate, storageStart, storageEnd, storageConstraints,
+                TrinomialStorageValuationIntrinsic<Day>(valuationDate, storageStart, storageEnd, storageConstraints, injectWithdrawInterpolation,
                     injectionCostRate, cmdtyConsumedOnInjection, withdrawalCostRate,
                     cmdtyConsumedOnWithdrawal, currentInventory, forwardCurve, interestRateCurve, numGlobalGridPoints, 
                     numericalTolerance).NetPresentValue);
@@ -90,6 +92,7 @@ namespace Cmdty.Storage.Excel
                             DateTime storageStartDateTime,
                             DateTime storageEndDateTime,
                             object injectWithdrawConstraints,
+                            string injectWithdrawInterpolation,
                             double injectionCostRate,
                             double cmdtyConsumedOnInjection,
                             double withdrawalCostRate,
@@ -107,7 +110,7 @@ namespace Cmdty.Storage.Excel
                             "Numerical_tolerance");
 
             var storage = StorageExcelHelper.CreateCmdtyStorageFromExcelInputs<T>(storageStartDateTime,
-                storageEndDateTime, injectWithdrawConstraints, injectionCostRate, cmdtyConsumedOnInjection,
+                storageEndDateTime, injectWithdrawConstraints, injectWithdrawInterpolation, injectionCostRate, cmdtyConsumedOnInjection,
                 withdrawalCostRate, cmdtyConsumedOnWithdrawal, numericalTolerance);
 
             T currentPeriod = TimePeriodFactory.FromDateTime<T>(valuationDateTime);
@@ -145,6 +148,7 @@ namespace Cmdty.Storage.Excel
                     DateTime storageStartDateTime,
                     DateTime storageEndDateTime,
                     object injectWithdrawConstraints,
+                    string injectWithdrawInterpolation,
                     double injectionCostRate,
                     double cmdtyConsumedOnInjection,
                     double withdrawalCostRate,
@@ -160,7 +164,7 @@ namespace Cmdty.Storage.Excel
                             "Numerical_tolerance");
 
             var storage = StorageExcelHelper.CreateCmdtyStorageFromExcelInputs<T>(storageStartDateTime,
-                storageEndDateTime, injectWithdrawConstraints, injectionCostRate, cmdtyConsumedOnInjection,
+                storageEndDateTime, injectWithdrawConstraints, injectWithdrawInterpolation, injectionCostRate, cmdtyConsumedOnInjection,
                 withdrawalCostRate, cmdtyConsumedOnWithdrawal, numericalTolerance);
 
             T currentPeriod = TimePeriodFactory.FromDateTime<T>(valuationDateTime);

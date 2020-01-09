@@ -9,5 +9,6 @@
   <Reference Path="Cmdty.Core.Trees.dll" Pack="true" />
   <Reference Path="JetBrains.Annotations.dll" Pack="true" />
   <Reference Path="MathNet.Numerics.dll" Pack="true" />
+  <Reference Path="System.Collections.Immutable.dll" Pack="true" />
   <Reference Path="System.ValueTuple.dll" Pack="true" />
 </DnaLibrary>

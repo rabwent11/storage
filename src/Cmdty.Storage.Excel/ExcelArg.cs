@@ -51,6 +51,12 @@ namespace Cmdty.Storage.Excel
             public const string Description = "Table of time-dependent injection, withdrawal and inventory constraints. Range with 4 columns; date-time, inventory, injection rate and withdrawal rate. Withdrawal rates are expressed as a negative numbers.";
         }
 
+        internal static class InjectWithdrawInterpolation
+        {
+            public const string Name = "Inject_withdraw_interpolation";
+            public const string Description = "Text which determines how injection/withdrawal rates are interpolated by inventory. Must be either 'PiecewiseLinear' or 'Polynomial'.";
+        }
+
         internal static class InjectionCost
         {
             public const string Name = "Inject_cost";
