@@ -56,6 +56,36 @@ namespace Cmdty.Storage
             return builder.WithInjectWithdrawConstraint(polynomialInjectWithdrawConstraint);
         }
 
+
+        // TODO think of shorter name
+        public static CmdtyStorage<T>.IAddInjectionCost WithTimeAndInventoryVaryingInjectWithdrawRates<T>(
+            [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
+            [NotNull] IEnumerable<InjectWithdrawRangeByInventoryAndPeriod<T>> injectWithdrawRanges,
+            InterpolationType interpolationType)
+            where T : ITimePeriod<T>
+        {
+            if (builder == null) throw new ArgumentNullException(nameof(builder));
+            if (injectWithdrawRanges == null) throw new ArgumentNullException(nameof(injectWithdrawRanges));
+
+            CmdtyStorage<T>.IAddInjectionCost addInjectionCost;
+
+            switch (interpolationType)
+            {
+                case InterpolationType.PiecewiseLinearType _:
+                    addInjectionCost =
+                        WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear(builder, injectWithdrawRanges);
+                    break;
+                case InterpolationType.PolynomialType polynomial:
+                    addInjectionCost = WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial(builder, injectWithdrawRanges, polynomial.NewtonRaphsonAccuracy,
+                                                        polynomial.NewtonRaphsonMaxNumIterations, polynomial.NewtonRaphsonSubdivision);
+                    break;
+                default:
+                    throw new ArgumentException($"InterpolationType {interpolationType.GetType().Name} not recognised"); // Shouldn't actually be possible to reach here...
+            }
+
+            return addInjectionCost;
+        }
+
         // TODO think of shorter name
         public static CmdtyStorage<T>.IAddInjectionCost WithTimeAndInventoryVaryingInjectWithdrawRatesPolynomial<T>(
                     [NotNull] this CmdtyStorage<T>.IAddInjectWithdrawConstraints builder,
