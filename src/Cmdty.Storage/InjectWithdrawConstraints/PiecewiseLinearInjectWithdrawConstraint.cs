@@ -101,13 +101,9 @@ namespace Cmdty.Storage
                 if (bracketLowerInventoryAfterWithdraw <= nextPeriodInventorySpaceUpperBound &&
                     nextPeriodInventorySpaceUpperBound <= bracketUpperInventoryAfterWithdraw)
                 {
-                    // Calculate m (gradient) and c (constant) coefficients of linear equation y = mx + c, where x is inventory this period, and y is inventory in the next period after max withdrawal
-                    double gradient = (bracketUpperInventoryAfterWithdraw - bracketLowerInventoryAfterWithdraw) /
-                                      (bracketUpperInventory - bracketLowerInventory);
-                    double constant = bracketLowerInventoryAfterWithdraw - gradient * bracketLowerInventory;
-
-                    // Solve for x, where y know, i.e. x = (y - c) / m
-                    double inventorySpaceUpper = (nextPeriodInventorySpaceUpperBound - constant) / gradient;
+                    double inventorySpaceUpper = InterpolateLinearAndSolve(bracketLowerInventory,
+                                                bracketLowerInventoryAfterWithdraw, bracketUpperInventory,
+                                                bracketUpperInventoryAfterWithdraw, nextPeriodInventorySpaceUpperBound);
                     return inventorySpaceUpper;
                 }
                 
@@ -149,14 +145,9 @@ namespace Cmdty.Storage
                 if (bracketLowerInventoryAfterInject <= nextPeriodInventorySpaceLowerBound &&
                     nextPeriodInventorySpaceLowerBound <= bracketUpperInventoryAfterInject)
                 {
-                    // TODO refactor this into shared static method for solving linear equation?
-                    // Calculate m (gradient) and c (constant) coefficients of linear equation y = mx + c, where x is inventory this period, and y is inventory in the next period after max injection
-                    double gradient = (bracketUpperInventoryAfterInject - bracketLowerInventoryAfterInject) /
-                                      (bracketUpperInventory - bracketLowerInventory);
-                    double constant = bracketLowerInventoryAfterInject - gradient * bracketLowerInventory;
-
-                    // Solve for x, where y know, i.e. x = (y - c) / m
-                    double inventorySpaceLower = (nextPeriodInventorySpaceLowerBound - constant) / gradient;
+                    double inventorySpaceLower = InterpolateLinearAndSolve(bracketLowerInventory,
+                                                bracketLowerInventoryAfterInject, bracketUpperInventory, 
+                                                bracketUpperInventoryAfterInject, nextPeriodInventorySpaceLowerBound);
                     return inventorySpaceLower;
                 }
 
@@ -166,5 +157,20 @@ namespace Cmdty.Storage
 
             throw new ApplicationException("Storage inventory constraints cannot be satisfied.");
         }
+
+        /// <summary>
+        /// Derives a linear equation from a pair of points (x1, y1) and (x2, y2) and then solves for x, for a known y
+        /// </summary>
+        private static double InterpolateLinearAndSolve(double x1, double y1, double x2, double y2, double y)
+        {
+            // Calculate m (gradient) and c (constant) coefficients of linear equation y = mx + c
+            double gradient = (y2 - y1) / (x2 - x1);
+            double constant = y1 - gradient * x1;
+
+            // Find x for known y
+            double x = (y - constant) / gradient;
+            return x;
+        }
+
     }
 }
