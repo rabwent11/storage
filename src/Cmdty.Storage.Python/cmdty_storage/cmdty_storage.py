@@ -33,6 +33,8 @@ from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdra
 from Cmdty.Storage import CmdtyStorage as NetCmdtyStorage
 
 from collections import namedtuple
+from datetime import datetime
+import pandas as pd
 
 ValuationResults = namedtuple('ValuationResults', 'npv, decision_profile')
 
@@ -40,7 +42,7 @@ InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, 
 
 InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
 
-def from_datetime_like(datetime_like, time_period_type):
+def _from_datetime_like(datetime_like, time_period_type):
     """ Converts either a pandas Period, datetime or date to a .NET Time Period"""
 
     if (hasattr(datetime_like, 'hour')):
@@ -50,6 +52,15 @@ def from_datetime_like(datetime_like, time_period_type):
 
     date_time = DateTime(datetime_like.year, datetime_like.month, datetime_like.day, *time_args)
     return TimePeriodFactory.FromDateTime[time_period_type](date_time)
+
+
+def _net_datetime_to_py_datetime(net_datetime):
+    return datetime(net_datetime.Year, net_datetime.Month, net_datetime.Day, net_datetime.Hour, net_datetime.Minute, net_datetime.Second, net_datetime.Millisecond * 1000)
+
+
+def _net_time_period_to_pandas_period(net_time_period, freq):
+    start_datetime = _net_datetime_to_py_datetime(net_time_period.Start)
+    return pd.Period(start_datetime, freq=freq)
 
 
 FREQ_TO_PERIOD_TYPE = {
@@ -81,8 +92,8 @@ class CmdtyStorage:
 
         time_period_type = FREQ_TO_PERIOD_TYPE[freq]
 
-        start_period = from_datetime_like(storage_start, time_period_type)
-        end_period = from_datetime_like(storage_end, time_period_type)
+        start_period = _from_datetime_like(storage_start, time_period_type)
+        end_period = _from_datetime_like(storage_end, time_period_type)
 
         builder = IBuilder[time_period_type](NetCmdtyStorage[time_period_type].Builder)
     
@@ -91,7 +102,7 @@ class CmdtyStorage:
         net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
 
         for period, rates_by_inventory in constraints:
-            net_period = from_datetime_like(period, time_period_type)
+            net_period = _from_datetime_like(period, time_period_type)
             net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
             for inventory, min_rate, max_rate in rates_by_inventory:
                 net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
@@ -121,8 +132,21 @@ class CmdtyStorage:
     
         IAddTerminalStorageState[time_period_type](builder).MustBeEmptyAtEnd()
         
-        self.net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
+        self._net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
+        self._freq = freq
+
+    @property
+    def freq(self):
+        return self._freq
 
     @property
     def must_be_empty_at_end(self):
-        return self.net_storage.MustBeEmptyAtEnd
+        return self._net_storage.MustBeEmptyAtEnd
+    
+    @property
+    def start_period(self):
+        return _net_time_period_to_pandas_period(self._net_storage.StartPeriod, self._freq)
+
+    @property
+    def end_period(self):
+        return _net_time_period_to_pandas_period(self._net_storage.EndPeriod, self._freq)

@@ -24,6 +24,7 @@
 import unittest
 from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
 from datetime import date
+import pandas as pd
 
 class TestCmdtyStorage(unittest.TestCase):
 
@@ -47,3 +48,13 @@ class TestCmdtyStorage(unittest.TestCase):
                                 constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw)
         
         self.assertEqual(True, storage.must_be_empty_at_end)
+
+        self.assertEqual('D', storage.freq)
+
+        self.assertEqual(pd.Period(date(2019, 8, 28), freq='D'), storage.start_period)
+
+        self.assertEqual(pd.Period(date(2019, 9, 25), freq='D'), storage.end_period)
+
+
+if __name__ == '__main__':
+    unittest.main()
