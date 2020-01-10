@@ -29,9 +29,8 @@ clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
-from Cmdty.Storage import CmdtyStorage, IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, InjectWithdrawRange, CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
-#from Cmdty.Storage.CmdtyStorage import IAddInjectWithdrawConstraints
-
+from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, InjectWithdrawRange, CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
+from Cmdty.Storage import CmdtyStorage as NetCmdtyStorage
 
 from collections import namedtuple
 
@@ -40,20 +39,6 @@ ValuationResults = namedtuple('ValuationResults', 'npv, decision_profile')
 InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, min_rate, max_rate')
 
 InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
-
-
-def intrinsic_storage_val(freq, storage_start, storage_end, constraints, injection_cost, injection_consumption, 
-                          withdrawal_cost, withdrawal_consumption, tolerance=None):
-    if freq not in FREQ_TO_PERIOD_TYPE:
-        raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
-
-    time_period_type = FREQ_TO_PERIOD_TYPE[freq]
-
-    storage_object = _create_storage_object(time_period_type, storage_start, storage_end, 
-                constraints, injection_cost, injection_consumption, withdrawal_cost, withdrawal_consumption, tolerance)
-
-    pass
-
 
 def from_datetime_like(datetime_like, time_period_type):
     """ Converts either a pandas Period, datetime or date to a .NET Time Period"""
@@ -66,69 +51,6 @@ def from_datetime_like(datetime_like, time_period_type):
     date_time = DateTime(datetime_like.year, datetime_like.month, datetime_like.day, *time_args)
     return TimePeriodFactory.FromDateTime[time_period_type](date_time)
 
-
-def _create_storage_object(time_period_type, storage_start, storage_end, constraints, injection_cost, injection_consumption, 
-                          withdrawal_cost, withdrawal_consumption, nr_accuracy=None):
-
-    start_period = from_datetime_like(storage_start, time_period_type)
-    end_period = from_datetime_like(storage_end, time_period_type)
-
-    builder = IBuilder[time_period_type](CmdtyStorage[time_period_type].Builder)
-    
-    builder = builder.WithActiveTimePeriod(start_period, end_period)
-
-    pass
-
-def create_storage(freq, storage_start, storage_end, constraints,
-                   constant_injection_cost, constant_withdrawal_cost, 
-                   constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None):
-
-    if freq not in FREQ_TO_PERIOD_TYPE:
-        raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
-
-    time_period_type = FREQ_TO_PERIOD_TYPE[freq]
-
-    start_period = from_datetime_like(storage_start, time_period_type)
-    end_period = from_datetime_like(storage_end, time_period_type)
-
-    builder = IBuilder[time_period_type](CmdtyStorage[time_period_type].Builder)
-    
-    builder = builder.WithActiveTimePeriod(start_period, end_period)
-
-    net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
-
-    for period, rates_by_inventory in constraints:
-        net_period = from_datetime_like(period, time_period_type)
-        net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
-        for inventory, min_rate, max_rate in rates_by_inventory:
-            net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
-        net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
-    
-    inject_withdraw_interface = IAddInjectWithdrawConstraints[time_period_type]
-    
-    builder = inject_withdraw_interface(builder)
-
-    CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
-
-    first_day_func = Func[time_period_type, Day](lambda dt: dt.First[Day]())
-
-    IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(constant_injection_cost, first_day_func)
-    
-    if constant_pcnt_consumed_inject is not None:
-        IAddCmdtyConsumedOnInject[time_period_type](builder).WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
-    else:
-        IAddCmdtyConsumedOnInject[time_period_type](builder).WithNoCmdtyConsumedOnInject()
-
-    IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(constant_withdrawal_cost, first_day_func)
-
-    if constant_pcnt_consumed_withdraw is not None:
-        IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
-    else:
-        IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithNoCmdtyConsumedOnWithdraw()
-    
-    IAddTerminalStorageState[time_period_type](builder).MustBeEmptyAtEnd()
-    
-    return IBuildCmdtyStorage[time_period_type](builder).Build()
 
 FREQ_TO_PERIOD_TYPE = {
         "15min" : QuarterHour,
@@ -146,3 +68,61 @@ The keys represent the pandas Offset Alias which describe the granularity, and w
     as the freq of the pandas Series objects returned by the curve construction methods.
 The values are the associated .NET time period types used in behind-the-scenes calculations.
 """
+
+
+class CmdtyStorage:
+
+    def __init__(self, freq, storage_start, storage_end, constraints,
+                   constant_injection_cost, constant_withdrawal_cost, 
+                   constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None):
+                 
+        if freq not in FREQ_TO_PERIOD_TYPE:
+            raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
+
+        time_period_type = FREQ_TO_PERIOD_TYPE[freq]
+
+        start_period = from_datetime_like(storage_start, time_period_type)
+        end_period = from_datetime_like(storage_end, time_period_type)
+
+        builder = IBuilder[time_period_type](NetCmdtyStorage[time_period_type].Builder)
+    
+        builder = builder.WithActiveTimePeriod(start_period, end_period)
+
+        net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
+
+        for period, rates_by_inventory in constraints:
+            net_period = from_datetime_like(period, time_period_type)
+            net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
+            for inventory, min_rate, max_rate in rates_by_inventory:
+                net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
+            net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
+    
+        inject_withdraw_interface = IAddInjectWithdrawConstraints[time_period_type]
+    
+        builder = inject_withdraw_interface(builder)
+
+        CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
+
+        first_day_func = Func[time_period_type, Day](lambda dt: dt.First[Day]())
+
+        IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(constant_injection_cost, first_day_func)
+    
+        if constant_pcnt_consumed_inject is not None:
+            IAddCmdtyConsumedOnInject[time_period_type](builder).WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
+        else:
+            IAddCmdtyConsumedOnInject[time_period_type](builder).WithNoCmdtyConsumedOnInject()
+
+        IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(constant_withdrawal_cost, first_day_func)
+
+        if constant_pcnt_consumed_withdraw is not None:
+            IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
+        else:
+            IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithNoCmdtyConsumedOnWithdraw()
+    
+        IAddTerminalStorageState[time_period_type](builder).MustBeEmptyAtEnd()
+        
+        self.net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
+
+    @property
+    def must_be_empty_at_end(self):
+        return self.net_storage.MustBeEmptyAtEnd

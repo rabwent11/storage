@@ -22,12 +22,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import unittest
-from cmdty_storage import intrinsic_storage_val, create_storage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
+from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
 from datetime import date
 
-class TestIntrinsic(unittest.TestCase):
+class TestCmdtyStorage(unittest.TestCase):
 
-    def test_intrinsic(self):
+    def test_initializer(self):
 
         constraints =   [
                             InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
@@ -43,6 +43,7 @@ class TestIntrinsic(unittest.TestCase):
         constant_withdrawal_cost = 0.02
         constant_pcnt_consumed_withdraw = 0.000088
 
-        storage = create_storage('D', date(2019, 8, 28), date(2019, 9, 25), constraints, constant_injection_cost,
+        storage = CmdtyStorage('D', date(2019, 8, 28), date(2019, 9, 25), constraints, constant_injection_cost,
                                 constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw)
         
+        self.assertEqual(True, storage.must_be_empty_at_end)
