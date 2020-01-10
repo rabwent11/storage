@@ -55,6 +55,11 @@ class TestCmdtyStorage(unittest.TestCase):
 
         self.assertEqual(pd.Period(date(2019, 9, 25), freq='D'), storage.end_period)
 
+        # Inventory half way between pillars, so assert against mean of min/max inject/withdraw at the pillars
+        min_dec, max_dec = storage.inject_withdraw_range(date(2019, 8, 29), 1000.0)
+        self.assertEqual(-175.0, min_dec)
+        self.assertEqual((255.2 + 175.0)/2.0, max_dec)
+
 
 if __name__ == '__main__':
     unittest.main()

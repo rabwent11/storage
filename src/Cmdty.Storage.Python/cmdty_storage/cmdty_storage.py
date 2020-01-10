@@ -150,3 +150,11 @@ class CmdtyStorage:
     @property
     def end_period(self):
         return _net_time_period_to_pandas_period(self._net_storage.EndPeriod, self._freq)
+
+    def inject_withdraw_range(self, period, inventory):
+
+        time_period_type = FREQ_TO_PERIOD_TYPE[self._freq]
+        net_time_period = _from_datetime_like(period, time_period_type)
+        net_inject_withdraw = self._net_storage.GetInjectWithdrawRange(net_time_period, inventory)
+        
+        return (net_inject_withdraw.MinInjectWithdrawRate, net_inject_withdraw.MaxInjectWithdrawRate)
