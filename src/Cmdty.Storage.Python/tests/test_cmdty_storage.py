@@ -29,23 +29,20 @@ class TestIntrinsic(unittest.TestCase):
 
     def test_intrinsic(self):
 
-        intrinsic_val = intrinsic_storage_val('D', date(2019, 8, 28), date(2019, 9, 25), None, None, None, None, None)
+        constraints =   [
+                            InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
+                                        [
+                                            InjectWithdrawByInventory(0.0, -150.0, 255.2),
+                                            InjectWithdrawByInventory(2000.0, -200.0, 175.0),
+                                        ]),
+                    # TODO specify constraint with tuples
+                ]
 
-        #constraints =   [
-        #                    InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
-        #                                [
-        #                                    InjectWithdrawByInventory(0.0, -150.0, 255.2),
-        #                                    InjectWithdrawByInventory(2000.0, -200.0, 175.0),
-        #                                ]),
-        #            # TODO specify constraint with tuples
-        #        ]
+        constant_injection_cost = 0.015
+        constant_pcnt_consumed_inject = 0.0001
+        constant_withdrawal_cost = 0.02
+        constant_pcnt_consumed_withdraw = 0.000088
 
-        #constant_injection_cost = 0.015
-        #constant_pcnt_consumed_inject = 0.0001
-        #constant_withdrawal_cost = 0.02
-        #constant_pcnt_consumed_withdraw = 0.000088
-
-        #storage = create_storage('D', date(2019, 8, 28), date(2019, 9, 25), constraints, constant_injection_cost,
-        #                        constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw)
+        storage = create_storage('D', date(2019, 8, 28), date(2019, 9, 25), constraints, constant_injection_cost,
+                                constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw)
         
-        #intrinsic_val = intrinsic_storage_val('D', date(2019, 8, 28), date(2019, 9, 25), None, None, None, None, None)

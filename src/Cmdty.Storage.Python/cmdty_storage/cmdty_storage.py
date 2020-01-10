@@ -22,14 +22,14 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import clr
-from System import DateTime
+from System import DateTime, Func
 from System.Collections.Generic import List
 from pathlib import Path
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
-from Cmdty.Storage import CmdtyStorage, IBuilder, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, InjectWithdrawRange
+from Cmdty.Storage import CmdtyStorage, IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, InjectWithdrawRange, CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
 #from Cmdty.Storage.CmdtyStorage import IAddInjectWithdrawConstraints
 
 
@@ -104,29 +104,31 @@ def create_storage(freq, storage_start, storage_end, constraints,
             net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
         net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
     
-    inject_withdraw_interface = CmdtyStorage[time_period_type].IAddInjectWithdrawConstraints
+    inject_withdraw_interface = IAddInjectWithdrawConstraints[time_period_type]
     
     builder = inject_withdraw_interface(builder)
 
-    builder.WithTimeAndInventoryVaryingInjectWithdrawRates(net_constraints)
+    CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
 
-    CmdtyStorage[time_period_type].IAddInjectionCost(builder).WithPerUnitInjectionCost(constant_injection_cost, lambda dt: dt)
+    first_day_func = Func[time_period_type, Day](lambda dt: dt.First[Day]())
+
+    IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(constant_injection_cost, first_day_func)
     
     if constant_pcnt_consumed_inject is not None:
-        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnInject(builder).WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
+        IAddCmdtyConsumedOnInject[time_period_type](builder).WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
     else:
-        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnInject(builder).WithNoCmdtyConsumedOnInject()
+        IAddCmdtyConsumedOnInject[time_period_type](builder).WithNoCmdtyConsumedOnInject()
 
-    CmdtyStorage[time_period_type].IAddWithdrawalCost(builder).WithPerUnitWithdrawalCost(constant_withdrawal_cost, lambda dt: dt)
+    IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(constant_withdrawal_cost, first_day_func)
 
     if constant_pcnt_consumed_withdraw is not None:
-        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnWithdraw(builder).WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
+        IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
     else:
-        CmdtyStorage[time_period_type].IAddCmdtyConsumedOnWithdraw(builder).WithNoCmdtyConsumedOnWithdraw()
+        IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithNoCmdtyConsumedOnWithdraw()
     
-    CmdtyStorage[time_period_type].IAddTerminalStorageState(builder).MustBeEmptyAtEnd()
+    IAddTerminalStorageState[time_period_type](builder).MustBeEmptyAtEnd()
     
-    return CmdtyStorage[time_period_type].IBuildCmdtyStorage(builder).Build()
+    return IBuildCmdtyStorage[time_period_type](builder).Build()
 
 FREQ_TO_PERIOD_TYPE = {
         "15min" : QuarterHour,
