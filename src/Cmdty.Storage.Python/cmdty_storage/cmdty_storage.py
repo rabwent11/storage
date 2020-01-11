@@ -29,8 +29,9 @@ clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
-from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, InjectWithdrawRange, CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
+from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
 from Cmdty.Storage import CmdtyStorage as NetCmdtyStorage
+from Cmdty.Storage import InjectWithdrawRange as NetInjectWithdrawRange
 
 from collections import namedtuple
 from datetime import datetime
@@ -41,6 +42,8 @@ ValuationResults = namedtuple('ValuationResults', 'npv, decision_profile')
 InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, min_rate, max_rate')
 
 InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
+
+InjectWithdrawRange = namedtuple('InjectWithdrawRange', 'min_inject_withdraw_rate, max_inject_withdraw_rate')
 
 def _from_datetime_like(datetime_like, time_period_type):
     """ Converts either a pandas Period, datetime or date to a .NET Time Period"""
@@ -107,7 +110,7 @@ class CmdtyStorage:
             net_period = _from_datetime_like(period, time_period_type)
             net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
             for inventory, min_rate, max_rate in rates_by_inventory:
-                net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
+                net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, NetInjectWithdrawRange(min_rate, max_rate)))
             net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
     
         builder = IAddInjectWithdrawConstraints[time_period_type](builder)
@@ -184,7 +187,7 @@ class CmdtyStorage:
         net_time_period = self._net_time_period(period)
         net_inject_withdraw = self._net_storage.GetInjectWithdrawRange(net_time_period, inventory)
         
-        return (net_inject_withdraw.MinInjectWithdrawRate, net_inject_withdraw.MaxInjectWithdrawRate)
+        return InjectWithdrawRange(net_inject_withdraw.MinInjectWithdrawRate, net_inject_withdraw.MaxInjectWithdrawRate)
 
     def min_inventory(self, period):
         net_time_period = self._net_time_period(period)
