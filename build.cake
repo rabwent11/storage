@@ -37,37 +37,6 @@ if (HasArgument("PythonVersion"))
     msBuildSettings.WithProperty("PythonVersion", Argument<string>("PythonVersion"));
 }
 
-Task("Add-NuGetSource")
-    .Does(() =>
-    {
-		if (isRunningOnBuildServer)
-		{
-			// Get the access token
-			string accessToken = EnvironmentVariable("SYSTEM_ACCESSTOKEN");
-			if (string.IsNullOrEmpty(accessToken))
-			{
-				throw new InvalidOperationException("Could not resolve SYSTEM_ACCESSTOKEN.");
-			}
-
-            StartProcessThrowOnError("nuget", "sources remove -Name cmdty -Source https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json -ConfigFile NuGet.config");
-			//NuGetRemoveSource("cmdty", "https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json");
-
-			// Add the authenticated feed source
-			NuGetAddSource(
-				"cmdty",
-				"https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json",
-				new NuGetSourcesSettings
-				{
-					UserName = "VSTS",
-					Password = accessToken
-				});
-		}
-		else
-		{
-			Information("Not running on build so no need to add Cmdty NuGet source");
-		}
-    });
-
 Task("Clean-Artifacts")
     .Does(() =>
 {
@@ -75,7 +44,6 @@ Task("Clean-Artifacts")
 });
 
 Task("Build")
-	.IsDependentOn("Add-NuGetSource")
 	.IsDependentOn("Clean-Artifacts") // Necessary as msbuild tasks in Cmdty.Storage.Excel.csproj copy the add-ins into the artifacts directory
     .Does(() =>
 {
@@ -148,7 +116,6 @@ var testPythonTask = Task("Test-Python")
 });
 
 Task("Build-Samples")
-    .IsDependentOn("Add-NuGetSource")
 	.Does(() =>
 {
 	var dotNetCoreSettings = new DotNetCoreBuildSettings()
