@@ -80,8 +80,13 @@ class TestCmdtyStorage(unittest.TestCase):
         cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(pd.Period(date(2019, 9, 25), freq='D'), 485.5, withdrawn_volume)
         self.assertEqual(withdrawn_volume * constant_pcnt_consumed_withdraw, cmdty_consumed_withdraw)
 
+        # TODO update test once added to CmdtyStorage constructor
         terminal_npv = storage.terminal_storage_npv(65.78, 250.0);
         self.assertEqual(0.0, terminal_npv)
+
+        # TODO update test once added to CmdtyStorage constructor
+        inventory_loss = storage.inventory_loss(date(2019, 9, 2), 250.0)
+        self.assertEqual(0.0, inventory_loss)
 
 if __name__ == '__main__':
     unittest.main()

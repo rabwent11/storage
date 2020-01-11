@@ -85,7 +85,8 @@ class CmdtyStorage:
 
     def __init__(self, freq, storage_start, storage_end, constraints,
                    constant_injection_cost, constant_withdrawal_cost, 
-                   constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None):
+                   constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None,
+                   inventory_loss=None):
                  
         if freq not in FREQ_TO_PERIOD_TYPE:
             raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
@@ -129,7 +130,15 @@ class CmdtyStorage:
             IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
         else:
             IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithNoCmdtyConsumedOnWithdraw()
-    
+        
+        builder = IAddCmdtyInventoryLoss[time_period_type](builder)
+        if inventory_loss is not None:
+            # TODO add unit test for this block executing
+            # TODO test if inventory_loss is function and handle
+            builder.WithFixedPercentCmdtyInventoryLoss(inventory_loss)
+        else:
+            builder.WithNoCmdtyInventoryLoss()
+
         IAddTerminalStorageState[time_period_type](builder).MustBeEmptyAtEnd()
         
         self._net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
@@ -194,3 +203,8 @@ class CmdtyStorage:
 
     def terminal_storage_npv(self, cmdty_price, terminal_inventory):
         return self._net_storage.TerminalStorageNpv(cmdty_price, terminal_inventory)
+
+    def inventory_loss(self, period, inventory):
+        net_time_period = self._net_time_period(period)
+        return self._net_storage.CmdtyInventoryLoss(net_time_period, inventory)
+
