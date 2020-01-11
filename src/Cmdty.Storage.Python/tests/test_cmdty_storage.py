@@ -66,6 +66,14 @@ class TestCmdtyStorage(unittest.TestCase):
         max_inventory = storage.max_inventory(date(2019, 8, 29))
         self.assertEqual(2000.0, max_inventory)
 
+        injected_volume = 58.74
+        injection_cost = storage.injection_cost(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
+        self.assertEqual(injected_volume * constant_injection_cost, injection_cost)
+
+        withdrawn_volume = 12.05
+        injection_cost = storage.withdrawal_cost(pd.Period(date(2019, 9, 2), freq='D'), 135.67, withdrawn_volume)
+        self.assertEqual(withdrawn_volume * constant_withdrawal_cost, injection_cost)
+
 
 if __name__ == '__main__':
     unittest.main()

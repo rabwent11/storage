@@ -169,3 +169,19 @@ class CmdtyStorage:
     def max_inventory(self, period):
         net_time_period = self._net_time_period(period)
         return self._net_storage.MaxInventory(net_time_period)
+
+    def injection_cost(self, period, inventory, injected_volume):
+        net_time_period = self._net_time_period(period)
+        net_inject_costs = self._net_storage.InjectionCost(net_time_period, inventory, injected_volume)
+        if net_inject_costs.Length > 0:
+            return net_inject_costs[0].Amount
+        return 0.0
+
+    # TODO CmdtyVolumeConsumedOnInject
+
+    def withdrawal_cost(self, period, inventory, withdrawn_volume):
+        net_time_period = self._net_time_period(period)
+        net_withdrawal_costs = self._net_storage.WithdrawalCost(net_time_period, inventory, withdrawn_volume)
+        if net_withdrawal_costs.Length > 0:
+            return net_withdrawal_costs[0].Amount
+        return 0.0
