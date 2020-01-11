@@ -191,3 +191,6 @@ class CmdtyStorage:
     def cmdty_consumed_withdraw(self, period, inventory, withdrawn_volume):
         net_time_period = self._net_time_period(period)
         return self._net_storage.CmdtyVolumeConsumedOnWithdraw(net_time_period, inventory, withdrawn_volume)
+
+    def terminal_storage_npv(self, cmdty_price, terminal_inventory):
+        return self._net_storage.TerminalStorageNpv(cmdty_price, terminal_inventory)
