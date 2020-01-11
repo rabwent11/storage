@@ -110,9 +110,7 @@ class CmdtyStorage:
                 net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, InjectWithdrawRange(min_rate, max_rate)))
             net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
     
-        inject_withdraw_interface = IAddInjectWithdrawConstraints[time_period_type]
-    
-        builder = inject_withdraw_interface(builder)
+        builder = IAddInjectWithdrawConstraints[time_period_type](builder)
 
         CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
 
@@ -120,17 +118,21 @@ class CmdtyStorage:
 
         IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(constant_injection_cost, first_day_func)
     
+        builder = IAddCmdtyConsumedOnInject[time_period_type](builder)
+
         if constant_pcnt_consumed_inject is not None:
-            IAddCmdtyConsumedOnInject[time_period_type](builder).WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
+            builder.WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
         else:
-            IAddCmdtyConsumedOnInject[time_period_type](builder).WithNoCmdtyConsumedOnInject()
+            builder.WithNoCmdtyConsumedOnInject()
 
         IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(constant_withdrawal_cost, first_day_func)
 
+        builder = IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
+
         if constant_pcnt_consumed_withdraw is not None:
-            IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
+            builder.WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
         else:
-            IAddCmdtyConsumedOnWithdraw[time_period_type](builder).WithNoCmdtyConsumedOnWithdraw()
+            builder.WithNoCmdtyConsumedOnWithdraw()
         
         builder = IAddCmdtyInventoryLoss[time_period_type](builder)
         if inventory_loss is not None:
