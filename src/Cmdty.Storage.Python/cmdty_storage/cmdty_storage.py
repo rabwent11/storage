@@ -84,8 +84,8 @@ The values are the associated .NET time period types used in behind-the-scenes c
 class CmdtyStorage:
 
     def __init__(self, freq, storage_start, storage_end, constraints,
-                   constant_injection_cost, constant_withdrawal_cost, 
-                   constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None,
+                   injection_cost, withdrawal_cost, 
+                   cmdty_consumed_inject=None, cmdty_consumed_withdraw=None,
                    terminal_storage_npv=None,
                    inventory_loss=None, inventory_cost=None):
                  
@@ -116,21 +116,21 @@ class CmdtyStorage:
 
         first_day_func = Func[time_period_type, Day](lambda dt: dt.First[Day]())
 
-        IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(constant_injection_cost, first_day_func)
+        IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(injection_cost, first_day_func)
     
         builder = IAddCmdtyConsumedOnInject[time_period_type](builder)
 
-        if constant_pcnt_consumed_inject is not None:
-            builder.WithFixedPercentCmdtyConsumedOnInject(constant_pcnt_consumed_inject)
+        if cmdty_consumed_inject is not None:
+            builder.WithFixedPercentCmdtyConsumedOnInject(cmdty_consumed_inject)
         else:
             builder.WithNoCmdtyConsumedOnInject()
 
-        IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(constant_withdrawal_cost, first_day_func)
+        IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(withdrawal_cost, first_day_func)
 
         builder = IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
 
-        if constant_pcnt_consumed_withdraw is not None:
-            builder.WithFixedPercentCmdtyConsumedOnWithdraw(constant_pcnt_consumed_withdraw)
+        if cmdty_consumed_withdraw is not None:
+            builder.WithFixedPercentCmdtyConsumedOnWithdraw(cmdty_consumed_withdraw)
         else:
             builder.WithNoCmdtyConsumedOnWithdraw()
         
