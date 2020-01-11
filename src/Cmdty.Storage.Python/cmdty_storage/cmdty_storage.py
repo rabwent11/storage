@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import clr
-from System import DateTime, Func
+from System import DateTime, Func, Double
 from System.Collections.Generic import List
 from pathlib import Path
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
@@ -86,6 +86,7 @@ class CmdtyStorage:
     def __init__(self, freq, storage_start, storage_end, constraints,
                    constant_injection_cost, constant_withdrawal_cost, 
                    constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None,
+                   terminal_storage_npv=None,
                    inventory_loss=None, inventory_cost=None):
                  
         if freq not in FREQ_TO_PERIOD_TYPE:
@@ -146,8 +147,13 @@ class CmdtyStorage:
         else:
             builder.WithNoCmdtyInventoryCost()
 
-        IAddTerminalStorageState[time_period_type](builder).MustBeEmptyAtEnd()
+        builder = IAddTerminalStorageState[time_period_type](builder)
         
+        if terminal_storage_npv is None:
+            builder.MustBeEmptyAtEnd()
+        else:
+            builder.WithTerminalInventoryNpv(Func[Double, Double, Double](terminal_storage_npv))
+
         self._net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
         self._freq = freq
 

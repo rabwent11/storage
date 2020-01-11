@@ -46,11 +46,15 @@ class TestCmdtyStorage(unittest.TestCase):
         constant_pcnt_inventory_loss = 0.001;
         constant_pcnt_inventory_cost = 0.002;
 
+        def terminal_npv_calc(price, inventory):
+            return price * inventory - 15.4 # Some arbitrary calculation
+
         storage = CmdtyStorage('D', date(2019, 8, 28), date(2019, 9, 25), constraints, constant_injection_cost,
                                 constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
+                                terminal_storage_npv=terminal_npv_calc,
                                 inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
         
-        self.assertEqual(True, storage.must_be_empty_at_end)
+        self.assertEqual(False, storage.must_be_empty_at_end)
 
         self.assertEqual('D', storage.freq)
 
@@ -85,7 +89,7 @@ class TestCmdtyStorage(unittest.TestCase):
 
         # TODO update test once added to CmdtyStorage constructor
         terminal_npv = storage.terminal_storage_npv(65.78, 250.0);
-        self.assertEqual(0.0, terminal_npv)
+        self.assertEqual(terminal_npv_calc(65.78, 250.0), terminal_npv)
 
         inventory_loss = storage.inventory_loss(date(2019, 9, 2), 250.0)
         self.assertEqual(constant_pcnt_inventory_loss * 250.0, inventory_loss)
