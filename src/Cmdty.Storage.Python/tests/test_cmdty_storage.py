@@ -36,9 +36,16 @@ class TestCmdtyStorage(unittest.TestCase):
                                             InjectWithdrawByInventory(0.0, -150.0, 255.2),
                                             InjectWithdrawByInventory(2000.0, -200.0, 175.0),
                                         ]),
-                    # TODO specify constraint with tuples
+                            (date(2019, 9, 10), 
+                                     [
+                                         (0.0, -170.5, 235.8),
+                                         (700.0, -180.2, 200.77),
+                                         (1800.0, -190.5, 174.45),
+                                    ])
                 ]
 
+        storage_start = date(2019, 8, 28)
+        storage_end = date(2019, 9, 25)
         constant_injection_cost = 0.015
         constant_pcnt_consumed_inject = 0.0001
         constant_withdrawal_cost = 0.02
@@ -49,7 +56,7 @@ class TestCmdtyStorage(unittest.TestCase):
         def terminal_npv_calc(price, inventory):
             return price * inventory - 15.4 # Some arbitrary calculation
 
-        storage = CmdtyStorage('D', date(2019, 8, 28), date(2019, 9, 25), constraints, constant_injection_cost,
+        storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
                                 constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
                                 terminal_storage_npv=terminal_npv_calc,
                                 inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
@@ -58,9 +65,9 @@ class TestCmdtyStorage(unittest.TestCase):
 
         self.assertEqual('D', storage.freq)
 
-        self.assertEqual(pd.Period(date(2019, 8, 28), freq='D'), storage.start_period)
+        self.assertEqual(pd.Period(storage_start, freq='D'), storage.start_period)
 
-        self.assertEqual(pd.Period(date(2019, 9, 25), freq='D'), storage.end_period)
+        self.assertEqual(pd.Period(storage_end, freq='D'), storage.end_period)
 
         # Inventory half way between pillars, so assert against mean of min/max inject/withdraw at the pillars
         min_dec, max_dec = storage.inject_withdraw_range(date(2019, 8, 29), 1000.0)
@@ -70,8 +77,8 @@ class TestCmdtyStorage(unittest.TestCase):
         min_inventory = storage.min_inventory(date(2019, 8, 29))
         self.assertEqual(0.0, min_inventory)
 
-        max_inventory = storage.max_inventory(date(2019, 8, 29))
-        self.assertEqual(2000.0, max_inventory)
+        max_inventory = storage.max_inventory(date(2019, 9, 10))
+        self.assertEqual(1800.0, max_inventory)
 
         injected_volume = 58.74
         injection_cost = storage.injection_cost(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
@@ -87,7 +94,6 @@ class TestCmdtyStorage(unittest.TestCase):
         cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(pd.Period(date(2019, 9, 25), freq='D'), 485.5, withdrawn_volume)
         self.assertEqual(withdrawn_volume * constant_pcnt_consumed_withdraw, cmdty_consumed_withdraw)
 
-        # TODO update test once added to CmdtyStorage constructor
         terminal_npv = storage.terminal_storage_npv(65.78, 250.0);
         self.assertEqual(terminal_npv_calc(65.78, 250.0), terminal_npv)
 
