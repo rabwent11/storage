@@ -49,11 +49,11 @@ Task("Add-NuGetSource")
 				throw new InvalidOperationException("Could not resolve SYSTEM_ACCESSTOKEN.");
 			}
 
-			NuGetRemoveSource("Cmdty", "https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json");
+			NuGetRemoveSource("cmdty", "https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json");
 
 			// Add the authenticated feed source
 			NuGetAddSource(
-				"Cmdty",
+				"cmdty",
 				"https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json",
 				new NuGetSourcesSettings
 				{
