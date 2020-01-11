@@ -177,11 +177,17 @@ class CmdtyStorage:
             return net_inject_costs[0].Amount
         return 0.0
 
-    # TODO CmdtyVolumeConsumedOnInject
-
+    def cmdty_consumed_inject(self, period, inventory, injected_volume):
+        net_time_period = self._net_time_period(period)
+        return self._net_storage.CmdtyVolumeConsumedOnInject(net_time_period, inventory, injected_volume)
+    
     def withdrawal_cost(self, period, inventory, withdrawn_volume):
         net_time_period = self._net_time_period(period)
         net_withdrawal_costs = self._net_storage.WithdrawalCost(net_time_period, inventory, withdrawn_volume)
         if net_withdrawal_costs.Length > 0:
             return net_withdrawal_costs[0].Amount
         return 0.0
+
+    def cmdty_consumed_withdraw(self, period, inventory, withdrawn_volume):
+        net_time_period = self._net_time_period(period)
+        return self._net_storage.CmdtyVolumeConsumedOnWithdraw(net_time_period, inventory, withdrawn_volume)

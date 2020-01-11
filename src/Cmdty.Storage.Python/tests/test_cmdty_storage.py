@@ -70,9 +70,13 @@ class TestCmdtyStorage(unittest.TestCase):
         injection_cost = storage.injection_cost(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
         self.assertEqual(injected_volume * constant_injection_cost, injection_cost)
 
+        cmdty_consumed_inject = storage.cmdty_volume_consumed_inject(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
+        self.assertEqual(injected_volume * constant_pcnt_consumed_inject, cmdty_consumed_inject)
+
         withdrawn_volume = 12.05
         injection_cost = storage.withdrawal_cost(pd.Period(date(2019, 9, 2), freq='D'), 135.67, withdrawn_volume)
         self.assertEqual(withdrawn_volume * constant_withdrawal_cost, injection_cost)
+
 
 
 if __name__ == '__main__':
