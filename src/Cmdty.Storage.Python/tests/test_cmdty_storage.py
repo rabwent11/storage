@@ -60,6 +60,12 @@ class TestCmdtyStorage(unittest.TestCase):
         self.assertEqual(-175.0, min_dec)
         self.assertEqual((255.2 + 175.0)/2.0, max_dec)
 
+        min_inventory = storage.min_inventory(date(2019, 8, 29))
+        self.assertEqual(0.0, min_inventory)
+
+        max_inventory = storage.max_inventory(date(2019, 8, 29))
+        self.assertEqual(2000.0, max_inventory)
+
 
 if __name__ == '__main__':
     unittest.main()

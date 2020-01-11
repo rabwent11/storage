@@ -135,6 +135,10 @@ class CmdtyStorage:
         self._net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
         self._freq = freq
 
+    def _net_time_period(self, period):
+        time_period_type = FREQ_TO_PERIOD_TYPE[self._freq]
+        return _from_datetime_like(period, time_period_type)
+    
     @property
     def freq(self):
         return self._freq
@@ -153,8 +157,15 @@ class CmdtyStorage:
 
     def inject_withdraw_range(self, period, inventory):
 
-        time_period_type = FREQ_TO_PERIOD_TYPE[self._freq]
-        net_time_period = _from_datetime_like(period, time_period_type)
+        net_time_period = self._net_time_period(period)
         net_inject_withdraw = self._net_storage.GetInjectWithdrawRange(net_time_period, inventory)
         
         return (net_inject_withdraw.MinInjectWithdrawRate, net_inject_withdraw.MaxInjectWithdrawRate)
+
+    def min_inventory(self, period):
+        net_time_period = self._net_time_period(period)
+        return self._net_storage.MinInventory(net_time_period)
+
+    def max_inventory(self, period):
+        net_time_period = self._net_time_period(period)
+        return self._net_storage.MaxInventory(net_time_period)
