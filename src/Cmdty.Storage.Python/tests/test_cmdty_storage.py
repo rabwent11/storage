@@ -43,9 +43,11 @@ class TestCmdtyStorage(unittest.TestCase):
         constant_pcnt_consumed_inject = 0.0001
         constant_withdrawal_cost = 0.02
         constant_pcnt_consumed_withdraw = 0.000088
+        constant_pcnt_inventory_cost = 0.002;
 
         storage = CmdtyStorage('D', date(2019, 8, 28), date(2019, 9, 25), constraints, constant_injection_cost,
-                                constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw)
+                                constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
+                                inventory_cost=constant_pcnt_inventory_cost)
         
         self.assertEqual(True, storage.must_be_empty_at_end)
 
@@ -87,6 +89,10 @@ class TestCmdtyStorage(unittest.TestCase):
         # TODO update test once added to CmdtyStorage constructor
         inventory_loss = storage.inventory_loss(date(2019, 9, 2), 250.0)
         self.assertEqual(0.0, inventory_loss)
+
+        inventory_cost = storage.inventory_cost(date(2019, 9, 2), 250.0)
+        self.assertEqual(constant_pcnt_inventory_cost * 250.0, inventory_cost)
+
 
 if __name__ == '__main__':
     unittest.main()

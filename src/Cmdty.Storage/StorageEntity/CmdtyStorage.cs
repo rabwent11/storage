@@ -389,6 +389,12 @@ namespace Cmdty.Storage
                 return this;
             }
 
+            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithFixedPerUnitCost(double perUnitCost)
+            {
+                _cmdtyInventoryCost = (period, inventory) 
+                    => new DomesticCashFlow[1]{new DomesticCashFlow(period.First<Day>(), inventory * perUnitCost)};
+                return this;
+            }
         }
         
 
@@ -463,6 +469,10 @@ namespace Cmdty.Storage
     {
         IAddTerminalStorageState<T> WithCmdtyInventoryCost(Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost);
         IAddTerminalStorageState<T> WithNoCmdtyInventoryCost();
+        /// <summary>
+        /// Adds a cost on the first day of the decision period
+        /// </summary>
+        IAddTerminalStorageState<T> WithFixedPerUnitCost(double perUnitCost);
     }
 
     public interface IAddTerminalStorageState<T> where T : ITimePeriod<T>

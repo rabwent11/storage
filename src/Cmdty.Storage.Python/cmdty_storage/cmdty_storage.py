@@ -86,7 +86,7 @@ class CmdtyStorage:
     def __init__(self, freq, storage_start, storage_end, constraints,
                    constant_injection_cost, constant_withdrawal_cost, 
                    constant_pcnt_consumed_inject=None, constant_pcnt_consumed_withdraw=None,
-                   inventory_loss=None):
+                   inventory_loss=None, inventory_cost=None):
                  
         if freq not in FREQ_TO_PERIOD_TYPE:
             raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
@@ -138,6 +138,13 @@ class CmdtyStorage:
             builder.WithFixedPercentCmdtyInventoryLoss(inventory_loss)
         else:
             builder.WithNoCmdtyInventoryLoss()
+
+        builder = IAddCmdtyInventoryCost[time_period_type](builder)
+        if inventory_cost is not None:
+            # TODO handle if inventory_cost is function
+            builder.WithFixedPerUnitCost(inventory_cost)
+        else:
+            builder.WithNoCmdtyInventoryCost()
 
         IAddTerminalStorageState[time_period_type](builder).MustBeEmptyAtEnd()
         
@@ -207,4 +214,11 @@ class CmdtyStorage:
     def inventory_loss(self, period, inventory):
         net_time_period = self._net_time_period(period)
         return self._net_storage.CmdtyInventoryLoss(net_time_period, inventory)
+
+    def inventory_cost(self, period, inventory):
+        net_time_period = self._net_time_period(period)
+        net_inventory_cost = self._net_storage.CmdtyInventoryCost(net_time_period, inventory)
+        if net_inventory_cost.Length > 0:
+            return net_inventory_cost[0].Amount
+        return 0.0
 
