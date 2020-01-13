@@ -36,7 +36,7 @@ from Cmdty.Storage import CmdtyStorage as NetCmdtyStorage
 from Cmdty.Storage import InjectWithdrawRange as NetInjectWithdrawRange
 
 from Cmdty.Storage import IntrinsicStorageValuation, IIntrinsicAddStartingInventory, IIntrinsicAddCurrentPeriod, IIntrinsicAddForwardCurve, \
-    IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, IIntrinsicAddInventoryGridCalculation, IIntrinsicAddInterpolator, \
+    IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, \
     IIntrinsicAddNumericalTolerance, IIntrinsicCalculate, IntrinsicStorageValuationExtensions
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.TimeSeries')))
@@ -115,9 +115,9 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
     IIntrinsicAddStartingInventory[time_period_type](intrinsic_calc).WithStartingInventory(inventory)
 
     current_period = _from_datetime_like(val_date, time_period_type)
+    IIntrinsicAddCurrentPeriod[time_period_type](intrinsic_calc).ForCurrentPeriod(current_period)
 
     net_forward_curve = _series_to_time_series(forward_curve, time_period_type)
-
     IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
 
     net_settlement_rule = Func[time_period_type, Day](settlement_rule)
@@ -125,6 +125,14 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
     
     interest_rate_func = Func[Day, Double](lambda cashFlowDate: interest_rates[_net_time_period_to_pandas_period(cashFlowDate, 'D')])
     IntrinsicStorageValuationExtensions.WithAct365ContinuouslyCompoundedInterestRate[time_period_type](intrinsic_calc, interest_rate_func)
+
+    IntrinsicStorageValuationExtensions.WithFixedNumberOfPointsOnGlobalInventoryRange[time_period_type](intrinsic_calc, num_inventory_grid_points)
+
+    IntrinsicStorageValuationExtensions.WithLinearInventorySpaceInterpolation[time_period_type](intrinsic_calc)
+
+    IIntrinsicAddNumericalTolerance[time_period_type](intrinsic_calc).WithNumericalTolerance(numerical_tolerance)
+
+    net_val_results = IIntrinsicCalculate[time_period_type](intrinsic_calc).Calculate()
 
     pass
 

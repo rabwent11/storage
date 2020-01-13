@@ -26,6 +26,11 @@ from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, Inje
 from datetime import date
 import pandas as pd
 
+import clr
+from pathlib import Path
+clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
+from Cmdty.TimePeriodValueTypes import Day
+
 class TestCmdtyStorage(unittest.TestCase):
 
     def test_initializer(self):
@@ -149,9 +154,15 @@ class TestIntrinsicValue(unittest.TestCase):
             pd.Period(date(2019, 9, 18), freq='D') : 59.89, 
             pd.Period(storage_end, freq='D') : 59.89, }).resample('D').fillna('pad')
         
+        # TODO test with proper interest rate curve
+        flat_interest_rate = 0.03
+        interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end, freq='D'))
+        interest_rate_curve[:] = flat_interest_rate
+
         # TODO more realistic settlement rule
-        first_day_rule = lambda period: period.First[time_period_type]()
-        intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, interest_rates=None)
+        first_day_rule = lambda period: period.First[Day]()
+        intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
+                        interest_rates=interest_rate_curve, num_inventory_grid_points=50)
 
 
 if __name__ == '__main__':
