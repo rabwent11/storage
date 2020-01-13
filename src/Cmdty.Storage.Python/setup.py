@@ -40,11 +40,11 @@ setuptools.setup(
     description='Valuation and optimisation of commodity storage.',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/cmdty/core',
+    url='https://github.com/cmdty/storage',
     packages=setuptools.find_packages(),
     keywords = 'commodities trading curves oil gas power quantitative finance',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 3 - Alpha',
         'Programming Language :: C#',
         'Intended Audience :: Developers',
         'Intended Audience :: Financial and Insurance Industry',
