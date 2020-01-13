@@ -144,12 +144,14 @@ class TestIntrinsicValue(unittest.TestCase):
 
         # TODO helper function for created piecewise flat curve (done in a better way than below)
         forward_curve = pd.Series(data={
-            pd.Period(val_date, freq='D') : 58.89,\
+            pd.Period(val_date, freq='D') : 58.89,
             pd.Period(date(2019, 9, 12), freq='D') : 61.41, 
             pd.Period(date(2019, 9, 18), freq='D') : 59.89, 
             pd.Period(storage_end, freq='D') : 59.89, }).resample('D').fillna('pad')
         
-        intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_dates=None, interest_rates=None)
+        # TODO more realistic settlement rule
+        first_day_rule = lambda period: period.First[time_period_type]()
+        intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, interest_rates=None)
 
 
 if __name__ == '__main__':

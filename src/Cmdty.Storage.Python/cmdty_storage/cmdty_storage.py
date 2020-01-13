@@ -103,7 +103,8 @@ The values are the associated .NET time period types used in behind-the-scenes c
 """
 
 
-def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_dates, interest_rates):
+def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule, interest_rates, 
+                    num_inventory_grid_points=100, numerical_tolerance=1E-12):
     
     if cmdty_storage.freq != forward_curve.index.freqstr:
         raise ValueError("cmdty_storage and forward_curve have different frequencies.")
@@ -118,6 +119,9 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
     net_forward_curve = _series_to_time_series(forward_curve, time_period_type)
 
     IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
+
+    net_settlement_rule = Func[time_period_type, Day](settlement_rule)
+    IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
 
     pass
 
