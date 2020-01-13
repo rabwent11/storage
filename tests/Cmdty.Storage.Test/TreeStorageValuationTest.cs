@@ -463,7 +463,7 @@ namespace Cmdty.Storage.Test
                 .ForCurrentPeriod(currentDate)
                 .WithForwardCurve(forwardCurve)
                 .WithCmdtySettlementRule(day => day)                     // No discounting 
-                .WithDiscountFactorFunc(day => 1.0)         // No discounting
+                .WithDiscountFactorFunc((valuationDate, cashFlowDate) => 1.0)         // No discounting
                 .WithFixedGridSpacing(100)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)

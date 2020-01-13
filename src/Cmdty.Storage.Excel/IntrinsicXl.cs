@@ -137,7 +137,7 @@ namespace Cmdty.Storage.Excel
                 .ForCurrentPeriod(currentPeriod)
                 .WithForwardCurve(forwardCurve)
                 .WithCmdtySettlementRule(period => period.First<Day>()) // TODO get rid if this
-                .WithDiscountFactorFunc(day => 1.0)
+                .WithDiscountFactorFunc((currentDate, cashFlowDate) => 1.0) // TODO add proper discounting
                 .WithFixedNumberOfPointsOnGlobalInventoryRange(numGridPoints)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(numericalTolerance)

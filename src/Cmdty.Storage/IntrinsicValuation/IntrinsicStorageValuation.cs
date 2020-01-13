@@ -41,7 +41,7 @@ namespace Cmdty.Storage
         private T _currentPeriod;
         private TimeSeries<T, double> _forwardCurve;
         private Func<T, Day> _settleDateRule;
-        private Func<Day, double> _discountFactors;
+        private Func<Day, Day, double> _discountFactors;
         private Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> _gridCalcFactory;
         private IInterpolatorFactory _interpolatorFactory;
         private double _numericalTolerance;
@@ -84,7 +84,7 @@ namespace Cmdty.Storage
             return this;
         }
 
-        IIntrinsicAddInventoryGridCalculation<T> IIntrinsicAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, double> discountFactors)
+        IIntrinsicAddInventoryGridCalculation<T> IIntrinsicAddDiscountFactorFunc<T>.WithDiscountFactorFunc([NotNull] Func<Day, Day, double> discountFactors)
         {
             _discountFactors = discountFactors ?? throw new ArgumentNullException(nameof(discountFactors));
             return this;
@@ -119,7 +119,7 @@ namespace Cmdty.Storage
 
         private static IntrinsicStorageValuationResults<T> Calculate(T currentPeriod, double startingInventory,
                 TimeSeries<T, double> forwardCurve, ICmdtyStorage<T> storage, Func<T, Day> settleDateRule,
-                Func<Day, double> discountFactors, Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory,
+                Func<Day, Day, double> discountFactors, Func<ICmdtyStorage<T>, IDoubleStateSpaceGridCalc> gridCalcFactory,
                 IInterpolatorFactory interpolatorFactory, double numericalTolerance)
         {
             if (startingInventory < 0)
@@ -163,6 +163,10 @@ namespace Cmdty.Storage
             if (forwardCurve.End.CompareTo(inventorySpace.End) < 0)
                 throw new ArgumentException("Forward curve does not extend until storage end period.", nameof(forwardCurve));
 
+            // Calculate discount factor function
+            Day dayToDiscountTo = currentPeriod.First<Day>(); // TODO IMPORTANT, this needs to change
+            double DiscountToCurrentDay(Day day) => discountFactors(dayToDiscountTo, day);
+
             // Perform backward induction
             var storageValueByInventory = new Func<double, double>[inventorySpace.Count];
 
@@ -189,7 +193,7 @@ namespace Cmdty.Storage
                     double inventory = inventorySpaceGrid[i];
                     storageValuesGrid[i] = OptimalDecisionAndValue(storage, periodLoop, inventory, nextStepInventorySpaceMin, 
                                                 nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, 
-                                                settleDateRule, discountFactors, numericalTolerance).StorageNpv;
+                                                settleDateRule, DiscountToCurrentDay, numericalTolerance).StorageNpv;
                 }
 
                 storageValueByInventory[backCounter] =
@@ -214,8 +218,8 @@ namespace Cmdty.Storage
                 (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = inventorySpace[periodLoop.Offset(1)];
                 (double storageNpvLoop, double optimalInjectWithdraw, double cmdtyConsumedOnAction) = 
                                         OptimalDecisionAndValue(storage, periodLoop, inventoryLoop, nextStepInventorySpaceMin,
-                                            nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, settleDateRule, 
-                                            discountFactors, numericalTolerance);
+                                            nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, settleDateRule,
+                                            DiscountToCurrentDay, numericalTolerance);
                 decisionProfileBuilder.Add(periodLoop, optimalInjectWithdraw);
                 cmdtyConsumedBuilder.Add(periodLoop, cmdtyConsumedOnAction);
 
@@ -323,7 +327,7 @@ namespace Cmdty.Storage
         /// Adds discount factor function.
         /// </summary>
         /// <param name="discountFactors">Function mapping from cash flow date to discount factor.</param>
-        IIntrinsicAddInventoryGridCalculation<T> WithDiscountFactorFunc(Func<Day, double> discountFactors);
+        IIntrinsicAddInventoryGridCalculation<T> WithDiscountFactorFunc(Func<Day, Day, double> discountFactors);
     }
 
     public interface IIntrinsicAddInventoryGridCalculation<T>

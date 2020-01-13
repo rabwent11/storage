@@ -65,7 +65,7 @@ namespace Cmdty.Storage.Test
                 .ForCurrentPeriod(currentPeriod)
                 .WithForwardCurve(forwardCurve)
                 .WithMonthlySettlement(settlementDates)
-                .WithDiscountFactorFunc(day => 1.0)
+                .WithDiscountFactorFunc((valuationDate, cashFlowDate) => 1.0) // No discounting
                 .WithFixedGridSpacing(10.0)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
@@ -262,7 +262,7 @@ namespace Cmdty.Storage.Test
                 .ForCurrentPeriod(storageEnd)
                 .WithForwardCurve(forwardCurve)
                 .WithMonthlySettlement(settlementDates)
-                .WithDiscountFactorFunc(day => 1.0)
+                .WithDiscountFactorFunc((valuationDate, cashFlowDate) => 1.0) // No discounting
                 .WithFixedGridSpacing(10.0)
                 .WithLinearInventorySpaceInterpolation()
                 .WithNumericalTolerance(1E-10)
