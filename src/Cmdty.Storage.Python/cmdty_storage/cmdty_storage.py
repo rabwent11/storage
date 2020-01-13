@@ -37,7 +37,7 @@ from Cmdty.Storage import InjectWithdrawRange as NetInjectWithdrawRange
 
 from Cmdty.Storage import IntrinsicStorageValuation, IIntrinsicAddStartingInventory, IIntrinsicAddCurrentPeriod, IIntrinsicAddForwardCurve, \
     IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, IIntrinsicAddInventoryGridCalculation, IIntrinsicAddInterpolator, \
-    IIntrinsicAddNumericalTolerance, IIntrinsicCalculate
+    IIntrinsicAddNumericalTolerance, IIntrinsicCalculate, IntrinsicStorageValuationExtensions
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.TimeSeries')))
 from Cmdty.TimeSeries import TimeSeries
@@ -122,6 +122,9 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
 
     net_settlement_rule = Func[time_period_type, Day](settlement_rule)
     IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
+    
+    interest_rate_func = Func[Day, Double](lambda cashFlowDate: interest_rates[_net_time_period_to_pandas_period(cashFlowDate, 'D')])
+    IntrinsicStorageValuationExtensions.WithAct365ContinuouslyCompoundedInterestRate[time_period_type](intrinsic_calc, interest_rate_func)
 
     pass
 

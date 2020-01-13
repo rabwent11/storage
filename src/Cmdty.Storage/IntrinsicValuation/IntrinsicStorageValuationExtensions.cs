@@ -47,6 +47,23 @@ namespace Cmdty.Storage
             });
         }
 
+        public static IIntrinsicAddInventoryGridCalculation<T> WithAct365ContinuouslyCompoundedInterestRate<T>(
+            [NotNull] this IIntrinsicAddDiscountFactorFunc<T> addDiscountFactorFunc, Func<Day, double> act365ContCompInterestRates)
+            where T : ITimePeriod<T>
+        {
+            if (addDiscountFactorFunc == null) throw new ArgumentNullException(nameof(addDiscountFactorFunc));
+
+            double DiscountFactor(Day presentDay, Day cashFlowDay)
+            {
+                if (cashFlowDay <= presentDay)
+                    return 1.0;
+                double interestRate = act365ContCompInterestRates(cashFlowDay);
+                return Math.Exp(-cashFlowDay.OffsetFrom(presentDay) / 365.0 * interestRate);
+            }
+
+            return addDiscountFactorFunc.WithDiscountFactorFunc(DiscountFactor);
+        }
+
         public static IIntrinsicAddInterpolator<T> WithFixedGridSpacing<T>([NotNull] this IIntrinsicAddInventoryGridCalculation<T> intrinsicAddSpacing, double gridSpacing)
             where T : ITimePeriod<T>
         {
