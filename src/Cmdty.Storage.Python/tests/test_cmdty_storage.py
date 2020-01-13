@@ -136,12 +136,9 @@ class TestIntrinsicValue(unittest.TestCase):
         constant_pcnt_inventory_loss = 0.001;
         constant_pcnt_inventory_cost = 0.002;
 
-        def terminal_npv_calc(price, inventory):
-            return price * inventory - 15.4 # Some arbitrary calculation
-
         cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
                                 constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
-                                terminal_storage_npv=terminal_npv_calc,
+                                terminal_storage_npv=None,
                                 inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
 
         inventory = 650.0
@@ -161,8 +158,9 @@ class TestIntrinsicValue(unittest.TestCase):
 
         # TODO more realistic settlement rule
         first_day_rule = lambda period: period.First[Day]()
-        intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
-                        interest_rates=interest_rate_curve, num_inventory_grid_points=50)
+        intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
+                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
+
 
 
 if __name__ == '__main__':

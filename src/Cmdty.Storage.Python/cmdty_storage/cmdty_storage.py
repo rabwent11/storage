@@ -46,7 +46,7 @@ from collections import namedtuple
 from datetime import datetime
 import pandas as pd
 
-ValuationResults = namedtuple('ValuationResults', 'npv, decision_profile')
+IntrinsicValuationResults = namedtuple('IntrinsicValuationResults', 'npv, decision_profile, cmdty_consumed')
 InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, min_rate, max_rate')
 InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
 InjectWithdrawRange = namedtuple('InjectWithdrawRange', 'min_inject_withdraw_rate, max_inject_withdraw_rate')
@@ -83,6 +83,20 @@ def _series_to_time_series(series, time_period_type):
         net_values[i] = series.values[i]
 
     return TimeSeries[time_period_type, Double](net_indices, net_values)
+
+
+def _net_time_series_to_pandas_series(net_time_series, freq):
+    """Converts an instance of class Cmdty.TimeSeries.TimeSeries to a pandas Series"""
+
+    curve_start = net_time_series.Indices[0].Start
+
+    curve_start_datetime = _net_datetime_to_py_datetime(curve_start)
+    
+    index = pd.period_range(start=curve_start_datetime, freq=freq, periods=net_time_series.Count)
+    
+    prices = [net_time_series.Data[idx] for idx in range(0, net_time_series.Count)]
+
+    return pd.Series(prices, index)
 
 
 FREQ_TO_PERIOD_TYPE = {
@@ -134,7 +148,10 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
 
     net_val_results = IIntrinsicCalculate[time_period_type](intrinsic_calc).Calculate()
 
-    pass
+    decision_profile = _net_time_series_to_pandas_series(net_val_results.DecisionProfile, cmdty_storage.freq)
+    cmdty_consumed = _net_time_series_to_pandas_series(net_val_results.CmdtyVolumeConsumed, cmdty_storage.freq)
+    
+    return IntrinsicValuationResults(net_val_results.NetPresentValue, decision_profile, cmdty_consumed)
 
 
 class CmdtyStorage:

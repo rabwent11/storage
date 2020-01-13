@@ -223,7 +223,7 @@ namespace Cmdty.Storage
                 decisionProfileBuilder.Add(periodLoop, optimalInjectWithdraw);
                 cmdtyConsumedBuilder.Add(periodLoop, cmdtyConsumedOnAction);
 
-                inventoryLoop += optimalInjectWithdraw;
+                inventoryLoop += optimalInjectWithdraw; // TODO take into account inventory loss
                 if (i == 0)
                 {
                     storageNpv = storageNpvLoop;
