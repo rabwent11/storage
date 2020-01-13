@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import clr
-from System import DateTime, Func, Double
+from System import DateTime, Func, Double, Array
 from System.Collections.Generic import List
 from pathlib import Path
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
@@ -38,6 +38,9 @@ from Cmdty.Storage import InjectWithdrawRange as NetInjectWithdrawRange
 from Cmdty.Storage import IntrinsicStorageValuation, IIntrinsicAddStartingInventory, IIntrinsicAddCurrentPeriod, IIntrinsicAddForwardCurve, \
     IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, IIntrinsicAddInventoryGridCalculation, IIntrinsicAddInterpolator, \
     IIntrinsicAddNumericalTolerance, IIntrinsicCalculate
+
+clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.TimeSeries')))
+from Cmdty.TimeSeries import TimeSeries
 
 from collections import namedtuple
 from datetime import datetime
@@ -69,6 +72,19 @@ def _net_time_period_to_pandas_period(net_time_period, freq):
     return pd.Period(start_datetime, freq=freq)
 
 
+def _series_to_time_series(series, time_period_type):
+    """Converts an instance of pandas Series to a Cmdty.TimeSeries.TimeSeries."""
+    series_len = len(series)
+    net_indices = Array.CreateInstance(time_period_type, series_len)
+    net_values = Array.CreateInstance(Double, series_len)
+
+    for i in range(series_len):
+        net_indices[i] = _from_datetime_like(series.index[i], time_period_type)
+        net_values[i] = series.values[i]
+
+    return TimeSeries[time_period_type, Double](net_indices, net_values)
+
+
 FREQ_TO_PERIOD_TYPE = {
         "15min" : QuarterHour,
         "30min" : HalfHour,
@@ -89,12 +105,19 @@ The values are the associated .NET time period types used in behind-the-scenes c
 
 def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_dates, interest_rates):
     
+    if cmdty_storage.freq != forward_curve.index.freqstr:
+        raise ValueError("cmdty_storage and forward_curve have different frequencies.")
+
     time_period_type = FREQ_TO_PERIOD_TYPE[cmdty_storage.freq]
     intrinsic_calc = IntrinsicStorageValuation[time_period_type].ForStorage(cmdty_storage.net_storage)
 
     IIntrinsicAddStartingInventory[time_period_type](intrinsic_calc).WithStartingInventory(inventory)
 
     current_period = _from_datetime_like(val_date, time_period_type)
+
+    net_forward_curve = _series_to_time_series(forward_curve, time_period_type)
+
+    IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
 
     pass
 

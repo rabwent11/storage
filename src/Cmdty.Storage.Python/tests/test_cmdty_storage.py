@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import unittest
-from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
+from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory, intrinsic_value
 from datetime import date
 import pandas as pd
 
@@ -134,13 +134,22 @@ class TestIntrinsicValue(unittest.TestCase):
         def terminal_npv_calc(price, inventory):
             return price * inventory - 15.4 # Some arbitrary calculation
 
-        storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
+        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
                                 constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
                                 terminal_storage_npv=terminal_npv_calc,
                                 inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
 
         inventory = 650.0
         val_date = date(2019, 9, 2)
+
+        # TODO helper function for created piecewise flat curve (done in a better way than below)
+        forward_curve = pd.Series(data={
+            pd.Period(val_date, freq='D') : 58.89,\
+            pd.Period(date(2019, 9, 12), freq='D') : 61.41, 
+            pd.Period(date(2019, 9, 18), freq='D') : 59.89, 
+            pd.Period(storage_end, freq='D') : 59.89, }).resample('D').fillna('pad')
+        
+        intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_dates=None, interest_rates=None)
 
 
 if __name__ == '__main__':
