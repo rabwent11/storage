@@ -29,20 +29,23 @@ clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
-from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
+from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, \
+    CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, \
+    IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
 from Cmdty.Storage import CmdtyStorage as NetCmdtyStorage
 from Cmdty.Storage import InjectWithdrawRange as NetInjectWithdrawRange
+
+from Cmdty.Storage import IntrinsicStorageValuation, IIntrinsicAddStartingInventory, IIntrinsicAddCurrentPeriod, IIntrinsicAddForwardCurve, \
+    IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, IIntrinsicAddInventoryGridCalculation, IIntrinsicAddInterpolator, \
+    IIntrinsicAddNumericalTolerance, IIntrinsicCalculate
 
 from collections import namedtuple
 from datetime import datetime
 import pandas as pd
 
 ValuationResults = namedtuple('ValuationResults', 'npv, decision_profile')
-
 InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, min_rate, max_rate')
-
 InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
-
 InjectWithdrawRange = namedtuple('InjectWithdrawRange', 'min_inject_withdraw_rate, max_inject_withdraw_rate')
 
 def _from_datetime_like(datetime_like, time_period_type):
@@ -82,6 +85,18 @@ The keys represent the pandas Offset Alias which describe the granularity, and w
     as the freq of the pandas Series objects returned by the curve construction methods.
 The values are the associated .NET time period types used in behind-the-scenes calculations.
 """
+
+
+def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_dates, interest_rates):
+    
+    time_period_type = FREQ_TO_PERIOD_TYPE[cmdty_storage.freq]
+    intrinsic_calc = IntrinsicStorageValuation[time_period_type].ForStorage(cmdty_storage.net_storage)
+
+    IIntrinsicAddStartingInventory[time_period_type](intrinsic_calc).WithStartingInventory(inventory)
+
+    current_period = _from_datetime_like(val_date, time_period_type)
+
+    pass
 
 
 class CmdtyStorage:
@@ -166,6 +181,10 @@ class CmdtyStorage:
         time_period_type = FREQ_TO_PERIOD_TYPE[self._freq]
         return _from_datetime_like(period, time_period_type)
     
+    @property
+    def net_storage(self):
+        return self._net_storage
+
     @property
     def freq(self):
         return self._freq

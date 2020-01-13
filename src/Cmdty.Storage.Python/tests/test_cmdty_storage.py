@@ -104,5 +104,44 @@ class TestCmdtyStorage(unittest.TestCase):
         self.assertEqual(constant_pcnt_inventory_cost * 250.0, inventory_cost)
 
 
+class TestIntrinsicValue(unittest.TestCase):
+
+    def test_intrinsic_value_runs(self):
+
+        constraints =   [
+                            InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
+                                        [
+                                            InjectWithdrawByInventory(0.0, -150.0, 255.2),
+                                            InjectWithdrawByInventory(2000.0, -200.0, 175.0),
+                                        ]),
+                            (date(2019, 9, 10), 
+                                     [
+                                         (0.0, -170.5, 235.8),
+                                         (700.0, -180.2, 200.77),
+                                         (1800.0, -190.5, 174.45),
+                                    ])
+                ]
+
+        storage_start = date(2019, 8, 28)
+        storage_end = date(2019, 9, 25)
+        constant_injection_cost = 0.015
+        constant_pcnt_consumed_inject = 0.0001
+        constant_withdrawal_cost = 0.02
+        constant_pcnt_consumed_withdraw = 0.000088
+        constant_pcnt_inventory_loss = 0.001;
+        constant_pcnt_inventory_cost = 0.002;
+
+        def terminal_npv_calc(price, inventory):
+            return price * inventory - 15.4 # Some arbitrary calculation
+
+        storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
+                                constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
+                                terminal_storage_npv=terminal_npv_calc,
+                                inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
+
+        inventory = 650.0
+        val_date = date(2019, 9, 2)
+
+
 if __name__ == '__main__':
     unittest.main()
