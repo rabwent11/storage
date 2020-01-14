@@ -187,9 +187,7 @@ class CmdtyStorage:
 
         CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
 
-        first_day_func = Func[time_period_type, Day](lambda dt: dt.First[Day]())
-
-        IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(injection_cost, first_day_func)
+        IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(injection_cost)
     
         builder = IAddCmdtyConsumedOnInject[time_period_type](builder)
 
@@ -198,7 +196,7 @@ class CmdtyStorage:
         else:
             builder.WithNoCmdtyConsumedOnInject()
 
-        IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(withdrawal_cost, first_day_func)
+        IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(withdrawal_cost)
 
         builder = IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
 

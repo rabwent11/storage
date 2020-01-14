@@ -262,6 +262,15 @@ namespace Cmdty.Storage
                 return this;
             }
 
+            public IAddCmdtyConsumedOnInject<T> WithPerUnitInjectionCost(double perVolumeUnitCost)
+            {
+                if (perVolumeUnitCost < 0)
+                    throw new ArgumentException("Per unit inject cost must be non-negative.", nameof(perVolumeUnitCost));
+                _injectionCashFlows = (period, inventory, injectedVolume) 
+                    => new[] { new DomesticCashFlow(period.First<Day>(), perVolumeUnitCost * injectedVolume) };
+                return this;
+            }
+
             IAddCmdtyConsumedOnInject<T> IAddInjectionCost<T>.WithInjectionCost(
                 Func<T, double, double, IReadOnlyList<DomesticCashFlow>> injectionCost)
             {
@@ -274,10 +283,19 @@ namespace Cmdty.Storage
             {
                 if (cashFlowDate == null) throw new ArgumentNullException(nameof(cashFlowDate));
                 if (perVolumeUnitCost < 0)
-                    throw new ArgumentException("Per unit inject cost must be non-negative.", nameof(perVolumeUnitCost));
+                    throw new ArgumentException("Per unit withdrawal cost must be non-negative.", nameof(perVolumeUnitCost));
 
                 _withdrawalCashFlows = (date, inventory, withdrawnVolume) 
                     => new[] { new DomesticCashFlow(cashFlowDate(date), perVolumeUnitCost * Math.Abs(withdrawnVolume)) };
+                return this;
+            }
+
+            public IAddCmdtyConsumedOnWithdraw<T> WithPerUnitWithdrawalCost(double perVolumeUnitCost)
+            {
+                if (perVolumeUnitCost < 0)
+                    throw new ArgumentException("Per unit withdrawal cost must be non-negative.", nameof(perVolumeUnitCost));
+                _withdrawalCashFlows = (period, inventory, withdrawnVolume)
+                    => new[] { new DomesticCashFlow(period.First<Day>(), perVolumeUnitCost * Math.Abs(withdrawnVolume)) };
                 return this;
             }
 
@@ -426,6 +444,10 @@ namespace Cmdty.Storage
     {
         IAddCmdtyConsumedOnInject<T> WithPerUnitInjectionCost(double perVolumeUnitCost, Func<T, Day> cashFlowDate);
         /// <summary>
+        /// Assumes cash flow date on start Day of decision period
+        /// </summary>
+        IAddCmdtyConsumedOnInject<T> WithPerUnitInjectionCost(double perVolumeUnitCost);
+        /// <summary>
         /// Adds the inject cost rule.
         /// </summary>
         /// <param name="injectionCost">Function mapping from the period, inventory (before injection) and
@@ -443,6 +465,10 @@ namespace Cmdty.Storage
     public interface IAddWithdrawalCost<T> where T : ITimePeriod<T>
     {
         IAddCmdtyConsumedOnWithdraw<T> WithPerUnitWithdrawalCost(double withdrawalCost, Func<T, Day> cashFlowDate);
+        /// <summary>
+        /// Assumes cash flow date on start Day of decision period
+        /// </summary>
+        IAddCmdtyConsumedOnWithdraw<T> WithPerUnitWithdrawalCost(double withdrawalCost);
         /// <summary>
         /// Adds the withdrawal cost rule.
         /// </summary>

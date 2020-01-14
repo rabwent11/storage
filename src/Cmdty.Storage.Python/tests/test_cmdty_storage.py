@@ -159,7 +159,7 @@ class TestIntrinsicValue(unittest.TestCase):
         # TODO more realistic settlement rule
         first_day_rule = lambda period: period.First[Day]()
         intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
-                        interest_rates=interest_rate_curve, num_inventory_grid_points=25)
+                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
 
 
 
