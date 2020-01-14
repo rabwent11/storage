@@ -287,7 +287,7 @@ namespace Cmdty.Storage
                     Func<Day, double> discountFactors, double numericalTolerance)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(period, inventory);
-            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
+            double inventoryLoss = storage.CmdtyInventoryPercentLoss(period) * inventory;
             double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory, inventoryLoss,
                                             nextStepInventorySpaceMin, nextStepInventorySpaceMax, numericalTolerance);
 
@@ -378,7 +378,7 @@ namespace Cmdty.Storage
                                 nextStepInventorySpaceMax, treeNode, continuationValueByInventory, _settleDateRule,
                                 DiscountToCurrentDay, _numericalTolerance);
 
-                        double inventoryLoss = _storage.CmdtyInventoryLoss(period, inventory);
+                        double inventoryLoss = _storage.CmdtyInventoryPercentLoss(period) * inventory;
 
                         storageNpv += thisStepImmediateNpv;
                         inventory += decisions[i] - inventoryLoss;

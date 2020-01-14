@@ -44,7 +44,7 @@ namespace Cmdty.Storage
         double InventorySpaceUpperBound([NotNull] T period, double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound);
         double InventorySpaceLowerBound([NotNull] T period, double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound);
         double TerminalStorageNpv(double cmdtyPrice, double finalInventory);
-        double CmdtyInventoryLoss([NotNull] T period, double inventory);
+        double CmdtyInventoryPercentLoss([NotNull] T period);
         IReadOnlyList<DomesticCashFlow> CmdtyInventoryCost([NotNull] T period, double inventory);
     }
 }

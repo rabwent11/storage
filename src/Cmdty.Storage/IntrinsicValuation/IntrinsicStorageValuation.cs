@@ -240,7 +240,7 @@ namespace Cmdty.Storage
             double numericalTolerance)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(period, inventory);
-            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
+            double inventoryLoss = storage.CmdtyInventoryPercentLoss(period) * inventory;
             double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory, inventoryLoss,
                                                     nextStepInventorySpaceMin, nextStepInventorySpaceMax, numericalTolerance);
             var valuesForDecision = new double[decisionSet.Length];

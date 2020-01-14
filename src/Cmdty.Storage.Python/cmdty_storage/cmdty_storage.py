@@ -296,9 +296,9 @@ class CmdtyStorage:
     def terminal_storage_npv(self, cmdty_price, terminal_inventory):
         return self._net_storage.TerminalStorageNpv(cmdty_price, terminal_inventory)
 
-    def inventory_loss(self, period, inventory):
+    def inventory_pcnt_loss(self, period):
         net_time_period = self._net_time_period(period)
-        return self._net_storage.CmdtyInventoryLoss(net_time_period, inventory)
+        return self._net_storage.CmdtyInventoryPercentLoss(net_time_period)
 
     def inventory_cost(self, period, inventory):
         net_time_period = self._net_time_period(period)

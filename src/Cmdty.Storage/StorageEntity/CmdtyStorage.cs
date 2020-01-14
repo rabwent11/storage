@@ -43,7 +43,7 @@ namespace Cmdty.Storage
         private readonly Func<T, double, double, double> _injectCmdtyConsumed;
         private readonly Func<T, double, double, IReadOnlyList<DomesticCashFlow>> _withdrawalCashFlows;
         private readonly Func<T, double, double, double> _withdrawCmdtyConsumed;
-        private readonly Func<T, double, double> _cmdtyInventoryLoss;
+        private readonly Func<T, double> _cmdtyInventoryLoss;
         private readonly Func<T, double, IReadOnlyList<DomesticCashFlow>> _cmdtyInventoryCost;
         private readonly Func<double, double, double> _terminalStorageValue;
 
@@ -60,7 +60,7 @@ namespace Cmdty.Storage
                             bool mustBeEmptyAtEnd,
                             Func<T, double, double, double> injectCmdtyConsumed,
                             Func<T, double, double, double> withdrawCmdtyConsumed,
-                            Func<T, double, double> cmdtyInventoryLoss,
+                            Func<T, double> cmdtyInventoryLoss,
                             Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost)
         {
             StartPeriod = startPeriod;
@@ -150,10 +150,10 @@ namespace Cmdty.Storage
             return _terminalStorageValue(cmdtyPrice, finalInventory);
         }
 
-        public double CmdtyInventoryLoss([NotNull] T period, double inventory)
+        public double CmdtyInventoryPercentLoss([NotNull] T period)
         {
             if (period == null) throw new ArgumentNullException(nameof(period));
-            return _cmdtyInventoryLoss(period, inventory);
+            return _cmdtyInventoryLoss(period);
         }
 
         public IReadOnlyList<DomesticCashFlow> CmdtyInventoryCost([NotNull] T period, double inventory)
@@ -179,7 +179,7 @@ namespace Cmdty.Storage
             private bool _mustBeEmptyAtEnd;
             private Func<T, double, double, double> _injectCmdtyConsumed;
             private Func<T, double, double, double> _withdrawCmdtyConsumed;
-            private Func<T, double, double> _cmdtyInventoryLoss;
+            private Func<T, double> _cmdtyInventoryLoss;
             private Func<T, double, IReadOnlyList<DomesticCashFlow>> _cmdtyInventoryCost;
 
             // ReSharper disable once StaticMemberInGenericType
@@ -358,7 +358,7 @@ namespace Cmdty.Storage
                 return this;
             }
 
-            IAddCmdtyInventoryCost<T> IAddCmdtyInventoryLoss<T>.WithCmdtyInventoryLoss([NotNull] Func<T, double, double> cmdtyInventoryLoss)
+            IAddCmdtyInventoryCost<T> IAddCmdtyInventoryLoss<T>.WithCmdtyInventoryLoss([NotNull] Func<T, double> cmdtyInventoryLoss)
             {
                 _cmdtyInventoryLoss = cmdtyInventoryLoss ?? throw new ArgumentNullException(nameof(cmdtyInventoryLoss));
                 return this;
@@ -366,13 +366,13 @@ namespace Cmdty.Storage
 
             IAddCmdtyInventoryCost<T> IAddCmdtyInventoryLoss<T>.WithNoCmdtyInventoryLoss()
             {
-                _cmdtyInventoryLoss = (period, inventory) => 0.0;
+                _cmdtyInventoryLoss = period => 0.0;
                 return this;
             }
 
             IAddCmdtyInventoryCost<T> IAddCmdtyInventoryLoss<T>.WithFixedPercentCmdtyInventoryLoss(double percentCmdtyInventoryLoss)
             {
-                _cmdtyInventoryLoss = (period, inventory) => inventory * percentCmdtyInventoryLoss;
+                _cmdtyInventoryLoss = period => percentCmdtyInventoryLoss;
                 return this;
             }
 
@@ -460,7 +460,7 @@ namespace Cmdty.Storage
 
     public interface IAddCmdtyInventoryLoss<T> where T : ITimePeriod<T>
     {
-        IAddCmdtyInventoryCost<T> WithCmdtyInventoryLoss(Func<T, double, double> cmdtyInventoryLoss);
+        IAddCmdtyInventoryCost<T> WithCmdtyInventoryLoss(Func<T, double> cmdtyInventoryLoss);
         IAddCmdtyInventoryCost<T> WithNoCmdtyInventoryLoss();
         IAddCmdtyInventoryCost<T> WithFixedPercentCmdtyInventoryLoss(double percentCmdtyInventoryLoss);
     }

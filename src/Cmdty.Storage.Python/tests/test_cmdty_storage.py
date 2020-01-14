@@ -102,8 +102,8 @@ class TestCmdtyStorage(unittest.TestCase):
         terminal_npv = storage.terminal_storage_npv(65.78, 250.0);
         self.assertEqual(terminal_npv_calc(65.78, 250.0), terminal_npv)
 
-        inventory_loss = storage.inventory_loss(date(2019, 9, 2), 250.0)
-        self.assertEqual(constant_pcnt_inventory_loss * 250.0, inventory_loss)
+        inventory_loss = storage.inventory_pcnt_loss(date(2019, 9, 2))
+        self.assertEqual(constant_pcnt_inventory_loss, inventory_loss)
 
         inventory_cost = storage.inventory_cost(date(2019, 9, 2), 250.0)
         self.assertEqual(constant_pcnt_inventory_cost * 250.0, inventory_cost)
@@ -159,7 +159,7 @@ class TestIntrinsicValue(unittest.TestCase):
         # TODO more realistic settlement rule
         first_day_rule = lambda period: period.First[Day]()
         intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
-                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
+                        interest_rates=interest_rate_curve, num_inventory_grid_points=25)
 
 
 
