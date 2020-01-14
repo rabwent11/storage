@@ -136,9 +136,12 @@ class TestIntrinsicValue(unittest.TestCase):
         constant_pcnt_inventory_loss = 0.001;
         constant_pcnt_inventory_cost = 0.002;
 
+        def terminal_npv_calc(price, inventory):
+            return price * inventory - 15.4 # Some arbitrary calculation
+
         cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
                                 constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
-                                terminal_storage_npv=None,
+                                terminal_storage_npv=terminal_npv_calc,
                                 inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
 
         inventory = 650.0
