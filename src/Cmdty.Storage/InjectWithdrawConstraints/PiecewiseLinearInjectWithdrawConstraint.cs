@@ -77,8 +77,10 @@ namespace Cmdty.Storage
         {
             var currentPeriodInjectWithdrawRangeAtMaxInventory = GetInjectWithdrawRange(currentPeriodMaxInventory);
 
-            double nextPeriodMaxInventoryFromThisPeriodMaxInventory = currentPeriodMaxInventory + currentPeriodInjectWithdrawRangeAtMaxInventory.MaxInjectWithdrawRate;
-            double nextPeriodMinInventoryFromThisPeriodMaxInventory = currentPeriodMaxInventory + currentPeriodInjectWithdrawRangeAtMaxInventory.MinInjectWithdrawRate;
+            double nextPeriodMaxInventoryFromThisPeriodMaxInventory = currentPeriodMaxInventory * (1 - inventoryPercentLoss)
+                                                                      + currentPeriodInjectWithdrawRangeAtMaxInventory.MaxInjectWithdrawRate;
+            double nextPeriodMinInventoryFromThisPeriodMaxInventory = currentPeriodMaxInventory * (1 - inventoryPercentLoss)
+                                                                      + currentPeriodInjectWithdrawRangeAtMaxInventory.MinInjectWithdrawRate;
 
             if (nextPeriodMinInventoryFromThisPeriodMaxInventory <= nextPeriodInventorySpaceUpperBound &&
                 nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMaxInventory)
@@ -94,7 +96,7 @@ namespace Cmdty.Storage
             {
                 var bracketLowerDecisionRange = _injectWithdrawRanges[i];
                 double bracketLowerInventory = bracketLowerDecisionRange.Inventory;
-                double bracketLowerInventoryAfterWithdraw = bracketLowerInventory +
+                double bracketLowerInventoryAfterWithdraw = bracketLowerInventory * (1 - inventoryPercentLoss) +
                                                 bracketLowerDecisionRange.InjectWithdrawRange.MinInjectWithdrawRate;
 
                 if (bracketLowerInventoryAfterWithdraw <= nextPeriodInventorySpaceUpperBound &&
@@ -118,8 +120,10 @@ namespace Cmdty.Storage
         {
             var currentPeriodInjectWithdrawRangeAtMinInventory = GetInjectWithdrawRange(currentPeriodMinInventory);
 
-            double nextPeriodMaxInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodInjectWithdrawRangeAtMinInventory.MaxInjectWithdrawRate;
-            double nextPeriodMinInventoryFromThisPeriodMinInventory = currentPeriodMinInventory + currentPeriodInjectWithdrawRangeAtMinInventory.MinInjectWithdrawRate;
+            double nextPeriodMaxInventoryFromThisPeriodMinInventory = currentPeriodMinInventory * (1 - inventoryPercentLoss)
+                                                                      + currentPeriodInjectWithdrawRangeAtMinInventory.MaxInjectWithdrawRate;
+            double nextPeriodMinInventoryFromThisPeriodMinInventory = currentPeriodMinInventory * (1 - inventoryPercentLoss)
+                                                                      + currentPeriodInjectWithdrawRangeAtMinInventory.MinInjectWithdrawRate;
 
             if (nextPeriodMinInventoryFromThisPeriodMinInventory <= nextPeriodInventorySpaceUpperBound &&
                 nextPeriodInventorySpaceLowerBound <= nextPeriodMaxInventoryFromThisPeriodMinInventory)
@@ -136,7 +140,7 @@ namespace Cmdty.Storage
             {
                 var bracketUpperDecisionRange = _injectWithdrawRanges[i];
                 double bracketUpperInventory = bracketUpperDecisionRange.Inventory;
-                double bracketUpperInventoryAfterInject = bracketUpperInventory +
+                double bracketUpperInventoryAfterInject = bracketUpperInventory * (1 - inventoryPercentLoss) +
                                             bracketUpperDecisionRange.InjectWithdrawRange.MaxInjectWithdrawRate;
 
                 if (bracketLowerInventoryAfterInject <= nextPeriodInventorySpaceLowerBound &&
