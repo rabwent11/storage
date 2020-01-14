@@ -38,11 +38,12 @@ namespace Cmdty.Storage.Test
         public void CalculateBangBangDecisionSet_InjectWithdrawRangeUnconstrained_ReturnsMinAndMaxRateWithZero()
         {
             var injectWithdrawRange = new InjectWithdrawRange(-15.5, 65.685);
-            const double currentInventory = 1000.0;
+            const double currentInventory = 1010.0;
+            const double inventoryLoss = 10.0;
             const double nextStepMinInventory = 900.0;
             const double nextStepMaxInventory = 1070.0;
 
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory,
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory, inventoryLoss,
                                 nextStepMinInventory, nextStepMaxInventory, NumericalTolerance);
             double[] expectedDecisionSet = new[] { injectWithdrawRange.MinInjectWithdrawRate, 0.0, injectWithdrawRange.MaxInjectWithdrawRate};
             Assert.Equal(expectedDecisionSet, decisionSet);
@@ -52,11 +53,12 @@ namespace Cmdty.Storage.Test
         public void CalculateBangBangDecisionSet_InjectWithdrawRangeBothPositiveUnconstrained_ReturnsMinAndMaxRate()
         {
             var injectWithdrawRange = new InjectWithdrawRange(15.5, 65.685);
-            const double currentInventory = 1000.0;
+            const double currentInventory = 1010.0;
+            const double inventoryLoss = 10.0;
             const double nextStepMinInventory = 900.0;
             const double nextStepMaxInventory = 1070.0;
 
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory,
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory, inventoryLoss,
                                         nextStepMinInventory, nextStepMaxInventory, NumericalTolerance);
             double[] expectedDecisionSet = new[] { injectWithdrawRange.MinInjectWithdrawRate, injectWithdrawRange.MaxInjectWithdrawRate };
             Assert.Equal(expectedDecisionSet, decisionSet);
@@ -67,10 +69,11 @@ namespace Cmdty.Storage.Test
         {
             var injectWithdrawRange = new InjectWithdrawRange(-65.685, -41.5);
             const double currentInventory = 1000.0;
+            const double inventoryLoss = 10.0;
             const double nextStepMinInventory = 900.0;
-            const double nextStepMaxInventory = 1070.0;
+            const double nextStepMaxInventory = 950.0;
 
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory,
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory, inventoryLoss,
                                         nextStepMinInventory, nextStepMaxInventory, NumericalTolerance);
             double[] expectedDecisionSet = new[] { injectWithdrawRange.MinInjectWithdrawRate, injectWithdrawRange.MaxInjectWithdrawRate };
             Assert.Equal(expectedDecisionSet, decisionSet);
@@ -81,14 +84,15 @@ namespace Cmdty.Storage.Test
             CalculateBangBangDecisionSet_NextStepInventoryConstrainsInjectionAndWithdrawalAroundCurrentInventory_ReturnsAdjustedInjectWithdrawRangeAndZero() // TODO rename!
         {
             var injectWithdrawRange = new InjectWithdrawRange(-15.5, 65.685);
-            const double currentInventory = 1000.0;
+            const double currentInventory = 1010.0;
+            const double inventoryLoss = 10.0;
             const double nextStepMinInventory = 991.87;
             const double nextStepMaxInventory = 1051.8;
 
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory,
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory, inventoryLoss,
                                         nextStepMinInventory, nextStepMaxInventory, NumericalTolerance);
-            double expectedWithdrawalRate = nextStepMaxInventory - currentInventory;
-            double expectedInjectionRate = nextStepMinInventory - currentInventory;
+            double expectedWithdrawalRate = nextStepMaxInventory - currentInventory + inventoryLoss; 
+            double expectedInjectionRate = nextStepMinInventory - currentInventory + inventoryLoss;
             double[] expectedDecisionSet = new[] { expectedInjectionRate, 0.0, expectedWithdrawalRate };
             Assert.Equal(expectedDecisionSet, decisionSet);
         }
@@ -97,14 +101,15 @@ namespace Cmdty.Storage.Test
         public void CalculateBangBangDecisionSet_NextStepInventoryConstrainsInjectionLowerThanCurrent_ReturnsArrayWithTwoValuesNoneZero()
         {
             var injectWithdrawRange = new InjectWithdrawRange(-15.5, 65.685);
-            const double currentInventory = 1000.0;
+            const double currentInventory = 1010.0;
+            const double inventoryLoss = 10.0;
             const double nextStepMinInventory = 900.00;
             const double nextStepMaxInventory = 995.8;
 
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory,
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory, inventoryLoss,
                                         nextStepMinInventory, nextStepMaxInventory, NumericalTolerance);
             double expectedWithdrawalRate = injectWithdrawRange.MinInjectWithdrawRate;
-            double expectedInjectionRate = nextStepMaxInventory - currentInventory;     // Negative injection, i.e. withdrawal
+            double expectedInjectionRate = nextStepMaxInventory - currentInventory + inventoryLoss;     // Negative injection, i.e. withdrawal
             double[] expectedDecisionSet = new[] { expectedWithdrawalRate, expectedInjectionRate };
             Assert.Equal(expectedDecisionSet, decisionSet);
         }
@@ -113,14 +118,15 @@ namespace Cmdty.Storage.Test
         public void CalculateBangBangDecisionSet_NextStepInventoryConstrainsWithdrawalHigherThanCurrent_ReturnsArrayWithTwoValuesNoneZero()
         {
             var injectWithdrawRange = new InjectWithdrawRange(-15.5, 65.685);
-            const double currentInventory = 1000.0;
+            const double currentInventory = 1010.0;
+            const double inventoryLoss = 10.0;
             const double nextStepMinInventory = 1001.8;
             const double nextStepMaxInventory= 1009.51;
 
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory,
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, currentInventory, inventoryLoss,
                                     nextStepMinInventory, nextStepMaxInventory, NumericalTolerance);
-            double expectedWithdrawalRate = nextStepMaxInventory - currentInventory;
-            double expectedInjectionRate = nextStepMinInventory - currentInventory;     // Negative injection, i.e. withdrawal
+            double expectedWithdrawalRate = nextStepMaxInventory - currentInventory + inventoryLoss;
+            double expectedInjectionRate = nextStepMinInventory - currentInventory + inventoryLoss;     // Negative injection, i.e. withdrawal
             double[] expectedDecisionSet = new[] { expectedInjectionRate, expectedWithdrawalRate };
             Assert.Equal(expectedDecisionSet, decisionSet);
         }
@@ -144,7 +150,7 @@ namespace Cmdty.Storage.Test
         }
 
         [Fact]
-        public void CalculateInventorySpace_CurrentPeriodAfterStorageStartPeriod_AsExpected() // TODO rename
+        public void CalculateInventorySpace_CurrentPeriodAfterStorageStartPeriod_AsExpected()
         {
             const double injectionRate = 5.0;
             const double withdrawalRate = 6.0;
@@ -189,7 +195,7 @@ namespace Cmdty.Storage.Test
         }
 
         [Fact]
-        public void CalculateInventorySpace_CurrentPeriodBeforeStorageStartPeriod_AsExpected() // TODO rename
+        public void CalculateInventorySpace_CurrentPeriodBeforeStorageStartPeriod_AsExpected()
         {
             const double injectionRate = 5.0;
             const double withdrawalRate = 6.0;

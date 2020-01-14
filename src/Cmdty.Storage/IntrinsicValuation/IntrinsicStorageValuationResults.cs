@@ -34,8 +34,9 @@ namespace Cmdty.Storage
         where T : ITimePeriod<T>
     {
         public double NetPresentValue { get; }
-        public DoubleTimeSeries<T> DecisionProfile { get; } // TODO decide whether injection is positive or negative number
-        public DoubleTimeSeries<T> CmdtyVolumeConsumed { get; } // TODO develop Time Series pane type and include data for DecisionProfile and CmdtyVolumeConsumed in single member of this type
+        // TODO develop Time Series pane type and include data for DecisionProfile and CmdtyVolumeConsumed in single member of this type
+        public DoubleTimeSeries<T> DecisionProfile { get; }
+        public DoubleTimeSeries<T> CmdtyVolumeConsumed { get; }
 
         public IntrinsicStorageValuationResults(double netPresentValue, [NotNull] DoubleTimeSeries<T> decisionProfile,
             [NotNull] DoubleTimeSeries<T> cmdtyVolumeConsumed)

@@ -233,20 +233,22 @@ namespace Cmdty.Storage
             return new IntrinsicStorageValuationResults<T>(storageNpv, decisionProfileBuilder.Build(), cmdtyConsumedBuilder.Build());
         }
 
-        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) OptimalDecisionAndValue(ICmdtyStorage<T> storage, T periodLoop, double inventory,
+        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) 
+            OptimalDecisionAndValue(ICmdtyStorage<T> storage, T period, double inventory,
             double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, double cmdtyPrice,
             Func<double, double> continuationValueByInventory, Func<T, Day> settleDateRule, Func<Day, double> discountFactors, 
             double numericalTolerance)
         {
-            InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(periodLoop, inventory);
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory,
+            InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(period, inventory);
+            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory, inventoryLoss,
                                                     nextStepInventorySpaceMin, nextStepInventorySpaceMax, numericalTolerance);
             var valuesForDecision = new double[decisionSet.Length];
             var cmdtyConsumedForDecision = new double[decisionSet.Length];
             for (var j = 0; j < decisionSet.Length; j++)
             {
                 double decisionInjectWithdraw = decisionSet[j];
-                (valuesForDecision[j], cmdtyConsumedForDecision[j]) = StorageValueForDecision(storage, periodLoop, inventory,
+                (valuesForDecision[j], cmdtyConsumedForDecision[j]) = StorageValueForDecision(storage, period, inventory, inventoryLoss,
                     decisionInjectWithdraw, cmdtyPrice, continuationValueByInventory, settleDateRule, discountFactors);
             }
 
@@ -256,11 +258,11 @@ namespace Cmdty.Storage
         }
 
 
-        private static (double StorageNpv, double CmdtyConsumed) StorageValueForDecision(ICmdtyStorage<T> storage, T period, double inventory,
+        private static (double StorageNpv, double CmdtyConsumed) StorageValueForDecision(
+                        ICmdtyStorage<T> storage, T period, double inventory, double inventoryLoss,
                         double injectWithdrawVolume, double cmdtyPrice, Func<double, double> continuationValueInterpolated, 
                         Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
         {
-            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
             double inventoryAfterDecision = inventory + injectWithdrawVolume - inventoryLoss;
             double continuationFutureNpv = continuationValueInterpolated(inventoryAfterDecision);
             // TODO use StorageHelper.StorageImmediateNpvForDecision

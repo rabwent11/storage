@@ -287,14 +287,14 @@ namespace Cmdty.Storage
                     Func<Day, double> discountFactors, double numericalTolerance)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(period, inventory);
-            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory,
+            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
+            double[] decisionSet = StorageHelper.CalculateBangBangDecisionSet(injectWithdrawRange, inventory, inventoryLoss,
                                             nextStepInventorySpaceMin, nextStepInventorySpaceMax, numericalTolerance);
 
             var valuesForDecisions = new double[decisionSet.Length];
             var cmdtyConsumedForDecisions = new double[decisionSet.Length];
             var immediateNpvs = new double[decisionSet.Length];
 
-            double inventoryLoss = storage.CmdtyInventoryLoss(period, inventory);
             IReadOnlyList<DomesticCashFlow> inventoryCostCashFlows = storage.CmdtyInventoryCost(period, inventory);
             double inventoryCostNpv = inventoryCostCashFlows.Sum(cashFlow => cashFlow.Amount * discountFactors(cashFlow.Date));
 

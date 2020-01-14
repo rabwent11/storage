@@ -102,13 +102,15 @@ namespace Cmdty.Storage
             return new TimeSeries<T, InventoryRange>(startActiveStorage.Offset(1), inventoryRanges);
         }
 
-        public static double[] CalculateBangBangDecisionSet(InjectWithdrawRange injectWithdrawRange, double currentInventory,
+        public static double[] CalculateBangBangDecisionSet(InjectWithdrawRange injectWithdrawRange, double currentInventory, double inventoryLoss,
                                         double nextStepMinInventory, double nextStepMaxInventory, double numericalTolerance)
         {
             if (nextStepMinInventory > nextStepMaxInventory)
                 throw new ArgumentException($"Parameter {nameof(nextStepMinInventory)} value cannot be higher than parameter {nameof(nextStepMaxInventory)} value");
 
-            double inventoryAfterMaxWithdrawal = injectWithdrawRange.MinInjectWithdrawRate + currentInventory;
+            double inventoryAfterLoss = currentInventory - inventoryLoss;
+
+            double inventoryAfterMaxWithdrawal = injectWithdrawRange.MinInjectWithdrawRate + inventoryAfterLoss;
             double yieldedWithdrawalRate;
 
             if (inventoryAfterMaxWithdrawal > nextStepMaxInventory) // Max withdrawal still above next step max inventory
@@ -116,7 +118,7 @@ namespace Cmdty.Storage
                 if (inventoryAfterMaxWithdrawal - nextStepMaxInventory < numericalTolerance)
                 {
                     // Next period inventory is breached, but only by a small amount, probably due to root finding in PolynomialInjectWithdrawConstraint during inventory space reduction
-                    yieldedWithdrawalRate = nextStepMaxInventory - currentInventory; // TODO unit test code reaching here
+                    yieldedWithdrawalRate = nextStepMaxInventory - inventoryAfterLoss; // TODO unit test code reaching here
                 }
                 else
                 {
@@ -129,10 +131,10 @@ namespace Cmdty.Storage
             }
             else
             {
-                yieldedWithdrawalRate = nextStepMinInventory - currentInventory; //constrained withdrawal (could be made positive to injection)
+                yieldedWithdrawalRate = nextStepMinInventory - inventoryAfterLoss; //constrained withdrawal (could be made positive to injection)
             }
 
-            double inventoryAfterMaxInjection = injectWithdrawRange.MaxInjectWithdrawRate + currentInventory;
+            double inventoryAfterMaxInjection = injectWithdrawRange.MaxInjectWithdrawRate + inventoryAfterLoss;
             double yieldedInjectionRate;
 
             if (inventoryAfterMaxInjection < nextStepMinInventory) // Max injection still below next step min inventory constraint
@@ -140,7 +142,7 @@ namespace Cmdty.Storage
                 if (nextStepMinInventory - inventoryAfterMaxInjection < numericalTolerance)
                 {
                     // Next period inventory is breached, but only by a small amount, probably due to root finding in PolynomialInjectWithdrawConstraint during inventory space reduction
-                    yieldedInjectionRate = nextStepMinInventory - currentInventory; // TODO unit test code reaching here
+                    yieldedInjectionRate = nextStepMinInventory - inventoryAfterLoss; // TODO unit test code reaching here
                 }
                 else
                 {
@@ -153,7 +155,7 @@ namespace Cmdty.Storage
             }
             else
             {
-                yieldedInjectionRate = nextStepMaxInventory - currentInventory; // Constrained injection (could be made negative to withdrawal)
+                yieldedInjectionRate = nextStepMaxInventory - inventoryAfterLoss; // Constrained injection (could be made negative to withdrawal)
             }
 
             double[] decisionSet;
