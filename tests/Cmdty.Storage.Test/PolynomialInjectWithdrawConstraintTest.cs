@@ -32,13 +32,14 @@ namespace Cmdty.Storage.Test
     {
 
         [Fact]
-        public void InventorySpaceUpperBound_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryPlusMaxWithdrawalRate()
+        public void InventorySpaceUpperBound_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryPlusMaxWithdrawalRateAdjustedForLoss()
         {
             const double maxInjectionRate = 56.8;
             const double maxWithdrawalRate = 47.12;
 
             var injectWithdrawRange = new InjectWithdrawRange(-maxWithdrawalRate, maxInjectionRate);
 
+            const double inventoryPercentLoss = 0.03;
             const double minInventory = 0.0;
             const double maxInventory = 1000.0;
             
@@ -56,20 +57,21 @@ namespace Cmdty.Storage.Test
 
             const double nextPeriodMinInventory = 320.0;
             const double nextPeriodMaxInventory = 620.0;
-            double thisPeriodMaxInventory = polynomialInjectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, 0);
+            double thisPeriodMaxInventory = polynomialInjectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, inventoryPercentLoss);
 
-            const double expectedThisPeriodMaxInventory = nextPeriodMaxInventory + maxWithdrawalRate;
+            const double expectedThisPeriodMaxInventory = (nextPeriodMaxInventory + maxWithdrawalRate) / (1 - inventoryPercentLoss);
             Assert.Equal(expectedThisPeriodMaxInventory, thisPeriodMaxInventory, 12);
         }
 
         [Fact]
-        public void InventorySpaceLowerBound_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryMinusMaxInjectRate()
+        public void InventorySpaceLowerBound_ConstantInjectWithdrawRate_EqualsNextPeriodInventoryMinusMaxInjectRateAdjustedForLoss()
         {
             const double maxInjectionRate = 56.8;
             const double maxWithdrawalRate = 47.12;
 
             var injectWithdrawRange = new InjectWithdrawRange(-maxWithdrawalRate, maxInjectionRate);
 
+            const double inventoryPercentLoss = 0.03;
             const double minInventory = 0.0;
             const double maxInventory = 1000.0;
             
@@ -87,15 +89,16 @@ namespace Cmdty.Storage.Test
 
             const double nextPeriodMinInventory = 620.0;
             const double nextPeriodMaxInventory = 870.0;
-            double thisPeriodMinInventory = polynomialInjectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, 0);
+            double thisPeriodMinInventory = polynomialInjectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, inventoryPercentLoss);
 
-            const double expectedThisPeriodMinInventory = nextPeriodMinInventory - maxInjectionRate;
+            const double expectedThisPeriodMinInventory = (nextPeriodMinInventory - maxInjectionRate) / (1 - inventoryPercentLoss);
             Assert.Equal(expectedThisPeriodMinInventory, thisPeriodMinInventory, 12);
         }
 
         [Fact]
         public void InventorySpaceUpperBound_InventoryDependentInjectWithdrawRate_ConsistentWithGetInjectWithdrawRange()
         {
+            const double inventoryPercentLoss = 0.03;
             const double minInventory = 0.0;
             const double maxInventory = 1000.0;
 
@@ -113,17 +116,18 @@ namespace Cmdty.Storage.Test
 
             const double nextPeriodMinInventory = 320.0;
             const double nextPeriodMaxInventory = 620.0;
-            double thisPeriodMaxInventory = polynomialInjectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, 0);
+            double thisPeriodMaxInventory = polynomialInjectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, inventoryPercentLoss);
             double thisPeriodMaxWithdrawalRateAtInventory = polynomialInjectWithdrawConstraint
                                             .GetInjectWithdrawRange(thisPeriodMaxInventory).MinInjectWithdrawRate;
 
-            double derivedNextPeriodMaxInventory = thisPeriodMaxInventory + thisPeriodMaxWithdrawalRateAtInventory;
+            double derivedNextPeriodMaxInventory = thisPeriodMaxInventory * (1 - inventoryPercentLoss) + thisPeriodMaxWithdrawalRateAtInventory;
             Assert.Equal(nextPeriodMaxInventory, derivedNextPeriodMaxInventory, 12);
         }
 
         [Fact]
         public void InventorySpaceLowerBound_InventoryDependentInjectWithdrawRate_ConsistentWithGetInjectWithdrawRange()
         {
+            const double inventoryPercentLoss = 0.03;
             const double minInventory = 0.0;
             const double maxInventory = 1000.0;
 
@@ -141,11 +145,11 @@ namespace Cmdty.Storage.Test
 
             const double nextPeriodMinInventory = 552.0;
             const double nextPeriodMaxInventory = 734.0;
-            double thisPeriodMinInventory = polynomialInjectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, 0);
+            double thisPeriodMinInventory = polynomialInjectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodMinInventory, nextPeriodMaxInventory, minInventory, maxInventory, inventoryPercentLoss);
             double thisPeriodMaxInjectRateAtInventory = polynomialInjectWithdrawConstraint
                                             .GetInjectWithdrawRange(thisPeriodMinInventory).MaxInjectWithdrawRate;
 
-            double derivedNextPeriodMinInventory = thisPeriodMinInventory + thisPeriodMaxInjectRateAtInventory;
+            double derivedNextPeriodMinInventory = thisPeriodMinInventory * (1 - inventoryPercentLoss) + thisPeriodMaxInjectRateAtInventory;
             Assert.Equal(nextPeriodMinInventory, derivedNextPeriodMinInventory, 12);
         }
 

@@ -101,8 +101,10 @@ namespace Cmdty.Storage
                 return currentPeriodMaxInventory;
             }
             
-            double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceUpperBound + _minInjectWithdrawPolynomial.Evaluate(inventory);
-            double PolyToSolve1StDeriv(double inventory) => 1 + _minInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
+            double PolyToSolve(double inventory) => inventory * (1 - inventoryPercentLoss) 
+                                                    + _minInjectWithdrawPolynomial.Evaluate(inventory)
+                                                    - nextPeriodInventorySpaceUpperBound ;
+            double PolyToSolve1StDeriv(double inventory) => (1 - inventoryPercentLoss) + _minInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
             if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
                 currentPeriodMaxInventory, _newtonRaphsonAccuracy, _newtonRaphsonMaxNumIterations,
@@ -134,8 +136,10 @@ namespace Cmdty.Storage
                 return currentPeriodMinInventory;
             }
 
-            double PolyToSolve(double inventory) => inventory - nextPeriodInventorySpaceLowerBound + _maxInjectWithdrawPolynomial.Evaluate(inventory);
-            double PolyToSolve1StDeriv(double inventory) => 1 + _maxInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
+            double PolyToSolve(double inventory) => inventory * (1 - inventoryPercentLoss) 
+                                                    + _maxInjectWithdrawPolynomial.Evaluate(inventory)
+                                                    - nextPeriodInventorySpaceLowerBound;
+            double PolyToSolve1StDeriv(double inventory) => (1 - inventoryPercentLoss) + _maxInjectWithdrawPolynomial1StDeriv.Evaluate(inventory);
 
             if (!RobustNewtonRaphson.TryFindRoot(PolyToSolve, PolyToSolve1StDeriv, currentPeriodMinInventory,
                 currentPeriodMaxInventory, _newtonRaphsonAccuracy, _newtonRaphsonMaxNumIterations, 
