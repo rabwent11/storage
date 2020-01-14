@@ -49,16 +49,19 @@ namespace Cmdty.Storage
 
         public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound,
             double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
-            double currentPeriodMaxInventory)
+            double currentPeriodMaxInventory, double inventoryPercentLoss)
         {
-            return Math.Min(nextPeriodInventorySpaceUpperBound - _injectWithdrawRange.MinInjectWithdrawRate, currentPeriodMaxInventory);
+            double solvedMaxInventory = (nextPeriodInventorySpaceUpperBound - _injectWithdrawRange.MinInjectWithdrawRate)/(1 - inventoryPercentLoss);
+            return Math.Min(solvedMaxInventory, currentPeriodMaxInventory);
         }
 
         public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound,
             double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
-            double currentPeriodMaxInventory)
+            double currentPeriodMaxInventory, double inventoryPercentLoss)
         {
-            return Math.Max(nextPeriodInventorySpaceLowerBound - _injectWithdrawRange.MaxInjectWithdrawRate, currentPeriodMinInventory);
+            double solvedMinInventory =
+                (nextPeriodInventorySpaceLowerBound - _injectWithdrawRange.MaxInjectWithdrawRate) / (1 - inventoryPercentLoss);
+            return Math.Max(solvedMinInventory, currentPeriodMinInventory);
         }
 
     }

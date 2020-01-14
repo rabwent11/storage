@@ -85,8 +85,8 @@ namespace Cmdty.Storage
         }
         
         public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound,
-                        double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
-                        double currentPeriodMaxInventory)
+            double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
+            double currentPeriodMaxInventory, double inventoryPercentLoss)
         {
             double currentPeriodMaxInjectWithdrawAtMaxInventory = _maxInjectWithdrawPolynomial.Evaluate(currentPeriodMaxInventory);
             double currentPeriodMinInjectWithdrawAtMaxInventory = _minInjectWithdrawPolynomial.Evaluate(currentPeriodMaxInventory);
@@ -119,7 +119,7 @@ namespace Cmdty.Storage
 
         public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound,
             double nextPeriodInventorySpaceUpperBound, double currentPeriodMinInventory,
-            double currentPeriodMaxInventory)
+            double currentPeriodMaxInventory, double inventoryPercentLoss)
         {
             double currentPeriodMaxInjectWithdrawAtMinInventory = _maxInjectWithdrawPolynomial.Evaluate(currentPeriodMinInventory);
             double currentPeriodMinInjectWithdrawAtMinInventory = _minInjectWithdrawPolynomial.Evaluate(currentPeriodMinInventory);

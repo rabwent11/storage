@@ -131,8 +131,10 @@ namespace Cmdty.Storage
         {
             if (period == null) throw new ArgumentNullException(nameof(period));
             IInjectWithdrawConstraint injectWithdrawConstraint = _injectWithdrawConstraints(period);
+            double inventoryPercentLoss = CmdtyInventoryPercentLoss(period);
             double inventorySpaceUpper =
-                injectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodInventorySpaceLowerBound, nextPeriodInventorySpaceUpperBound, MinInventory(period), MaxInventory(period));
+                injectWithdrawConstraint.InventorySpaceUpperBound(nextPeriodInventorySpaceLowerBound, nextPeriodInventorySpaceUpperBound, 
+                    MinInventory(period), MaxInventory(period), inventoryPercentLoss);
             return inventorySpaceUpper;
         }
 
@@ -140,8 +142,10 @@ namespace Cmdty.Storage
         {
             if (period == null) throw new ArgumentNullException(nameof(period));
             IInjectWithdrawConstraint injectWithdrawConstraint = _injectWithdrawConstraints(period);
+            double inventoryPercentLoss = CmdtyInventoryPercentLoss(period);
             double inventorySpaceLower =
-                injectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodInventorySpaceLowerBound, nextPeriodInventorySpaceUpperBound, MinInventory(period), MaxInventory(period));
+                injectWithdrawConstraint.InventorySpaceLowerBound(nextPeriodInventorySpaceLowerBound, nextPeriodInventorySpaceUpperBound, 
+                    MinInventory(period), MaxInventory(period), inventoryPercentLoss);
             return inventorySpaceLower;
         }
 

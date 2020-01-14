@@ -71,8 +71,9 @@ namespace Cmdty.Storage
             return new InjectWithdrawRange(minInjectWithdrawRate, maxInjectWithdrawRate);
         }
 
-        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound,
-                                                double currentPeriodMinInventory, double currentPeriodMaxInventory)
+        public double InventorySpaceUpperBound(double nextPeriodInventorySpaceLowerBound,
+            double nextPeriodInventorySpaceUpperBound,
+            double currentPeriodMinInventory, double currentPeriodMaxInventory, double inventoryPercentLoss)
         {
             var currentPeriodInjectWithdrawRangeAtMaxInventory = GetInjectWithdrawRange(currentPeriodMaxInventory);
 
@@ -113,7 +114,7 @@ namespace Cmdty.Storage
         }
 
         public double InventorySpaceLowerBound(double nextPeriodInventorySpaceLowerBound, double nextPeriodInventorySpaceUpperBound,
-                                                double currentPeriodMinInventory, double currentPeriodMaxInventory)
+                                                double currentPeriodMinInventory, double currentPeriodMaxInventory, double inventoryPercentLoss)
         {
             var currentPeriodInjectWithdrawRangeAtMinInventory = GetInjectWithdrawRange(currentPeriodMinInventory);
 
