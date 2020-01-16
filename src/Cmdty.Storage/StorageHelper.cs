@@ -57,15 +57,18 @@ namespace Cmdty.Storage
             {
                 T periodLoop = startActiveStorage.Offset(i);
                 T nextPeriod = periodLoop.Offset(1);
+                double inventoryPercentLoss = storage.CmdtyInventoryPercentLoss(periodLoop);
 
                 double injectWithdrawMin = storage.GetInjectWithdrawRange(periodLoop, minInventoryForwardCalc).MinInjectWithdrawRate;
+                double inventoryLossAtMin = inventoryPercentLoss * minInventoryForwardCalc;
                 double storageMin = storage.MinInventory(nextPeriod);
-                minInventoryForwardCalc = Math.Max(minInventoryForwardCalc + injectWithdrawMin, storageMin);
+                minInventoryForwardCalc = Math.Max(minInventoryForwardCalc - inventoryLossAtMin + injectWithdrawMin, storageMin);
                 forwardCalcMinInventory[i] = minInventoryForwardCalc;
 
                 double injectWithdrawMax = storage.GetInjectWithdrawRange(periodLoop, maxInventoryForwardCalc).MaxInjectWithdrawRate;
+                double inventoryLossAtMax = inventoryPercentLoss * maxInventoryForwardCalc;
                 double storageMax = storage.MaxInventory(nextPeriod);
-                maxInventoryForwardCalc = Math.Min(maxInventoryForwardCalc + injectWithdrawMax, storageMax);
+                maxInventoryForwardCalc = Math.Min(maxInventoryForwardCalc - inventoryLossAtMax + injectWithdrawMax, storageMax);
                 forwardCalcMaxInventory[i] = maxInventoryForwardCalc;
             }
 
