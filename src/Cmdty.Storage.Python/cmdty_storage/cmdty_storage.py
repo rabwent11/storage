@@ -46,7 +46,7 @@ from collections import namedtuple
 from datetime import datetime
 import pandas as pd
 
-IntrinsicValuationResults = namedtuple('IntrinsicValuationResults', 'npv, decision_profile, cmdty_consumed')
+IntrinsicValuationResults = namedtuple('IntrinsicValuationResults', 'npv, profile')
 InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, min_rate, max_rate')
 InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
 InjectWithdrawRange = namedtuple('InjectWithdrawRange', 'min_inject_withdraw_rate, max_inject_withdraw_rate')
@@ -148,10 +148,28 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
 
     net_val_results = IIntrinsicCalculate[time_period_type](intrinsic_calc).Calculate()
 
-    decision_profile = _net_time_series_to_pandas_series(net_val_results.DecisionProfile, cmdty_storage.freq)
-    cmdty_consumed = _net_time_series_to_pandas_series(net_val_results.CmdtyVolumeConsumed, cmdty_storage.freq)
+    net_profile = net_val_results.StorageProfile
+    profile_start = _net_datetime_to_py_datetime(net_profile.Indices[0].Start)
+    index = pd.period_range(start=profile_start, freq=cmdty_storage.freq, periods=net_profile.Count)
+
+    inventories = [None] * net_profile.Count
+    inject_withdraw_volumes = [None] * net_profile.Count
+    cmdty_consumed = [None] * net_profile.Count
+    inventory_loss = [None] * net_profile.Count
+    net_position = [None] * net_profile.Count
+
+    for i, profile_data in enumerate(net_profile.Data):
+        inventories[i] = profile_data.Inventory
+        inject_withdraw_volumes[i] = profile_data.InjectWithdrawVolume
+        cmdty_consumed[i] = profile_data.CmdtyConsumed
+        inventory_loss[i] = profile_data.InventoryLoss
+        net_position[i] = profile_data.NetPosition
+
+    data_frame_data = {'inventory' : inventories, 'inject_withdraw_volume' : inject_withdraw_volumes,
+                  'cmdty_consumed' : cmdty_consumed, 'inventory_loss' : inventory_loss, 'net_position' : net_position}
+    data_frame = pd.DataFrame(data=data_frame_data, index=index)
     
-    return IntrinsicValuationResults(net_val_results.NetPresentValue, decision_profile, cmdty_consumed)
+    return IntrinsicValuationResults(net_val_results.NetPresentValue, data_frame)
 
 
 class CmdtyStorage:

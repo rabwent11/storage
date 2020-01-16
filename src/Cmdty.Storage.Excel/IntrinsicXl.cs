@@ -86,13 +86,13 @@ namespace Cmdty.Storage.Excel
                     cmdtyConsumedOnWithdrawal,
                     currentInventory, forwardCurve, interestRateCurve, numGlobalGridPoints, numericalTolerance);
 
-                var resultArray = new object[valuationResults.DecisionProfile.Count, 3];
+                var resultArray = new object[valuationResults.StorageProfile.Count, 3];
 
                 for (int i = 0; i < resultArray.GetLength(0); i++)
                 {
-                    resultArray[i, 0] = valuationResults.DecisionProfile.Indices[i].Start;
-                    resultArray[i, 1] = valuationResults.DecisionProfile[i];
-                    resultArray[i, 2] = valuationResults.CmdtyVolumeConsumed[i];
+                    resultArray[i, 0] = valuationResults.StorageProfile.Indices[i].Start;
+                    resultArray[i, 1] = valuationResults.StorageProfile[i].InjectWithdrawVolume;
+                    resultArray[i, 2] = valuationResults.StorageProfile[i].CmdtyConsumed;
                 }
 
                 return resultArray;

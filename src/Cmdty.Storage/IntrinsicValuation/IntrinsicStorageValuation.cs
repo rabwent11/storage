@@ -126,7 +126,7 @@ namespace Cmdty.Storage
                 throw new ArgumentException("Inventory cannot be negative.", nameof(startingInventory));
 
             if (currentPeriod.CompareTo(storage.EndPeriod) > 0)
-                return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty, DoubleTimeSeries<T>.Empty);
+                return new IntrinsicStorageValuationResults<T>(0.0, TimeSeries<T, StorageProfile>.Empty);
 
             if (currentPeriod.Equals(storage.EndPeriod))
             {
@@ -134,7 +134,7 @@ namespace Cmdty.Storage
                 {
                     if (startingInventory > 0) // TODO allow some tolerance for floating point numerical error?
                         throw new InventoryConstraintsCannotBeFulfilledException("Storage must be empty at end, but inventory is greater than zero.");
-                    return new IntrinsicStorageValuationResults<T>(0.0, DoubleTimeSeries<T>.Empty, DoubleTimeSeries<T>.Empty);
+                    return new IntrinsicStorageValuationResults<T>(0.0, TimeSeries<T, StorageProfile>.Empty);
                 }
 
                 double terminalMinInventory = storage.MinInventory(storage.EndPeriod);
@@ -148,7 +148,7 @@ namespace Cmdty.Storage
 
                 double cmdtyPrice = forwardCurve[storage.EndPeriod];
                 double npv = storage.TerminalStorageNpv(cmdtyPrice, startingInventory);
-                return new IntrinsicStorageValuationResults<T>(npv, DoubleTimeSeries<T>.Empty, DoubleTimeSeries<T>.Empty);
+                return new IntrinsicStorageValuationResults<T>(npv, TimeSeries<T, StorageProfile>.Empty);
             }
 
             TimeSeries<T, InventoryRange> inventorySpace = StorageHelper.CalculateInventorySpace(storage, startingInventory, currentPeriod);
@@ -218,9 +218,8 @@ namespace Cmdty.Storage
             // Loop forward from start inventory choosing optimal decisions
             double storageNpv = 0.0;
 
-            // TODO more efficient to build with arrays than builder?
-            var decisionProfileBuilder = new DoubleTimeSeries<T>.Builder(inventorySpace.Count);
-            var cmdtyConsumedBuilder = new DoubleTimeSeries<T>.Builder(inventorySpace.Count);
+            var storageProfiles = new StorageProfile[inventorySpace.Count];
+            var periods = new T[inventorySpace.Count];
 
             double inventoryLoop = startingInventory;
             T startActiveStorage = inventorySpace.Start.Offset(-1);
@@ -237,17 +236,20 @@ namespace Cmdty.Storage
                                         OptimalDecisionAndValue(storage, periodLoop, inventoryLoop, nextStepInventorySpaceMin,
                                             nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, discountFactorFromCmdtySettlement,
                                             DiscountToCurrentDay, numericalTolerance);
-                decisionProfileBuilder.Add(periodLoop, optimalInjectWithdraw);
-                cmdtyConsumedBuilder.Add(periodLoop, cmdtyConsumedOnAction);
 
                 inventoryLoop += optimalInjectWithdraw - inventoryLoss;
                 if (i == 0)
                 {
                     storageNpv = storageNpvLoop;
                 }
+
+                double netPosition = -optimalInjectWithdraw - cmdtyConsumedOnAction;
+                var storageProfile = new StorageProfile(inventoryLoop, optimalInjectWithdraw, cmdtyConsumedOnAction, inventoryLoss, netPosition);
+                storageProfiles[i] = storageProfile;
+                periods[i] = periodLoop;
             }
 
-            return new IntrinsicStorageValuationResults<T>(storageNpv, decisionProfileBuilder.Build(), cmdtyConsumedBuilder.Build());
+            return new IntrinsicStorageValuationResults<T>(storageNpv, new TimeSeries<T, StorageProfile>(periods, storageProfiles));
         }
 
         private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction, double InventoryLoss) 

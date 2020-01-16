@@ -34,27 +34,24 @@ namespace Cmdty.Storage
         where T : ITimePeriod<T>
     {
         public double NetPresentValue { get; }
-        // TODO develop Time Series pane type and include data for DecisionProfile and CmdtyVolumeConsumed in single member of this type
-        public DoubleTimeSeries<T> DecisionProfile { get; }
-        public DoubleTimeSeries<T> CmdtyVolumeConsumed { get; }
+        // TODO develop Time Series pane type and include data for StorageProfile
+        public TimeSeries<T, StorageProfile> StorageProfile { get; set; }
 
-        public IntrinsicStorageValuationResults(double netPresentValue, [NotNull] DoubleTimeSeries<T> decisionProfile,
-            [NotNull] DoubleTimeSeries<T> cmdtyVolumeConsumed)
+        public IntrinsicStorageValuationResults(double netPresentValue, [NotNull] TimeSeries<T, StorageProfile> storageProfile)
         {
             NetPresentValue = netPresentValue;
-            DecisionProfile = decisionProfile ?? throw new ArgumentNullException(nameof(decisionProfile));
-            CmdtyVolumeConsumed = cmdtyVolumeConsumed ?? throw new ArgumentNullException(nameof(cmdtyVolumeConsumed));
+            StorageProfile = storageProfile ?? throw new ArgumentNullException(nameof(storageProfile));
         }
 
         public override string ToString()
         {
-            return $"{nameof(NetPresentValue)}: {NetPresentValue}, {nameof(DecisionProfile)}.Count = {DecisionProfile.Count}";
+            return $"{nameof(NetPresentValue)}: {NetPresentValue}, {nameof(StorageProfile)}.Count = {StorageProfile.Count}";
         }
 
-        public void Deconstruct(out double netPresentValue, out DoubleTimeSeries<T> decisionProfile)
+        public void Deconstruct(out double netPresentValue, out TimeSeries<T, StorageProfile> storageProfile)
         {
             netPresentValue = NetPresentValue;
-            decisionProfile = DecisionProfile;
+            storageProfile = StorageProfile;
         }
 
     }

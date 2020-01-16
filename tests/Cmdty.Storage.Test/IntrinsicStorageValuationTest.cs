@@ -23,6 +23,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
+using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using Xunit;
@@ -87,12 +88,12 @@ namespace Cmdty.Storage.Test
             return forwardCurveBuilder.Build();
         }
 
-        private void AssertDecisionProfileAllZeros<T>(DoubleTimeSeries<T> decisionProfile, T expectedStart, T expectedEnd)
+        private void AssertDecisionProfileAllZeros<T>(TimeSeries<T, StorageProfile> storageProfile, T expectedStart, T expectedEnd)
             where T : ITimePeriod<T>
         {
-            Assert.Equal(expectedStart, decisionProfile.Start);
-            Assert.Equal(expectedEnd, decisionProfile.End);
-            foreach (double d in decisionProfile.Data)
+            Assert.Equal(expectedStart, storageProfile.Start);
+            Assert.Equal(expectedEnd, storageProfile.End);
+            foreach (double d in storageProfile.Data.Select(profile => profile.InjectWithdrawVolume))
             {
                 Assert.Equal(0.0, d);
             }
@@ -121,7 +122,7 @@ namespace Cmdty.Storage.Test
 
             IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0, forwardCurve, currentPeriod);
 
-            AssertDecisionProfileAllZeros(valuationResults.DecisionProfile, 
+            AssertDecisionProfileAllZeros(valuationResults.StorageProfile, 
                                 new Day(2019, 9, 15), 
                                 new Day(2019, 9, 29));
         }
@@ -141,7 +142,7 @@ namespace Cmdty.Storage.Test
             // Cycle cost = 2.0, so create curve with spread of 1.99
             var valuationResults = IntrinsicValuationZeroInventoryForwardCurveWithSpread(1.99);
 
-            AssertDecisionProfileAllZeros(valuationResults.DecisionProfile,
+            AssertDecisionProfileAllZeros(valuationResults.StorageProfile,
                                 new Day(2019, 9, 15),
                                 new Day(2019, 9, 29));
         }
@@ -200,7 +201,7 @@ namespace Cmdty.Storage.Test
             IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0,
                                                                         TimeSeries<Day, double>.Empty, currentPeriod);
 
-            Assert.True(valuationResults.DecisionProfile.IsEmpty);
+            Assert.True(valuationResults.StorageProfile.IsEmpty);
         }
 
         [Fact]
@@ -222,7 +223,7 @@ namespace Cmdty.Storage.Test
             IntrinsicStorageValuationResults<Day> valuationResults = GenerateValuationResults(0.0,
                 TimeSeries<Day, double>.Empty, currentPeriod);
 
-            Assert.True(valuationResults.DecisionProfile.IsEmpty);
+            Assert.True(valuationResults.StorageProfile.IsEmpty);
         }
 
         private static IntrinsicStorageValuationResults<Day> 
@@ -294,7 +295,7 @@ namespace Cmdty.Storage.Test
             IntrinsicStorageValuationResults<Day> valuationResults =
                 GenerateValuationResults_CurrentPeriodEqualToStorageEndStorageInventoryHasTerminalValue(terminalInventory, forwardPriceForEndDate);
 
-            Assert.True(valuationResults.DecisionProfile.IsEmpty);
+            Assert.True(valuationResults.StorageProfile.IsEmpty);
         }
 
 
