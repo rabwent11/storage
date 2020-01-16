@@ -233,14 +233,14 @@ namespace Cmdty.Storage
                 double cmdtyPrice = forwardCurve[periodLoop];
                 Func<double, double> continuationValueByInventory = storageValueByInventory[i];
                 (double nextStepInventorySpaceMin, double nextStepInventorySpaceMax) = inventorySpace[periodLoop.Offset(1)];
-                (double storageNpvLoop, double optimalInjectWithdraw, double cmdtyConsumedOnAction) = 
+                (double storageNpvLoop, double optimalInjectWithdraw, double cmdtyConsumedOnAction, double inventoryLoss) = 
                                         OptimalDecisionAndValue(storage, periodLoop, inventoryLoop, nextStepInventorySpaceMin,
                                             nextStepInventorySpaceMax, cmdtyPrice, continuationValueByInventory, discountFactorFromCmdtySettlement,
                                             DiscountToCurrentDay, numericalTolerance);
                 decisionProfileBuilder.Add(periodLoop, optimalInjectWithdraw);
                 cmdtyConsumedBuilder.Add(periodLoop, cmdtyConsumedOnAction);
 
-                inventoryLoop += optimalInjectWithdraw; // TODO take into account inventory loss
+                inventoryLoop += optimalInjectWithdraw - inventoryLoss;
                 if (i == 0)
                 {
                     storageNpv = storageNpvLoop;
@@ -250,7 +250,7 @@ namespace Cmdty.Storage
             return new IntrinsicStorageValuationResults<T>(storageNpv, decisionProfileBuilder.Build(), cmdtyConsumedBuilder.Build());
         }
 
-        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction) 
+        private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction, double InventoryLoss) 
             OptimalDecisionAndValue(ICmdtyStorage<T> storage, T period, double inventory,
             double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, double cmdtyPrice,
             Func<double, double> continuationValueByInventory, double discountFactorFromCmdtySettlement, 
@@ -271,7 +271,8 @@ namespace Cmdty.Storage
 
             (double storageNpv, int indexOfOptimalDecision) = StorageHelper.MaxValueAndIndex(valuesForDecision);
 
-            return (StorageNpv: storageNpv, OptimalInjectWithdraw: decisionSet[indexOfOptimalDecision], CmdtyConsumedOnAction: cmdtyConsumedForDecision[indexOfOptimalDecision]);
+            return (StorageNpv: storageNpv, OptimalInjectWithdraw: decisionSet[indexOfOptimalDecision], 
+                    CmdtyConsumedOnAction: cmdtyConsumedForDecision[indexOfOptimalDecision], InventoryLoss: inventoryLoss);
         }
 
 
