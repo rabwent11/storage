@@ -169,9 +169,9 @@ namespace Cmdty.Storage.Test
                         .WithConstantInjectWithdrawRange(-withdrawalRate, injectionRate)
                         .WithConstantMinInventory(minInventory)
                         .WithConstantMaxInventory(maxInventory)
-                        .WithPerUnitInjectionCost(1.5, injectionDate => injectionDate)
+                        .WithPerUnitInjectionCost(1.5)
                         .WithNoCmdtyConsumedOnInject()
-                        .WithPerUnitWithdrawalCost(0.8, withdrawalDate => withdrawalDate)
+                        .WithPerUnitWithdrawalCost(0.8)
                         .WithNoCmdtyConsumedOnWithdraw()
                         .WithFixedPercentCmdtyInventoryLoss(inventoryPercentLoss)
                         .WithNoCmdtyInventoryCost()
@@ -227,6 +227,7 @@ namespace Cmdty.Storage.Test
             const double withdrawalRate = 6.0;
             const double startingInventory = 11.0;
 
+            const double inventoryPercentLoss = 0.03;
             const double minInventory = 0.0;
             const double maxInventory = 23.5;
 
@@ -239,11 +240,11 @@ namespace Cmdty.Storage.Test
                         .WithConstantInjectWithdrawRange(-withdrawalRate, injectionRate)
                         .WithConstantMinInventory(minInventory)
                         .WithConstantMaxInventory(maxInventory)
-                        .WithPerUnitInjectionCost(1.5, injectionDate => injectionDate)
+                        .WithPerUnitInjectionCost(1.5)
                         .WithNoCmdtyConsumedOnInject()
-                        .WithPerUnitWithdrawalCost(0.8, withdrawalDate => withdrawalDate)
+                        .WithPerUnitWithdrawalCost(0.8)
                         .WithNoCmdtyConsumedOnWithdraw()
-                        .WithNoCmdtyInventoryLoss()
+                        .WithFixedPercentCmdtyInventoryLoss(inventoryPercentLoss)
                         .WithNoCmdtyInventoryCost()
                         .MustBeEmptyAtEnd()
                         .Build();
@@ -253,26 +254,43 @@ namespace Cmdty.Storage.Test
 
             int expectedInventorySpaceCount = storageEnd.OffsetFrom(storageStart);
             Assert.Equal(expectedInventorySpaceCount, inventorySpace.Count);
+            
+            double expectedInventoryLower = startingInventory * (1 - inventoryPercentLoss) - withdrawalRate;
+            double expectedInventoryUpper = startingInventory * (1 - inventoryPercentLoss) + injectionRate;
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 20)], expectedInventoryLower, expectedInventoryUpper);
 
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 20)], 5.0, 16.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 21)], 0.0, 21.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 22)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 23)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 24)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 25)], 0.0, 18.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 26)], 0.0, 12.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 27)], 0.0, 6.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 28)], 0.0, 0.0);
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 21)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 22)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 23)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 24)], expectedInventoryLower, expectedInventoryUpper);
+
+            // At this point the backwardly derived reduced inventory space kicks in so we need to start going backwards in time
+            expectedInventoryLower = 0.0;
+            expectedInventoryUpper = 0.0;
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 28)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryUpper = Math.Min((expectedInventoryUpper + withdrawalRate) / (1 - inventoryPercentLoss), maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 27)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryUpper = Math.Min((expectedInventoryUpper + withdrawalRate) / (1 - inventoryPercentLoss), maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 26)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryUpper = Math.Min((expectedInventoryUpper + withdrawalRate) / (1 - inventoryPercentLoss), maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 25)], expectedInventoryLower, expectedInventoryUpper);
 
         }
         
-        //private static InventoryRange SimpleInventoryBoundsCalc(double startingInventory, double inventoryPercentLoss,
-        //                                                        double injectRate, double withdrawalRate)
-        //{
-
-
-        //}
-
         private void AssertInventoryRangeEqualsExpected(InventoryRange inventoryRange, 
                             double expectedInventoryLower, double expectedInventoryUpper)
         {
