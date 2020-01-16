@@ -156,6 +156,7 @@ namespace Cmdty.Storage.Test
             const double withdrawalRate = 6.0;
             const double startingInventory = 8.0;
 
+            const double inventoryPercentLoss = 0.03;
             const double minInventory = 0.0;
             const double maxInventory = 23.5;
 
@@ -172,7 +173,7 @@ namespace Cmdty.Storage.Test
                         .WithNoCmdtyConsumedOnInject()
                         .WithPerUnitWithdrawalCost(0.8, withdrawalDate => withdrawalDate)
                         .WithNoCmdtyConsumedOnWithdraw()
-                        .WithNoCmdtyInventoryLoss()
+                        .WithFixedPercentCmdtyInventoryLoss(inventoryPercentLoss)
                         .WithNoCmdtyInventoryCost()
                         .WithTerminalInventoryNpv((cmdtyPrice, inventory) => 0.0)
                         .Build();
@@ -183,16 +184,41 @@ namespace Cmdty.Storage.Test
             int expectedInventorySpaceCount = storageEnd.OffsetFrom(currentPeriod);
             Assert.Equal(expectedInventorySpaceCount, inventorySpace.Count);
 
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 21)], 2.0, 13.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 22)], 0.0, 18.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 23)], 0.0, 23.0);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 24)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 25)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 26)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 27)], 0.0, 23.5);
-            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 28)], 0.0, 23.5);
+            double expectedInventoryLower = startingInventory * (1 - inventoryPercentLoss) - withdrawalRate;
+            double expectedInventoryUpper = startingInventory * (1 - inventoryPercentLoss) + injectionRate;
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 21)], expectedInventoryLower, expectedInventoryUpper);
+            
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 22)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 23)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 24)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 25)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 26)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 27)], expectedInventoryLower, expectedInventoryUpper);
+
+            expectedInventoryLower = Math.Max(expectedInventoryLower * (1 - inventoryPercentLoss) - withdrawalRate, minInventory);
+            expectedInventoryUpper = Math.Min(expectedInventoryUpper * (1 - inventoryPercentLoss) + injectionRate, maxInventory);
+            AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 28)], expectedInventoryLower, expectedInventoryUpper);
             
         }
+
+
 
         [Fact]
         public void CalculateInventorySpace_CurrentPeriodBeforeStorageStartPeriod_AsExpected()
@@ -239,13 +265,19 @@ namespace Cmdty.Storage.Test
             AssertInventoryRangeEqualsExpected(inventorySpace[new Day(2019, 8, 28)], 0.0, 0.0);
 
         }
+        
+        //private static InventoryRange SimpleInventoryBoundsCalc(double startingInventory, double inventoryPercentLoss,
+        //                                                        double injectRate, double withdrawalRate)
+        //{
 
+
+        //}
 
         private void AssertInventoryRangeEqualsExpected(InventoryRange inventoryRange, 
-                            double expectedMinInventory, double expectedMaxInventory)
+                            double expectedInventoryLower, double expectedInventoryUpper)
         {
-            Assert.Equal(expectedMinInventory, inventoryRange.MinInventory);
-            Assert.Equal(expectedMaxInventory, inventoryRange.MaxInventory);
+            Assert.Equal(expectedInventoryLower, inventoryRange.MinInventory);
+            Assert.Equal(expectedInventoryUpper, inventoryRange.MaxInventory);
         }
 
 
