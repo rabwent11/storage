@@ -261,15 +261,15 @@ class CmdtyStorage:
         return self._freq
 
     @property
-    def must_be_empty_at_end(self):
+    def empty_at_end(self):
         return self._net_storage.MustBeEmptyAtEnd
     
     @property
-    def start_period(self):
+    def start(self):
         return _net_time_period_to_pandas_period(self._net_storage.StartPeriod, self._freq)
 
     @property
-    def end_period(self):
+    def end(self):
         return _net_time_period_to_pandas_period(self._net_storage.EndPeriod, self._freq)
 
     def inject_withdraw_range(self, period, inventory):

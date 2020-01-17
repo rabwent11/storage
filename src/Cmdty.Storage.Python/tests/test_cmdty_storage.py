@@ -33,9 +33,8 @@ from Cmdty.TimePeriodValueTypes import Day
 
 class TestCmdtyStorage(unittest.TestCase):
 
-    def test_initializer(self):
-
-        constraints =   [
+    _default_freq='D'
+    _default_constraints =   [
                             InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
                                         [
                                             InjectWithdrawByInventory(0.0, -150.0, 255.2),
@@ -49,64 +48,110 @@ class TestCmdtyStorage(unittest.TestCase):
                                     ])
                 ]
 
-        storage_start = date(2019, 8, 28)
-        storage_end = date(2019, 9, 25)
-        constant_injection_cost = 0.015
-        constant_pcnt_consumed_inject = 0.0001
-        constant_withdrawal_cost = 0.02
-        constant_pcnt_consumed_withdraw = 0.000088
-        constant_pcnt_inventory_loss = 0.001;
-        constant_pcnt_inventory_cost = 0.002;
+    _default_storage_start = date(2019, 8, 28)
+    _default_storage_end = date(2019, 9, 25)
+    _default_injection_cost = 0.015
+    _default_cmdty_consumed_inject = 0.0001
+    _default_withdrawal_cost = 0.02
+    _default_cmdty_consumed_withdraw = 0.000088
+    _default_inventory_loss = 0.001;
+    _default_inventory_cost = 0.002;
 
-        def terminal_npv_calc(price, inventory):
-            return price * inventory - 15.4 # Some arbitrary calculation
+    _default_terminal_npv_calc = lambda price, inventory: price * inventory - 15.4 # Some arbitrary calculation
+    
+    def _create_storage(cls, freq=_default_freq, storage_start=_default_storage_start, storage_end=_default_storage_end, 
+                   constraints=_default_constraints, injection_cost=_default_injection_cost, 
+                   withdrawal_cost=_default_withdrawal_cost, cmdty_consumed_inject=_default_cmdty_consumed_inject, 
+                   cmdty_consumed_withdraw=_default_cmdty_consumed_withdraw, terminal_storage_npv=_default_terminal_npv_calc,
+                   inventory_loss=_default_inventory_loss, inventory_cost=_default_inventory_cost):
 
-        storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
-                                constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
-                                terminal_storage_npv=terminal_npv_calc,
-                                inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
+        return CmdtyStorage(freq, storage_start, storage_end, constraints, injection_cost,
+                                withdrawal_cost, cmdty_consumed_inject, cmdty_consumed_withdraw,
+                                terminal_storage_npv, inventory_loss, inventory_cost)
+
+    def test_start_property(self):
+        storage = self._create_storage()
+        self.assertEqual(pd.Period(self._default_storage_start, freq='D'), storage.start)
         
-        self.assertEqual(False, storage.must_be_empty_at_end)
+    def test_end_property(self):
+        storage = self._create_storage()
+        self.assertEqual(pd.Period(self._default_storage_end, freq='D'), storage.end)
+        
+    def test_freq_property(self):
+        storage = self._create_storage()
+        self.assertEqual(self._default_freq, storage.freq)
+        
+    def test_empty_at_end_true_when_terminal_storage_npv_none(self):
+        storage = self._create_storage(terminal_storage_npv=None)
+        self.assertEqual(True, storage.empty_at_end)
+        
+    def test_empty_at_end_false_when_terminal_storage_npv_not_none(self):
+        storage = self._create_storage()
+        self.assertEqual(False, storage.empty_at_end)
 
-        self.assertEqual('D', storage.freq)
+    def test_terminal_storage_npv_always_zero_when_terminal_storage_npv_none(self):
+        storage = self._create_storage(terminal_storage_npv=None)
+        for cmdty_price in [0.0, 23.85, 75.9, 100.22]:
+            for terminal_inventory in [0.0, 500.58, 1268.65, 1800.0]:
+                self.assertEqual(0.0, storage.terminal_storage_npv(cmdty_price, terminal_inventory))
 
-        self.assertEqual(pd.Period(storage_start, freq='D'), storage.start_period)
+    def test_terminal_storage_npv_evaluates_to_function_specified(self):
+        storage = self._create_storage()
+        for cmdty_price in [0.0, 23.85, 75.9, 100.22]:
+            for terminal_inventory in [0.0, 500.58, 1268.65, 1800.0]:
+                self.assertEqual(TestCmdtyStorage._default_terminal_npv_calc(cmdty_price, terminal_inventory), 
+                                 storage.terminal_storage_npv(cmdty_price, terminal_inventory))
 
-        self.assertEqual(pd.Period(storage_end, freq='D'), storage.end_period)
-
+    def test_inject_withdraw_range_linearly_interpolated(self):
+        storage = self._create_storage()
         # Inventory half way between pillars, so assert against mean of min/max inject/withdraw at the pillars
         min_dec, max_dec = storage.inject_withdraw_range(date(2019, 8, 29), 1000.0)
         self.assertEqual(-175.0, min_dec)
         self.assertEqual((255.2 + 175.0)/2.0, max_dec)
 
-        min_inventory = storage.min_inventory(date(2019, 8, 29))
-        self.assertEqual(0.0, min_inventory)
+    def test_min_inventory_property(self):
+        storage = self._create_storage()
+        self.assertEqual(0.0, storage.min_inventory(date(2019, 8, 29)))
+        self.assertEqual(0.0, storage.min_inventory(date(2019, 9, 11)))
 
-        max_inventory = storage.max_inventory(date(2019, 9, 10))
-        self.assertEqual(1800.0, max_inventory)
+    def test_max_inventory_property(self):
+        storage = self._create_storage()
+        self.assertEqual(2000.0, storage.max_inventory(date(2019, 8, 29)))
+        self.assertEqual(1800.0, storage.max_inventory(date(2019, 9, 11)))
 
+    def test_injection_cost(self):
+        storage = self._create_storage()
         injected_volume = 58.74
         injection_cost = storage.injection_cost(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
-        self.assertEqual(injected_volume * constant_injection_cost, injection_cost)
+        self.assertEqual(injected_volume * self._default_injection_cost, injection_cost)
 
+    def test_cmdty_consumed_inject(self):
+        storage = self._create_storage()
+        injected_volume = 58.74
         cmdty_consumed_inject = storage.cmdty_consumed_inject(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
-        self.assertEqual(injected_volume * constant_pcnt_consumed_inject, cmdty_consumed_inject)
+        self.assertEqual(injected_volume * self._default_cmdty_consumed_inject, cmdty_consumed_inject)
 
+    def test_withdrawal_cost(self):
+        storage = self._create_storage()
         withdrawn_volume = 12.05
         injection_cost = storage.withdrawal_cost(pd.Period(date(2019, 9, 2), freq='D'), 135.67, withdrawn_volume)
-        self.assertEqual(withdrawn_volume * constant_withdrawal_cost, injection_cost)
+        self.assertEqual(withdrawn_volume * self._default_withdrawal_cost, injection_cost)
 
+    def test_cmdty_consumed_withdraw(self):
+        storage = self._create_storage()
+        withdrawn_volume = 12.05
         cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(pd.Period(date(2019, 9, 25), freq='D'), 485.5, withdrawn_volume)
-        self.assertEqual(withdrawn_volume * constant_pcnt_consumed_withdraw, cmdty_consumed_withdraw)
+        self.assertEqual(withdrawn_volume * self._default_cmdty_consumed_withdraw, cmdty_consumed_withdraw)
 
-        terminal_npv = storage.terminal_storage_npv(65.78, 250.0);
-        self.assertEqual(terminal_npv_calc(65.78, 250.0), terminal_npv)
-
+    def test_inventory_pcnt_loss(self):
+        storage = self._create_storage()
         inventory_loss = storage.inventory_pcnt_loss(date(2019, 9, 2))
-        self.assertEqual(constant_pcnt_inventory_loss, inventory_loss)
+        self.assertEqual(self._default_inventory_loss, inventory_loss)
 
+    def test_inventory_cost(self):
+        storage = self._create_storage()
         inventory_cost = storage.inventory_cost(date(2019, 9, 2), 250.0)
-        self.assertEqual(constant_pcnt_inventory_cost * 250.0, inventory_cost)
+        self.assertEqual(self._default_inventory_cost * 250.0, inventory_cost)
 
 
 class TestIntrinsicValue(unittest.TestCase):
