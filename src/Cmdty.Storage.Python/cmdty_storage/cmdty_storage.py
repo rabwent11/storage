@@ -137,8 +137,8 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
     net_settlement_rule = Func[time_period_type, Day](settlement_rule)
     IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
     
-    interest_rate_func = Func[Day, Double](lambda cashFlowDate: interest_rates[_net_time_period_to_pandas_period(cashFlowDate, 'D')])
-    IntrinsicStorageValuationExtensions.WithAct365ContinuouslyCompoundedInterestRate[time_period_type](intrinsic_calc, interest_rate_func)
+    interest_rate_time_series = _series_to_time_series(interest_rates, FREQ_TO_PERIOD_TYPE['D'])
+    IntrinsicStorageValuationExtensions.WithAct365ContinuouslyCompoundedInterestRateCurve[time_period_type](intrinsic_calc, interest_rate_time_series)
 
     IntrinsicStorageValuationExtensions.WithFixedNumberOfPointsOnGlobalInventoryRange[time_period_type](intrinsic_calc, num_inventory_grid_points)
 

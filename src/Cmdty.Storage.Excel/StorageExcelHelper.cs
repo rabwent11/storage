@@ -24,7 +24,6 @@
 #endregion
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Cmdty.TimePeriodValueTypes;
@@ -124,9 +123,9 @@ namespace Cmdty.Storage.Excel
             CmdtyStorage<T> storage = CmdtyStorage<T>.Builder
                     .WithActiveTimePeriod(storageStart, storageEnd)
                     .WithTimeAndInventoryVaryingInjectWithdrawRates(injectWithdrawConstraints, interpolationType)
-                    .WithPerUnitInjectionCost(injectionCostRate, injectionDate => injectionDate.First<Day>())
+                    .WithPerUnitInjectionCost(injectionCostRate)
                     .WithFixedPercentCmdtyConsumedOnInject(cmdtyConsumedOnInjection)
-                    .WithPerUnitWithdrawalCost(withdrawalCostRate, withdrawalDate => withdrawalDate.First<Day>())
+                    .WithPerUnitWithdrawalCost(withdrawalCostRate)
                     .WithFixedPercentCmdtyConsumedOnWithdraw(cmdtyConsumedOnWithdrawal)
                     .WithNoCmdtyInventoryLoss()
                     .WithNoCmdtyInventoryCost()
