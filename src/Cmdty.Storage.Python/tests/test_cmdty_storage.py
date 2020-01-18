@@ -31,6 +31,11 @@ from pathlib import Path
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 from Cmdty.TimePeriodValueTypes import Day
 
+def _create_piecewise_flat_series(data, dt_index, freq):
+    period_index = pd.PeriodIndex([pd.Period(dt, freq=freq) for dt in dt_index])
+    return pd.Series(data, period_index).resample(freq).fillna('pad')
+
+
 class TestCmdtyStorage(unittest.TestCase):
 
     _default_freq='D'
@@ -48,6 +53,18 @@ class TestCmdtyStorage(unittest.TestCase):
                                     ])
                 ]
 
+    _constant_min_inventory = 2.54;
+    _constant_max_inventory = 1234.56
+    _constant_max_injection_rate = 65.64
+    _constant_max_withdrawal_rate = 107.07
+
+    _series_min_inventory = _create_piecewise_flat_series([2.4, 1.2, 0.0, 0.0], 
+                            [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
+    _series_max_inventory = _create_piecewise_flat_series([1250.5, 1358.5, 54.5, 54.5], 
+                            [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
+    _series_max_injection_rate = []
+    _series_max_withrawal_rate = []
+
     _default_storage_start = date(2019, 8, 28)
     _default_storage_end = date(2019, 9, 25)
     _default_injection_cost = 0.015
@@ -60,14 +77,21 @@ class TestCmdtyStorage(unittest.TestCase):
     _default_terminal_npv_calc = lambda price, inventory: price * inventory - 15.4 # Some arbitrary calculation
     
     def _create_storage(cls, freq=_default_freq, storage_start=_default_storage_start, storage_end=_default_storage_end, 
-                   constraints=_default_constraints, injection_cost=_default_injection_cost, 
+                   constraints=_default_constraints, 
+                   min_inventory=None, max_inventory=None, max_injection_rate=None, max_withdrawal_rate=None,
+                   injection_cost=_default_injection_cost, 
                    withdrawal_cost=_default_withdrawal_cost, cmdty_consumed_inject=_default_cmdty_consumed_inject, 
                    cmdty_consumed_withdraw=_default_cmdty_consumed_withdraw, terminal_storage_npv=_default_terminal_npv_calc,
                    inventory_loss=_default_inventory_loss, inventory_cost=_default_inventory_cost):
 
-        return CmdtyStorage(freq, storage_start, storage_end, constraints, injection_cost,
-                                withdrawal_cost, cmdty_consumed_inject, cmdty_consumed_withdraw,
-                                terminal_storage_npv, inventory_loss, inventory_cost)
+        return CmdtyStorage(freq, storage_start, storage_end, injection_cost,
+                                withdrawal_cost, constraints=constraints, 
+                                min_inventory=min_inventory, max_inventory=max_inventory, 
+                                max_injection_rate=max_injection_rate, max_withdrawal_rate=max_withdrawal_rate,
+                                cmdty_consumed_inject=cmdty_consumed_inject, 
+                                cmdty_consumed_withdraw=cmdty_consumed_withdraw,
+                                terminal_storage_npv=terminal_storage_npv, inventory_loss=inventory_loss, 
+                                inventory_cost=inventory_cost)
 
     def test_start_property(self):
         storage = self._create_storage()
@@ -109,12 +133,42 @@ class TestCmdtyStorage(unittest.TestCase):
         self.assertEqual(-175.0, min_dec)
         self.assertEqual((255.2 + 175.0)/2.0, max_dec)
 
-    def test_min_inventory_property(self):
+    def test_min_inventory_property_from_constraints_table(self):
         storage = self._create_storage()
         self.assertEqual(0.0, storage.min_inventory(date(2019, 8, 29)))
         self.assertEqual(0.0, storage.min_inventory(date(2019, 9, 11)))
 
-    def test_max_inventory_property(self):
+    def test_min_inventory_property_from_float_init_param(self):
+        storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
+                        max_inventory=self._constant_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
+                        max_withdrawal_rate=self._constant_max_withdrawal_rate)
+        self.assertEqual(self._constant_min_inventory, storage.min_inventory(date(2019, 8, 29)))
+        self.assertEqual(self._constant_min_inventory, storage.min_inventory(date(2019, 9, 11)))
+        
+    def test_min_inventory_property_from_series_init_param(self):
+        storage = self._create_storage(constraints=None, min_inventory=self._series_min_inventory,
+                        max_inventory=self._series_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
+                        max_withdrawal_rate=self._constant_max_withdrawal_rate)
+        self.assertEqual(2.4, storage.min_inventory(date(2019, 8, 29)))
+        self.assertEqual(1.2, storage.min_inventory(date(2019, 9, 1)))
+        self.assertEqual(0.0, storage.min_inventory(date(2019, 9, 11)))
+
+    def test_max_inventory_property_from_float_init_param(self):
+        storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
+                        max_inventory=self._constant_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
+                        max_withdrawal_rate=self._constant_max_withdrawal_rate)
+        self.assertEqual(self._constant_max_inventory, storage.max_inventory(date(2019, 8, 29)))
+        self.assertEqual(self._constant_max_inventory, storage.max_inventory(date(2019, 9, 11)))
+
+    def test_max_inventory_property_from_series_init_param(self):
+        storage = self._create_storage(constraints=None, min_inventory=self._series_min_inventory,
+                        max_inventory=self._series_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
+                        max_withdrawal_rate=self._constant_max_withdrawal_rate)
+        self.assertEqual(1250.5, storage.max_inventory(date(2019, 8, 29)))
+        self.assertEqual(1358.5, storage.max_inventory(date(2019, 9, 1)))
+        self.assertEqual(54.5, storage.max_inventory(date(2019, 9, 11)))
+        
+    def test_max_inventory_property_from_constraints_table(self):
         storage = self._create_storage()
         self.assertEqual(2000.0, storage.max_inventory(date(2019, 8, 29)))
         self.assertEqual(1800.0, storage.max_inventory(date(2019, 9, 11)))
@@ -184,8 +238,8 @@ class TestIntrinsicValue(unittest.TestCase):
         def terminal_npv_calc(price, inventory):
             return price * inventory - 15.4 # Some arbitrary calculation
 
-        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constraints, constant_injection_cost,
-                                constant_withdrawal_cost, constant_pcnt_consumed_inject, constant_pcnt_consumed_withdraw,
+        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constant_injection_cost, constant_withdrawal_cost, constraints, 
+                                cmdty_consumed_inject=constant_pcnt_consumed_inject, cmdty_consumed_withdraw=constant_pcnt_consumed_withdraw,
                                 terminal_storage_npv=terminal_npv_calc,
                                 inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
 

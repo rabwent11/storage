@@ -31,6 +31,7 @@ from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, \
     CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, \
+    IAddMinInventory, IAddMaxInventory, \
     IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
 from Cmdty.Storage import CmdtyStorage as NetCmdtyStorage
 from Cmdty.Storage import InjectWithdrawRange as NetInjectWithdrawRange
@@ -174,8 +175,10 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
 
 class CmdtyStorage:
 
-    def __init__(self, freq, storage_start, storage_end, constraints,
+    def __init__(self, freq, storage_start, storage_end, 
                    injection_cost, withdrawal_cost, 
+                   constraints=None,
+                   min_inventory=None, max_inventory=None, max_injection_rate=None, max_withdrawal_rate=None,
                    cmdty_consumed_inject=None, cmdty_consumed_withdraw=None,
                    terminal_storage_npv=None,
                    inventory_loss=None, inventory_cost=None):
@@ -194,16 +197,51 @@ class CmdtyStorage:
 
         net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
 
-        for period, rates_by_inventory in constraints:
-            net_period = _from_datetime_like(period, time_period_type)
-            net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
-            for inventory, min_rate, max_rate in rates_by_inventory:
-                net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, NetInjectWithdrawRange(min_rate, max_rate)))
-            net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
-    
-        builder = IAddInjectWithdrawConstraints[time_period_type](builder)
+        if constraints is not None:
+            # TODO put the checks below into shared function call
+            if min_inventory is not None:
+                raise ValueError("min_inventory parameter should not be provided if constraints parameter is provided.")
+            if max_inventory is not None:
+                raise ValueError("max_inventory parameter should not be provided if constraints parameter is provided.")
+            if max_injection_rate is not None:
+                raise ValueError("max_injection_rate parameter should not be provided if constraints parameter is provided.")
+            if max_withdrawal_rate is not None:
+                raise ValueError("max_withdrawal_rate parameter should not be provided if constraints parameter is provided.")
+            
+            for period, rates_by_inventory in constraints:
+                net_period = _from_datetime_like(period, time_period_type)
+                net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
+                for inventory, min_rate, max_rate in rates_by_inventory:
+                    net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, NetInjectWithdrawRange(min_rate, max_rate)))
+                net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
 
-        CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
+            builder = IAddInjectWithdrawConstraints[time_period_type](builder)
+            CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
+
+        else:
+            # TODO put the checks below into shared function call
+            if min_inventory is None:
+                raise ValueError("min_inventory parameter should be provided if constraints parameter is not provided.")
+            if max_inventory is None:
+                raise ValueError("max_inventory parameter should be provided if constraints parameter is not provided.")
+            if max_injection_rate is None:
+                raise ValueError("max_injection_rate parameter should be provided if constraints parameter is not provided.")
+            if max_withdrawal_rate is None:
+                raise ValueError("max_withdrawal_rate parameter should be provided if constraints parameter is not provided.")
+
+            builder = IAddMinInventory[time_period_type](builder)
+            if isinstance(min_inventory, pd.Series):
+                net_series_min_inventory = _series_to_time_series(min_inventory, time_period_type)
+                builder.WithMinInventoryTimeSeries(net_series_min_inventory)
+            else: # Assume min_inventory is a constaint number
+                builder.WithConstantMinInventory(min_inventory)
+
+            builder = IAddMaxInventory[time_period_type](builder)
+            if isinstance(max_inventory, pd.Series):
+                net_series_max_inventory = _series_to_time_series(max_inventory, time_period_type)
+                builder.WithMaxInventoryTimeSeries(net_series_max_inventory)
+            else: # Assume max_inventory is a constaint number
+                builder.WithConstantMaxInventory(max_inventory)
 
         IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(injection_cost)
     

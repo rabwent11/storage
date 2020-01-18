@@ -27,6 +27,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Cmdty.TimePeriodValueTypes;
+using Cmdty.TimeSeries;
 using JetBrains.Annotations;
 
 namespace Cmdty.Storage
@@ -227,6 +228,26 @@ namespace Cmdty.Storage
                 return this;
             }
 
+            IAddInjectionCost<T> IAddMaxInventory<T>.WithMaxInventoryTimeSeries([NotNull] TimeSeries<T, double> maxInventorySeries)
+            {
+                if (maxInventorySeries == null) throw new ArgumentNullException(nameof(maxInventorySeries));
+
+                if (maxInventorySeries.IsEmpty)
+                    throw new ArgumentException("Maximum inventory time series cannot be empty.", nameof(maxInventorySeries));
+
+                if (maxInventorySeries.Start.CompareTo(_startPeriod) > 0)
+                    throw new ArgumentException(
+                        $"Maximum inventory time series starts at {maxInventorySeries.Start} which is later than the storage start period {_startPeriod}.", nameof(maxInventorySeries));
+
+                if (maxInventorySeries.End.CompareTo(_endPeriod) < 0)
+                    throw new ArgumentException(
+                        $"Maximum inventory time series ends at {maxInventorySeries.End} which is earlier than the storage end period {_endPeriod}.", nameof(maxInventorySeries));
+                
+                _maxInventory = period => maxInventorySeries[period];
+                return this;
+            }
+
+
             IAddInjectionCost<T> IAddMaxInventory<T>.WithMaxInventory(Func<T, double> maxInventory)
             {
                 _maxInventory = maxInventory ?? throw new ArgumentNullException(nameof(maxInventory));
@@ -245,6 +266,25 @@ namespace Cmdty.Storage
                     throw new ArgumentException("Minimum inventory must be non-negative.", nameof(minInventory));
 
                 _minInventory = date => minInventory;
+                return this;
+            }
+
+            IAddInjectionCost<T> IAddMinInventory<T>.WithMinInventoryTimeSeries(TimeSeries<T, double> minInventorySeries)
+            {
+                if (minInventorySeries == null) throw new ArgumentNullException(nameof(minInventorySeries));
+
+                if (minInventorySeries.IsEmpty)
+                    throw new ArgumentException("Minimum inventory time series cannot be empty.", nameof(minInventorySeries));
+
+                if (minInventorySeries.Start.CompareTo(_startPeriod) > 0)
+                    throw new ArgumentException(
+                        $"Minimum inventory time series starts at {minInventorySeries.Start} which is later than the storage start period {_startPeriod}.", nameof(minInventorySeries));
+
+                if (minInventorySeries.End.CompareTo(_endPeriod) < 0)
+                    throw new ArgumentException(
+                        $"Minimum inventory time series ends at {minInventorySeries.End} which is earlier than the storage end period {_endPeriod}.", nameof(minInventorySeries));
+
+                _minInventory = period => minInventorySeries[period];
                 return this;
             }
 
@@ -435,12 +475,14 @@ namespace Cmdty.Storage
     {
         IAddMaxInventory<T> WithZeroMinInventory();
         IAddMaxInventory<T> WithConstantMinInventory(double minInventory);
+        IAddInjectionCost<T> WithMinInventoryTimeSeries(TimeSeries<T, double> minInventory);
         IAddMaxInventory<T> WithMinInventory(Func<T, double> minInventory);
     }
 
     public interface IAddMaxInventory<T> where T : ITimePeriod<T>
     {
         IAddInjectionCost<T> WithConstantMaxInventory(double maxInventory);
+        IAddInjectionCost<T> WithMaxInventoryTimeSeries(TimeSeries<T, double> maxInventory);
         IAddInjectionCost<T> WithMaxInventory(Func<T, double> maxInventory);
     }
 
