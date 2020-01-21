@@ -19,6 +19,14 @@ Valuation and optimisation of commodity storage.
         * [Calculating the Intrinsic Value](#calculating-the-intrinsic-value)
         * [Calculating the Extrinsic Value: One-Factor Trinomial Tree](#calculating-the-extrinsic-value-one-factor-trinomial-tree)
 * [Building](#building)
+    * [Build on Windows](#building-on-windows)
+        * [Build Prerequisites](#build-prerequisites)
+        * [Running the Build](#running-the-build)
+        * [Build Artifacts](#build-artifacts)
+    * [Building on Linux or macOS](#building-on-linux-or-macOS)
+        * [Build Prerequisites](#build-prerequisites-1)
+        * [Running the Build](#running-the-build-1)
+        * [Build Artifacts](#build-artifacts-1)
 * [One Factor Trinomial Tree Model](#one-factor-trinomial-tree-method-critique-and-rationale)
 * [License](#license)
 
@@ -293,20 +301,54 @@ Calculated storage NPV: 24809.48
 ```
 
 ## Building
-Build scripts use [cake](https://github.com/cake-build/cake) and require [the .NET Core SDK](https://dotnet.microsoft.com/download) to be installed on the Windows machine performing the build.
+This section describes how to run a scripted build on a cloned repo. Visual Studio 2019 is used for development, and can also be used to build the C# and run unit tests on the C# and Python APIs. However, the scripted build process also creates packages (NuGet and Python), builds the C# samples, and verifies the C# interactive documentation. [Cake](https://github.com/cake-build/cake) is used for running scripted builds. The ability to run a full scripted build on non-Windows is [planned](https://github.com/cmdty/storage/issues/2), but at the moment it can only be done on Windows.
 
-Run the following commands in a PowerShell console to clone and build the project:
+### Building on Windows
+
+#### Build Prerequisites
+The following are required on the host machine in order for the build to run.
+* The .NET Core SDK. Check the [global.json file](global.json) for the version necessary, taking into account [the matching rules used](https://docs.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules).
+* The Python interpretter, accessible by being in a file location in the PATH environment variable. Version 3.6 is used, although other 3.x versions might work.
+* The following Python packages installed:
+    * virtualenv.
+    * setuptools.
+    * wheel.
+
+#### Running the Build
+The build is started by running the PowerShell script build.ps1 from a PowerShell console, ISE, or the Visual Studio Package Manager Console.
+
 ```
-> git clone https://github.com/cmdty/storage.git
-
-> cd storage
-
-> .\build.ps1 -Target Pack-NuGet
-
+PM> .\build.ps1
 ```
-The result of this build will be saved into the artifacts directory:
-* The NuGet package.
-* 32-bit and 64-bit versions of the Excel add-in.
+
+#### Build Artifacts
+The following results of the build will be saved into the artifacts directory (which itelf will be created in the top directory of the repo).
+* The NuGet package: Cmdty.Storage.[version].nupkg
+* The Python package files:
+    * cmdty_storage-[version]-py3-none-any.whl
+    * cmdty_storage-[version].tar.gz
+* 32-bit and 64-bit versions of the Excel add-in:
+    * Cmdty.Storage-x86.xll
+    * Cmdty.Storage-x64.xll
+
+### Building on Linux or macOS
+At the moment only building, testing and packaging the .NET components is possible on a non-Windows OS.
+
+#### Build Prerequisites
+The following are required on the host machine in order for the build to run.
+* The .NET Core SDK. Check the [global.json file](global.json) for the version necessary, taking into account [the matching rules used](https://docs.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules).
+
+#### Running the Build
+Run the following commands in a cloned repo
+```
+> dotnet build src/Cmdty.Storage/ -c Release
+> dotnet test tests/Cmdty.Storage.Test/ -c Release
+> dotnet pack src/Cmdty.Storage -o artifacts -c Release --no-build
+```
+
+#### Build Artifacts
+The following results of the build will be saved into the artifacts directory (which itelf will be created in the top directory of the repo).
+* The NuGet package: Cmdty.Storage.[version].nupkg
 
 ## One-Factor Trinomial Tree Method: Critique and Rationale
 Currently this library only contains one model to calculate the extrinsic value of storage, the one-factor trinomial tree model. However, the author is aware thof the many shortcomings of this approach such as:

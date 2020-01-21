@@ -159,6 +159,9 @@ Task("Pack-Python")
     {
         setupContext.Environment.WorkingDirectory = originalWorkingDir;
     }
+    Information("Python package created");
+    CopyFiles("src/Cmdty.Storage.Python/dist/*", artifactsDirectory);
+    Information("Python package file copied to /artifacts directory");
 });
 
 private string GetEnvironmentVariable(string envVariableName)
