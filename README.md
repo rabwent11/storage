@@ -8,6 +8,8 @@ Valuation and optimisation of commodity storage.
 ### Table of Contents
 * [Overview](#overview)
 * [Models](#models)
+    * [Currently Implemented](#currently-implemented)
+    * [Planned Implementations](#planned-implementations)
 * [Getting Started](#getting-started)
     * [Installing C# API](#installing-c-api)
     * [Installing Excel Add-In](#installing-excel-add-in)
