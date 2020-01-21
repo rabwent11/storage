@@ -43,11 +43,17 @@ Calculations take into account many of the complex features of physical storage 
 * Ability to constrain the storage to be empty at the end of it's life, or specify a value of commodity inventory left in storage.
 
 ## Models
+### Currently Implemented
 Currently the following models are implemented in this repository:
 * Intrinsic valuation, i.e. optimal value assuming the commodity price remains static.
 * One-factor trinomial tree, with seasonal spot volatility.
 
 Both approaches solve the optimsation problem using backward induction across a discrete inventory grid.
+
+### Planned Implementations
+Implemenations using the following techniques are planned in the near future:
+* Least-Squares Monte Carlo with a multi-factor price process.
+* Rolling Intrinsic.
 
 ## Getting Started
 
