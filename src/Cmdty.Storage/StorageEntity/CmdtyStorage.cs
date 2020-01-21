@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using Cmdty.TimeSeries;
 using JetBrains.Annotations;
@@ -203,6 +204,30 @@ namespace Cmdty.Storage
             {
                 if (injectWithdrawRangeByPeriod == null) throw new ArgumentNullException(nameof(injectWithdrawRangeByPeriod));
                 _injectWithdrawConstraints = period => new ConstantInjectWithdrawConstraint(injectWithdrawRangeByPeriod(period));
+                return this;
+            }
+
+            IAddMinInventory<T> IAddInjectWithdrawConstraints<T>.WithInjectWithdrawRangeSeries(
+                                [NotNull] TimeSeries<T, InjectWithdrawRange> injectWithdrawRangeSeries)
+            {
+                if (injectWithdrawRangeSeries == null)
+                    throw new ArgumentNullException(nameof(injectWithdrawRangeSeries));
+
+                if (injectWithdrawRangeSeries.IsEmpty)
+                    throw new ArgumentException("Inject/withdraw range time series cannot be empty.", nameof(injectWithdrawRangeSeries));
+
+                if (injectWithdrawRangeSeries.Start.CompareTo(_startPeriod) > 0)
+                    throw new ArgumentException(
+                        $"Inject/withdraw range time series starts at {injectWithdrawRangeSeries.Start} which is later than the storage start period {_startPeriod}.", nameof(injectWithdrawRangeSeries));
+
+                if (injectWithdrawRangeSeries.End.CompareTo(_endPeriod) < 0)
+                    throw new ArgumentException(
+                        $"Inject/withdraw range time series ends at {injectWithdrawRangeSeries.End} which is earlier than the storage end period {_endPeriod}.", nameof(injectWithdrawRangeSeries));
+                
+                var constraintSeries = new TimeSeries<T, IInjectWithdrawConstraint>(
+                    injectWithdrawRangeSeries.Indices, injectWithdrawRangeSeries.Data.Select(range => new ConstantInjectWithdrawConstraint(range)));
+
+                _injectWithdrawConstraints = period => constraintSeries[period];
                 return this;
             }
 
@@ -467,6 +492,7 @@ namespace Cmdty.Storage
     public interface IAddInjectWithdrawConstraints<T> where T : ITimePeriod<T>
     {
         IAddMinInventory<T> WithTimeDependentInjectWithdrawRange(Func<T, InjectWithdrawRange> injectWithdrawRangeByPeriod);
+        IAddMinInventory<T> WithInjectWithdrawRangeSeries(TimeSeries<T, InjectWithdrawRange> injectWithdrawRangeSeries);
         IAddMinInventory<T> WithInjectWithdrawConstraint(IInjectWithdrawConstraint injectWithdrawConstraint);
         IAddMinInventory<T> WithInjectWithdrawConstraint(Func<T, IInjectWithdrawConstraint> injectWithdrawConstraintByPeriod);
     }
