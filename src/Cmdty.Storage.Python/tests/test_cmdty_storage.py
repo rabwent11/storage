@@ -258,11 +258,30 @@ class TestCmdtyStorage(unittest.TestCase):
         injection_cost = storage.injection_cost(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
         self.assertEqual(injected_volume * self._constant_injection_cost, injection_cost)
 
-    def test_cmdty_consumed_inject(self):
+    def test_cmdty_consumed_inject_scalar_init_parameter(self):
         storage = self._create_storage()
         injected_volume = 58.74
-        cmdty_consumed_inject = storage.cmdty_consumed_inject(pd.Period(date(2019, 9, 25), freq='D'), 485.5, injected_volume)
-        self.assertEqual(injected_volume * self._constant_cmdty_consumed_inject, cmdty_consumed_inject)
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            for inventory in [2.54, 500.58, 1234.56]:
+                cmdty_consumed_inject = storage.cmdty_consumed_inject(dt, inventory, injected_volume)
+                self.assertEqual(injected_volume * self._constant_cmdty_consumed_inject, cmdty_consumed_inject)
+
+    def test_cmdty_consumed_inject_none_init_parameter(self):
+        storage = self._create_storage(cmdty_consumed_inject=None)
+        injected_volume = 58.74
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            for inventory in [2.54, 500.58, 1234.56]:
+                cmdty_consumed_inject = storage.cmdty_consumed_inject(dt, inventory, injected_volume)
+                self.assertEqual(0, cmdty_consumed_inject)
+
+    def test_cmdty_consumed_inject_series_init_parameter(self):
+        storage = self._create_storage(cmdty_consumed_inject=self._series_cmdty_consumed_inject)
+        injected_volume = 58.74
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            expected_cmdty_consumed_inject = self._series_cmdty_consumed_inject[dt] * injected_volume
+            for inventory in [2.54, 500.58, 1234.56]:
+                cmdty_consumed_inject = storage.cmdty_consumed_inject(dt, inventory, injected_volume)
+                self.assertEqual(expected_cmdty_consumed_inject, cmdty_consumed_inject)
 
     def test_withdrawal_cost(self):
         storage = self._create_storage()

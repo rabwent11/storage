@@ -459,7 +459,7 @@ namespace Cmdty.Storage
                 return this;
             }
 
-            IAddWithdrawalCost<T> IAddCmdtyConsumedOnInject<T>.WithFixedPercentCmdtyConsumedOnInjectTimeSeries(
+            IAddWithdrawalCost<T> IAddCmdtyConsumedOnInject<T>.WithPercentCmdtyConsumedOnInjectTimeSeries(
                 [NotNull] TimeSeries<T, double> percentCmdtyConsumedSeries)
             {
                 if (percentCmdtyConsumedSeries == null) throw new ArgumentNullException(nameof(percentCmdtyConsumedSeries));
@@ -613,7 +613,7 @@ namespace Cmdty.Storage
     {
         IAddWithdrawalCost<T> WithNoCmdtyConsumedOnInject();
         IAddWithdrawalCost<T> WithFixedPercentCmdtyConsumedOnInject(double percentCmdtyConsumed);
-        IAddWithdrawalCost<T> WithFixedPercentCmdtyConsumedOnInjectTimeSeries(TimeSeries<T, double> percentCmdtyConsumed);
+        IAddWithdrawalCost<T> WithPercentCmdtyConsumedOnInjectTimeSeries(TimeSeries<T, double> percentCmdtyConsumed);
         IAddWithdrawalCost<T> WithCmdtyConsumedOnInject(Func<T, double, double, double> volumeOfCmdtyConsumed);
     }
 

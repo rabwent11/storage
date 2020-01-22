@@ -271,10 +271,14 @@ class CmdtyStorage:
         builder = IAddCmdtyConsumedOnInject[time_period_type](builder)
 
         if cmdty_consumed_inject is not None:
-            builder.WithFixedPercentCmdtyConsumedOnInject(cmdty_consumed_inject)
+            if _is_scalar(cmdty_consumed_inject):
+                builder.WithFixedPercentCmdtyConsumedOnInject(cmdty_consumed_inject)
+            else:
+                net_series_cmdty_consumed_inject = _series_to_double_time_series(cmdty_consumed_inject, time_period_type)
+                builder.WithPercentCmdtyConsumedOnInjectTimeSeries(net_series_cmdty_consumed_inject)
         else:
             builder.WithNoCmdtyConsumedOnInject()
-
+        
         IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(withdrawal_cost)
 
         builder = IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
