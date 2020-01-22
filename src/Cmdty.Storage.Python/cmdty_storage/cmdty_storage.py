@@ -286,9 +286,11 @@ class CmdtyStorage:
         
         builder = IAddCmdtyInventoryLoss[time_period_type](builder)
         if inventory_loss is not None:
-            # TODO add unit test for this block executing
-            # TODO test if inventory_loss is function and handle
-            builder.WithFixedPercentCmdtyInventoryLoss(inventory_loss)
+            if _is_scalar(inventory_loss):
+                builder.WithFixedPercentCmdtyInventoryLoss(inventory_loss)
+            else:
+                net_series_inventory_loss = _series_to_double_time_series(inventory_loss, time_period_type)
+                builder.WithCmdtyInventoryLossTimeSeries(net_series_inventory_loss)
         else:
             builder.WithNoCmdtyInventoryLoss()
 

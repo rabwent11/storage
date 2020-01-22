@@ -276,10 +276,24 @@ class TestCmdtyStorage(unittest.TestCase):
         cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(pd.Period(date(2019, 9, 25), freq='D'), 485.5, withdrawn_volume)
         self.assertEqual(withdrawn_volume * self._constant_cmdty_consumed_withdraw, cmdty_consumed_withdraw)
 
-    def test_inventory_pcnt_loss(self):
+    def test_inventory_pcnt_loss_scalar_init_parameter(self):
         storage = self._create_storage()
-        inventory_loss = storage.inventory_pcnt_loss(date(2019, 9, 2))
-        self.assertEqual(self._constant_inventory_loss, inventory_loss)
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            inventory_loss = storage.inventory_pcnt_loss(dt)
+            self.assertEqual(self._constant_inventory_loss, inventory_loss)
+
+    def test_inventory_pcnt_loss_none_init_parameter(self):
+        storage = self._create_storage(inventory_loss=None)
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            inventory_loss = storage.inventory_pcnt_loss(dt)
+            self.assertEqual(0, inventory_loss)
+
+    def test_inventory_pcnt_loss_series_init_parameter(self):
+        storage = self._create_storage(inventory_loss=self._series_inventory_loss)
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            inventory_loss = storage.inventory_pcnt_loss(dt)
+            expected_inventory_loss = self._series_inventory_loss[dt]
+            self.assertEqual(expected_inventory_loss, inventory_loss)
 
     def test_inventory_cost_scalar_init_parameter(self):
         storage = self._create_storage()
