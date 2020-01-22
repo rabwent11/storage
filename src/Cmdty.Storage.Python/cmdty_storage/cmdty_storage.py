@@ -383,7 +383,7 @@ class CmdtyStorage:
     def inventory_cost(self, period, inventory):
         net_time_period = self._net_time_period(period)
         net_inventory_cost = self._net_storage.CmdtyInventoryCost(net_time_period, inventory)
-        if net_inventory_cost.Length > 0:
+        if len(net_inventory_cost) > 0:
             return net_inventory_cost[0].Amount
         return 0.0
 

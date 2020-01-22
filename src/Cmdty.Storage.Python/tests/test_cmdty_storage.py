@@ -288,6 +288,13 @@ class TestCmdtyStorage(unittest.TestCase):
                 inventory_cost = storage.inventory_cost(dt, inventory)
                 self.assertEqual(self._constant_inventory_cost * inventory, inventory_cost)
 
+    def test_inventory_cost_none_init_parameter(self):
+        storage = self._create_storage(inventory_cost=None)
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            for inventory in [0, 500.58, 1234.56, 1800]:
+                inventory_cost = storage.inventory_cost(dt, inventory)
+                self.assertEqual(0.0, inventory_cost)
+
     def test_inventory_cost_series_init_parameter(self):
         storage = self._create_storage(inventory_cost=self._series_inventory_cost)
         for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
