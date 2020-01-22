@@ -241,11 +241,11 @@ class CmdtyStorage:
                 CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
             else:
                 if max_injection_rate_is_scalar:
-                    pass # TODO
+                    max_injection_rate = pd.Series(data=[max_injection_rate] * len(max_withdrawal_rate), index=max_withdrawal_rate.index)
                 elif max_withdrawal_rate_is_scalar:
-                    pass # TODO
-                else: # Assumed that both max_injection_rate and max_withdrawal_rate are series
-                    inject_withdraw_series = max_injection_rate.combine(max_withdrawal_rate, lambda inj_rate, with_rate: (-with_rate, inj_rate)).dropna()
+                    max_withdrawal_rate = pd.Series(data=[max_withdrawal_rate] * len(max_injection_rate), index=max_injection_rate.index)
+
+                inject_withdraw_series = max_injection_rate.combine(max_withdrawal_rate, lambda inj_rate, with_rate: (-with_rate, inj_rate)).dropna()
                 net_inj_with_series = _series_to_time_series(inject_withdraw_series, time_period_type, NetInjectWithdrawRange, lambda tup: NetInjectWithdrawRange(tup[0], tup[1]))
                 builder.WithInjectWithdrawRangeSeries(net_inj_with_series)
 

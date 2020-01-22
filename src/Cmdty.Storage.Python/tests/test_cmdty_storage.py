@@ -64,7 +64,7 @@ class TestCmdtyStorage(unittest.TestCase):
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
     _series_max_injection_rate = _create_piecewise_flat_series([125.5, 100, 120.66, 120.66], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_max_withrawal_rate = _create_piecewise_flat_series([211.52, 200, 220.66, 220.66], 
+    _series_max_withdrawal_rate = _create_piecewise_flat_series([211.52, 200, 220.66, 220.66], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
 
     _default_storage_start = date(2019, 8, 28)
@@ -162,16 +162,42 @@ class TestCmdtyStorage(unittest.TestCase):
     def test_inject_withdraw_range_from_series_init_parameters(self):
         storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
                         max_inventory=self._constant_max_inventory, max_injection_rate=self._series_max_injection_rate, 
-                        max_withdrawal_rate=self._series_max_withrawal_rate)
+                        max_withdrawal_rate=self._series_max_withdrawal_rate)
 
-        for inventory in [2.54, 500.58, 1234.56]:
-            for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
-                expected_min_dec = - self._series_max_withrawal_rate[dt]
-                expeted_max_dec = self._series_max_injection_rate[dt]
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            expected_min_dec = -self._series_max_withdrawal_rate[dt]
+            expeted_max_dec = self._series_max_injection_rate[dt]
+            for inventory in [2.54, 500.58, 1234.56]:
                 min_dec, max_dec = storage.inject_withdraw_range(dt, inventory)
                 self.assertEqual(expected_min_dec, min_dec)
                 self.assertEqual(expeted_max_dec, max_dec)
                 
+    def test_inject_withdraw_range_from_series_max_injection_rate_init_parameters(self):
+        storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
+                        max_inventory=self._constant_max_inventory, max_injection_rate=self._series_max_injection_rate, 
+                        max_withdrawal_rate=self._constant_max_withdrawal_rate)
+
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            expected_min_dec = -self._constant_max_withdrawal_rate
+            expeted_max_dec = self._series_max_injection_rate[dt]
+            for inventory in [2.54, 500.58, 1234.56]:
+                min_dec, max_dec = storage.inject_withdraw_range(dt, inventory)
+                self.assertEqual(expected_min_dec, min_dec)
+                self.assertEqual(expeted_max_dec, max_dec)
+
+    def test_inject_withdraw_range_from_series_max_withdrawal_rate_init_parameters(self):
+        storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
+                        max_inventory=self._constant_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
+                        max_withdrawal_rate=self._series_max_withdrawal_rate)
+
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            expected_min_dec = -self._series_max_withdrawal_rate[dt]
+            expeted_max_dec = self._constant_max_injection_rate
+            for inventory in [2.54, 500.58, 1234.56]:
+                min_dec, max_dec = storage.inject_withdraw_range(dt, inventory)
+                self.assertEqual(expected_min_dec, min_dec)
+                self.assertEqual(expeted_max_dec, max_dec)
+
     def test_min_inventory_property_from_constraints_table(self):
         storage = self._create_storage()
         self.assertEqual(0.0, storage.min_inventory(date(2019, 8, 29)))
