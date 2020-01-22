@@ -285,7 +285,12 @@ class CmdtyStorage:
         else:
             builder.WithNoCmdtyConsumedOnInject()
         
-        IAddWithdrawalCost[time_period_type](builder).WithPerUnitWithdrawalCost(withdrawal_cost)
+        builder = IAddWithdrawalCost[time_period_type](builder)
+        if _is_scalar(withdrawal_cost):
+            builder.WithPerUnitWithdrawalCost(withdrawal_cost)
+        else:
+            net_series_withdrawal_cost = _series_to_double_time_series(withdrawal_cost, time_period_type)
+            builder.WithPerUnitWithdrawalCostTimeSeries(net_series_withdrawal_cost)
 
         builder = IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
 

@@ -294,11 +294,22 @@ class TestCmdtyStorage(unittest.TestCase):
                 cmdty_consumed_inject = storage.cmdty_consumed_inject(dt, inventory, injected_volume)
                 self.assertEqual(expected_cmdty_consumed_inject, cmdty_consumed_inject)
 
-    def test_withdrawal_cost(self):
+    def test_withdrawal_cost_scalar_init_parameter(self):
         storage = self._create_storage()
         withdrawn_volume = 12.05
-        withdrawal_cost = storage.withdrawal_cost(pd.Period(date(2019, 9, 2), freq='D'), 135.67, withdrawn_volume)
-        self.assertEqual(withdrawn_volume * self._constant_withdrawal_cost, withdrawal_cost)
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            for inventory in [0, 500.58, 1234.56, 1800]:
+                withdrawal_cost = storage.withdrawal_cost(dt, inventory, withdrawn_volume)
+                self.assertEqual(withdrawn_volume * self._constant_withdrawal_cost, withdrawal_cost)
+
+    def test_withdrawal_cost_series_init_parameter(self):
+        storage = self._create_storage(withdrawal_cost=self._series_withdrawal_cost)
+        withdrawn_volume = 12.05
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            expected_withdrawal_cost = self._series_withdrawal_cost[dt] * withdrawn_volume
+            for inventory in [0, 500.58, 1234.56, 1800]:
+                withdrawal_cost = storage.withdrawal_cost(dt, inventory, withdrawn_volume)
+                self.assertEqual(expected_withdrawal_cost, withdrawal_cost)
 
     def test_cmdty_consumed_withdraw_scalar_init_parameter(self):
         storage = self._create_storage()
