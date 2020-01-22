@@ -292,9 +292,9 @@ class CmdtyStorage:
         builder = IAddCmdtyInventoryCost[time_period_type](builder)
         if inventory_cost is not None:
             # TODO handle if inventory_cost is function
-            builder.WithFixedPerUnitCost(inventory_cost)
+            builder.WithFixedPerUnitInventoryCost(inventory_cost)
         else:
-            builder.WithNoCmdtyInventoryCost()
+            builder.WithNoInventoryCost()
 
         builder = IAddTerminalStorageState[time_period_type](builder)
         

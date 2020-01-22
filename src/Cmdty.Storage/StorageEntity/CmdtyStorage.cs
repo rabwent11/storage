@@ -340,6 +340,34 @@ namespace Cmdty.Storage
                 return this;
             }
 
+            private void CheckTimeSeriesInputCoversStorageActivePeriod<TData>(TimeSeries<T, TData> timeSeries, 
+                                            string parameterName, string parameterDescription)
+            {
+                if (timeSeries.IsEmpty)
+                    throw new ArgumentException(parameterDescription + " time series cannot be empty.", parameterName);
+
+                if (timeSeries.Start.CompareTo(_startPeriod) > 0)
+                    throw new ArgumentException(
+                        parameterDescription + $" time series starts at {timeSeries.Start} which is later than the storage start period {_startPeriod}.", parameterName);
+
+                T latActivePeriod = _endPeriod.Offset(-1);
+                if (timeSeries.End.CompareTo(latActivePeriod) < 0)
+                    throw new ArgumentException(
+                        parameterDescription + $" time series ends at {timeSeries.End} which is earlier than {latActivePeriod}, the last active period.", parameterName);
+
+            }
+
+            IAddCmdtyConsumedOnInject<T> IAddInjectionCost<T>.WithPerUnitInjectionCostTimeSeries([NotNull] TimeSeries<T, double> perVolumeUnitCostSeries)
+            {
+                if (perVolumeUnitCostSeries == null) throw new ArgumentNullException(nameof(perVolumeUnitCostSeries));
+                CheckTimeSeriesInputCoversStorageActivePeriod(perVolumeUnitCostSeries, nameof(perVolumeUnitCostSeries),
+                    "Per unit injection cost");
+
+                _injectionCashFlows = (period, inventory, injectedVolume)
+                    => new[] { new DomesticCashFlow(period.First<Day>(), perVolumeUnitCostSeries[period] * injectedVolume) };
+                return this;
+            }
+
             IAddCmdtyConsumedOnInject<T> IAddInjectionCost<T>.WithInjectionCost(
                 Func<T, double, double, IReadOnlyList<DomesticCashFlow>> injectionCost)
             {
@@ -365,6 +393,18 @@ namespace Cmdty.Storage
                     throw new ArgumentException("Per unit withdrawal cost must be non-negative.", nameof(perVolumeUnitCost));
                 _withdrawalCashFlows = (period, inventory, withdrawnVolume)
                     => new[] { new DomesticCashFlow(period.First<Day>(), perVolumeUnitCost * Math.Abs(withdrawnVolume)) };
+                return this;
+            }
+
+            IAddCmdtyConsumedOnWithdraw<T> IAddWithdrawalCost<T>.WithPerUnitWithdrawalCostTimeSeries(
+                [NotNull] TimeSeries<T, double> perVolumeUnitCostSeries)
+            {
+                if (perVolumeUnitCostSeries == null) throw new ArgumentNullException(nameof(perVolumeUnitCostSeries));
+                CheckTimeSeriesInputCoversStorageActivePeriod(perVolumeUnitCostSeries, nameof(perVolumeUnitCostSeries),
+                    "Per unit withdrawal cost");
+
+                _withdrawalCashFlows = (period, inventory, withdrawnVolume)
+                    => new[] { new DomesticCashFlow(period.First<Day>(), perVolumeUnitCostSeries[period] * Math.Abs(withdrawnVolume)) };
                 return this;
             }
 
@@ -419,6 +459,17 @@ namespace Cmdty.Storage
                 return this;
             }
 
+            IAddWithdrawalCost<T> IAddCmdtyConsumedOnInject<T>.WithFixedPercentCmdtyConsumedOnInjectTimeSeries(
+                [NotNull] TimeSeries<T, double> percentCmdtyConsumedSeries)
+            {
+                if (percentCmdtyConsumedSeries == null) throw new ArgumentNullException(nameof(percentCmdtyConsumedSeries));
+                CheckTimeSeriesInputCoversStorageActivePeriod(percentCmdtyConsumedSeries, nameof(percentCmdtyConsumedSeries),
+                    "Percentage of cmdty consumed on inject");
+
+                _injectCmdtyConsumed = (period, inventory, injectedVolume) => percentCmdtyConsumedSeries[period] * Math.Abs(injectedVolume);
+                return this;
+            }
+
             IAddWithdrawalCost<T> IAddCmdtyConsumedOnInject<T>.WithCmdtyConsumedOnInject(
                             [NotNull] Func<T, double, double, double> volumeOfCmdtyConsumed)
             {
@@ -438,6 +489,18 @@ namespace Cmdty.Storage
                 return this;
             }
 
+            IAddWithdrawalCost<T> IAddCmdtyConsumedOnWithdraw<T>.WithFixedPercentCmdtyConsumedOnWithdrawTimeSeries(
+                [NotNull] TimeSeries<T, double> percentCmdtyConsumedSeries)
+            {
+                if (percentCmdtyConsumedSeries == null)
+                    throw new ArgumentNullException(nameof(percentCmdtyConsumedSeries));
+                CheckTimeSeriesInputCoversStorageActivePeriod(percentCmdtyConsumedSeries, nameof(percentCmdtyConsumedSeries),
+                    "Percentage of cmdty consumed on withdraw");
+
+                _withdrawCmdtyConsumed = (period, inventory, withdrawnVolume) => percentCmdtyConsumedSeries[period] * Math.Abs(withdrawnVolume);
+                return this;
+            }
+
             IAddCmdtyInventoryLoss<T> IAddCmdtyConsumedOnWithdraw<T>.WithCmdtyConsumedOnWithdraw(
                                 [NotNull] Func<T, double, double, double> volumeOfCmdtyConsumed)
             {
@@ -448,6 +511,16 @@ namespace Cmdty.Storage
             IAddCmdtyInventoryCost<T> IAddCmdtyInventoryLoss<T>.WithCmdtyInventoryLoss([NotNull] Func<T, double> cmdtyInventoryLoss)
             {
                 _cmdtyInventoryLoss = cmdtyInventoryLoss ?? throw new ArgumentNullException(nameof(cmdtyInventoryLoss));
+                return this;
+            }
+
+            IAddCmdtyInventoryCost<T> IAddCmdtyInventoryLoss<T>.WithCmdtyInventoryLossTimeSeries([NotNull] TimeSeries<T, double> cmdtyInventoryLossSeries)
+            {
+                if (cmdtyInventoryLossSeries == null) throw new ArgumentNullException(nameof(cmdtyInventoryLossSeries));
+                CheckTimeSeriesInputCoversStorageActivePeriod(cmdtyInventoryLossSeries, nameof(cmdtyInventoryLossSeries),
+                    "Cmdty inventory loss");
+
+                _cmdtyInventoryLoss = period => cmdtyInventoryLossSeries[period];
                 return this;
             }
 
@@ -463,32 +536,40 @@ namespace Cmdty.Storage
                 return this;
             }
 
-            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithCmdtyInventoryCost(
+            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithInventoryCost(
                 [NotNull] Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost)
             {
                 _cmdtyInventoryCost = cmdtyInventoryCost ?? throw new ArgumentNullException(nameof(cmdtyInventoryCost));
                 return this;
             }
 
-            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithNoCmdtyInventoryCost()
+            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithNoInventoryCost()
             {
                 _cmdtyInventoryCost = (period, inventory) => EmptyCashFlows;
                 return this;
             }
 
-            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithFixedPerUnitCost(double perUnitCost)
+            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithFixedPerUnitInventoryCost(double perUnitCost)
             {
                 _cmdtyInventoryCost = (period, inventory) 
-                    => new DomesticCashFlow[1]{new DomesticCashFlow(period.First<Day>(), inventory * perUnitCost)};
+                    => new[]{new DomesticCashFlow(period.First<Day>(), inventory * perUnitCost)};
+                return this;
+            }
+
+            IAddTerminalStorageState<T> IAddCmdtyInventoryCost<T>.WithPerUnitInventoryCostTimeSeries([NotNull] TimeSeries<T, double> perUnitCostSeries)
+            {
+                if (perUnitCostSeries == null) throw new ArgumentNullException(nameof(perUnitCostSeries));
+                CheckTimeSeriesInputCoversStorageActivePeriod(perUnitCostSeries, nameof(perUnitCostSeries),
+                    "Per unit inventory cost");
+
+                _cmdtyInventoryCost = (period, inventory)
+                    => new[] { new DomesticCashFlow(period.First<Day>(), inventory * perUnitCostSeries[period]) };
                 return this;
             }
         }
         
-
     }
-
-
-
+    
     public interface IAddInjectWithdrawConstraints<T> where T : ITimePeriod<T>
     {
         IAddMinInventory<T> WithTimeDependentInjectWithdrawRange(Func<T, InjectWithdrawRange> injectWithdrawRangeByPeriod);
@@ -519,6 +600,7 @@ namespace Cmdty.Storage
         /// Assumes cash flow date on start Day of decision period
         /// </summary>
         IAddCmdtyConsumedOnInject<T> WithPerUnitInjectionCost(double perVolumeUnitCost);
+        IAddCmdtyConsumedOnInject<T> WithPerUnitInjectionCostTimeSeries(TimeSeries<T, double> perVolumeUnitCostSeries);
         /// <summary>
         /// Adds the inject cost rule.
         /// </summary>
@@ -531,6 +613,7 @@ namespace Cmdty.Storage
     {
         IAddWithdrawalCost<T> WithNoCmdtyConsumedOnInject();
         IAddWithdrawalCost<T> WithFixedPercentCmdtyConsumedOnInject(double percentCmdtyConsumed);
+        IAddWithdrawalCost<T> WithFixedPercentCmdtyConsumedOnInjectTimeSeries(TimeSeries<T, double> percentCmdtyConsumed);
         IAddWithdrawalCost<T> WithCmdtyConsumedOnInject(Func<T, double, double, double> volumeOfCmdtyConsumed);
     }
 
@@ -541,6 +624,7 @@ namespace Cmdty.Storage
         /// Assumes cash flow date on start Day of decision period
         /// </summary>
         IAddCmdtyConsumedOnWithdraw<T> WithPerUnitWithdrawalCost(double withdrawalCost);
+        IAddCmdtyConsumedOnWithdraw<T> WithPerUnitWithdrawalCostTimeSeries(TimeSeries<T, double> perVolumeUnitCostSeries);
         /// <summary>
         /// Adds the withdrawal cost rule.
         /// </summary>
@@ -553,24 +637,27 @@ namespace Cmdty.Storage
     {
         IAddCmdtyInventoryLoss<T> WithNoCmdtyConsumedOnWithdraw();
         IAddCmdtyInventoryLoss<T> WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed);
+        IAddWithdrawalCost<T> WithFixedPercentCmdtyConsumedOnWithdrawTimeSeries(TimeSeries<T, double> percentCmdtyConsumedTimeSeries);
         IAddCmdtyInventoryLoss<T> WithCmdtyConsumedOnWithdraw(Func<T, double, double, double> volumeOfCmdtyConsumed);
     }
 
     public interface IAddCmdtyInventoryLoss<T> where T : ITimePeriod<T>
     {
         IAddCmdtyInventoryCost<T> WithCmdtyInventoryLoss(Func<T, double> cmdtyInventoryLoss);
+        IAddCmdtyInventoryCost<T> WithCmdtyInventoryLossTimeSeries(TimeSeries<T, double> cmdtyInventoryLossSeries);
         IAddCmdtyInventoryCost<T> WithNoCmdtyInventoryLoss();
         IAddCmdtyInventoryCost<T> WithFixedPercentCmdtyInventoryLoss(double percentCmdtyInventoryLoss);
     }
 
     public interface IAddCmdtyInventoryCost<T> where T : ITimePeriod<T>
     {
-        IAddTerminalStorageState<T> WithCmdtyInventoryCost(Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost);
-        IAddTerminalStorageState<T> WithNoCmdtyInventoryCost();
+        IAddTerminalStorageState<T> WithInventoryCost(Func<T, double, IReadOnlyList<DomesticCashFlow>> cmdtyInventoryCost);
+        IAddTerminalStorageState<T> WithNoInventoryCost();
         /// <summary>
         /// Adds a cost on the first day of the decision period
         /// </summary>
-        IAddTerminalStorageState<T> WithFixedPerUnitCost(double perUnitCost);
+        IAddTerminalStorageState<T> WithFixedPerUnitInventoryCost(double perUnitCost);
+        IAddTerminalStorageState<T> WithPerUnitInventoryCostTimeSeries(TimeSeries<T, double> perUnitCostSeries);
     }
 
     public interface IAddTerminalStorageState<T> where T : ITimePeriod<T>

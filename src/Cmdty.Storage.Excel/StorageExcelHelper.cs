@@ -128,7 +128,7 @@ namespace Cmdty.Storage.Excel
                     .WithPerUnitWithdrawalCost(withdrawalCostRate)
                     .WithFixedPercentCmdtyConsumedOnWithdraw(cmdtyConsumedOnWithdrawal)
                     .WithNoCmdtyInventoryLoss()
-                    .WithNoCmdtyInventoryCost()
+                    .WithNoInventoryCost()
                     .MustBeEmptyAtEnd()
                     .Build();
 

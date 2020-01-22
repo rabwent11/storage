@@ -64,7 +64,7 @@ namespace Cmdty.Storage.Test
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)
                                 .WithNoCmdtyConsumedOnWithdraw()
                                 .WithNoCmdtyInventoryLoss()
-                                .WithNoCmdtyInventoryCost()
+                                .WithNoInventoryCost()
                                 .MustBeEmptyAtEnd()
                                 .Build();
             return storage;
@@ -99,7 +99,7 @@ namespace Cmdty.Storage.Test
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)
                                 .WithNoCmdtyConsumedOnWithdraw()
                                 .WithNoCmdtyInventoryLoss()
-                                .WithNoCmdtyInventoryCost()
+                                .WithNoInventoryCost()
                                 .MustBeEmptyAtEnd()
                                 .Build();
 
@@ -159,7 +159,7 @@ namespace Cmdty.Storage.Test
                                 .WithPerUnitWithdrawalCost(ConstantWithdrawalCost, withdrawalDate => withdrawalDate)
                                 .WithNoCmdtyConsumedOnWithdraw()
                                 .WithNoCmdtyInventoryLoss()
-                                .WithNoCmdtyInventoryCost()
+                                .WithNoInventoryCost()
                                 .MustBeEmptyAtEnd()
                                 .Build();
 
