@@ -266,7 +266,13 @@ class CmdtyStorage:
             else: # Assume max_inventory is a constaint number
                 builder.WithConstantMaxInventory(max_inventory)
 
-        IAddInjectionCost[time_period_type](builder).WithPerUnitInjectionCost(injection_cost)
+        builder = IAddInjectionCost[time_period_type](builder)
+
+        if _is_scalar(injection_cost):
+            builder.WithPerUnitInjectionCost(injection_cost)
+        else:
+            net_series_injection_cost = _series_to_double_time_series(injection_cost, time_period_type)
+            builder.WithPerUnitInjectionCostTimeSeries(net_series_injection_cost)
     
         builder = IAddCmdtyConsumedOnInject[time_period_type](builder)
 
