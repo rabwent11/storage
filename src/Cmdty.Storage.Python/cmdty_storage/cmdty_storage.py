@@ -72,18 +72,21 @@ def _net_time_period_to_pandas_period(net_time_period, freq):
     start_datetime = _net_datetime_to_py_datetime(net_time_period.Start)
     return pd.Period(start_datetime, freq=freq)
 
+def _series_to_double_time_series(series, time_period_type):
+    """Converts an instance of pandas Series to a Cmdty.TimeSeries.TimeSeries type with Double data type."""
+    return _series_to_time_series(series, time_period_type, Double, lambda x: x)
 
-def _series_to_time_series(series, time_period_type):
+def _series_to_time_series(series, time_period_type, net_data_type, data_selector):
     """Converts an instance of pandas Series to a Cmdty.TimeSeries.TimeSeries."""
     series_len = len(series)
     net_indices = Array.CreateInstance(time_period_type, series_len)
-    net_values = Array.CreateInstance(Double, series_len)
+    net_values = Array.CreateInstance(net_data_type, series_len)
 
     for i in range(series_len):
         net_indices[i] = _from_datetime_like(series.index[i], time_period_type)
-        net_values[i] = series.values[i]
+        net_values[i] = data_selector(series.values[i])
 
-    return TimeSeries[time_period_type, Double](net_indices, net_values)
+    return TimeSeries[time_period_type, net_data_type](net_indices, net_values)
 
 
 def _net_time_series_to_pandas_series(net_time_series, freq):
@@ -132,13 +135,13 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
     current_period = _from_datetime_like(val_date, time_period_type)
     IIntrinsicAddCurrentPeriod[time_period_type](intrinsic_calc).ForCurrentPeriod(current_period)
 
-    net_forward_curve = _series_to_time_series(forward_curve, time_period_type)
+    net_forward_curve = _series_to_double_time_series(forward_curve, time_period_type)
     IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
 
     net_settlement_rule = Func[time_period_type, Day](settlement_rule)
     IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
     
-    interest_rate_time_series = _series_to_time_series(interest_rates, FREQ_TO_PERIOD_TYPE['D'])
+    interest_rate_time_series = _series_to_double_time_series(interest_rates, FREQ_TO_PERIOD_TYPE['D'])
     IntrinsicStorageValuationExtensions.WithAct365ContinuouslyCompoundedInterestRateCurve[time_period_type](intrinsic_calc, interest_rate_time_series)
 
     IntrinsicStorageValuationExtensions.WithFixedNumberOfPointsOnGlobalInventoryRange[time_period_type](intrinsic_calc, num_inventory_grid_points)
@@ -231,23 +234,31 @@ class CmdtyStorage:
 
             builder = IAddInjectWithdrawConstraints[time_period_type](builder)
             
-            max_injection_rate_is_constant = isinstance(max_injection_rate, int) or isinstance(max_injection_rate, float)
-            max_withdrawal_rate_is_constant = isinstance(max_withdrawal_rate, int) or isinstance(max_withdrawal_rate, float)
+            max_injection_rate_is_scalar = isinstance(max_injection_rate, int) or isinstance(max_injection_rate, float)
+            max_withdrawal_rate_is_scalar = isinstance(max_withdrawal_rate, int) or isinstance(max_withdrawal_rate, float)
             
-            if max_injection_rate_is_constant and max_withdrawal_rate_is_constant:
+            if max_injection_rate_is_scalar and max_withdrawal_rate_is_scalar:
                 CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
-
+            else:
+                if max_injection_rate_is_scalar:
+                    pass # TODO
+                elif max_withdrawal_rate_is_scalar:
+                    pass # TODO
+                else: # Assumed that both max_injection_rate and max_withdrawal_rate are series
+                    inject_withdraw_series = max_injection_rate.combine(max_withdrawal_rate, lambda inj_rate, with_rate: (-with_rate, inj_rate)).dropna()
+                net_inj_with_series = _series_to_time_series(inject_withdraw_series, time_period_type, NetInjectWithdrawRange, lambda tup: NetInjectWithdrawRange(tup[0], tup[1]))
+                builder.WithInjectWithdrawRangeSeries(net_inj_with_series)
 
             builder = IAddMinInventory[time_period_type](builder)
             if isinstance(min_inventory, pd.Series):
-                net_series_min_inventory = _series_to_time_series(min_inventory, time_period_type)
+                net_series_min_inventory = _series_to_double_time_series(min_inventory, time_period_type)
                 builder.WithMinInventoryTimeSeries(net_series_min_inventory)
             else: # Assume min_inventory is a constaint number
                 builder.WithConstantMinInventory(min_inventory)
 
             builder = IAddMaxInventory[time_period_type](builder)
             if isinstance(max_inventory, pd.Series):
-                net_series_max_inventory = _series_to_time_series(max_inventory, time_period_type)
+                net_series_max_inventory = _series_to_double_time_series(max_inventory, time_period_type)
                 builder.WithMaxInventoryTimeSeries(net_series_max_inventory)
             else: # Assume max_inventory is a constaint number
                 builder.WithConstantMaxInventory(max_inventory)
