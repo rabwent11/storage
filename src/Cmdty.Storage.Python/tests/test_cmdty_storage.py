@@ -133,6 +133,30 @@ class TestCmdtyStorage(unittest.TestCase):
         self.assertEqual(-175.0, min_dec)
         self.assertEqual((255.2 + 175.0)/2.0, max_dec)
 
+    def test_inject_withdraw_range_from_float_init_parameters(self):
+        storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
+                        max_inventory=self._constant_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
+                        max_withdrawal_rate=self._constant_max_withdrawal_rate)
+        
+        for inventory in [2.54, 500.58, 1234.56]:
+            for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+                min_dec, max_dec = storage.inject_withdraw_range(dt, inventory)
+                self.assertEqual(-self._constant_max_withdrawal_rate, min_dec)
+                self.assertEqual(self._constant_max_injection_rate, max_dec)
+
+    def test_inject_withdraw_range_from_int_init_parameters(self):
+        int_max_injection_rate = int(self._constant_max_injection_rate)
+        int_max_withdrawal_rate = int(self._constant_max_withdrawal_rate)
+        storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
+                        max_inventory=self._constant_max_inventory, max_injection_rate=int_max_injection_rate, 
+                        max_withdrawal_rate=int_max_withdrawal_rate)
+        
+        for inventory in [2.54, 500.58, 1234.56]:
+            for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+                min_dec, max_dec = storage.inject_withdraw_range(dt, inventory)
+                self.assertEqual(-int_max_withdrawal_rate, min_dec)
+                self.assertEqual(int_max_injection_rate, max_dec)
+
     def test_min_inventory_property_from_constraints_table(self):
         storage = self._create_storage()
         self.assertEqual(0.0, storage.min_inventory(date(2019, 8, 29)))
@@ -168,6 +192,8 @@ class TestCmdtyStorage(unittest.TestCase):
         self.assertEqual(1358.5, storage.max_inventory(date(2019, 9, 1)))
         self.assertEqual(54.5, storage.max_inventory(date(2019, 9, 11)))
         
+
+
     def test_max_inventory_property_from_constraints_table(self):
         storage = self._create_storage()
         self.assertEqual(2000.0, storage.max_inventory(date(2019, 8, 29)))

@@ -229,6 +229,15 @@ class CmdtyStorage:
             if max_withdrawal_rate is None:
                 raise ValueError("max_withdrawal_rate parameter should be provided if constraints parameter is not provided.")
 
+            builder = IAddInjectWithdrawConstraints[time_period_type](builder)
+            
+            max_injection_rate_is_constant = isinstance(max_injection_rate, int) or isinstance(max_injection_rate, float)
+            max_withdrawal_rate_is_constant = isinstance(max_withdrawal_rate, int) or isinstance(max_withdrawal_rate, float)
+            
+            if max_injection_rate_is_constant and max_withdrawal_rate_is_constant:
+                CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
+
+
             builder = IAddMinInventory[time_period_type](builder)
             if isinstance(min_inventory, pd.Series):
                 net_series_min_inventory = _series_to_time_series(min_inventory, time_period_type)
