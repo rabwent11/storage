@@ -289,11 +289,30 @@ class TestCmdtyStorage(unittest.TestCase):
         injection_cost = storage.withdrawal_cost(pd.Period(date(2019, 9, 2), freq='D'), 135.67, withdrawn_volume)
         self.assertEqual(withdrawn_volume * self._constant_withdrawal_cost, injection_cost)
 
-    def test_cmdty_consumed_withdraw(self):
+    def test_cmdty_consumed_withdraw_scalar_init_parameter(self):
         storage = self._create_storage()
         withdrawn_volume = 12.05
-        cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(pd.Period(date(2019, 9, 25), freq='D'), 485.5, withdrawn_volume)
-        self.assertEqual(withdrawn_volume * self._constant_cmdty_consumed_withdraw, cmdty_consumed_withdraw)
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            for inventory in [2.54, 500.58, 1234.56]:
+                cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(dt, inventory, withdrawn_volume)
+                self.assertEqual(withdrawn_volume * self._constant_cmdty_consumed_withdraw, cmdty_consumed_withdraw)
+
+    def test_cmdty_consumed_withdraw_none_init_parameter(self):
+        storage = self._create_storage(cmdty_consumed_withdraw=None)
+        withdrawn_volume = 12.05
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            for inventory in [2.54, 500.58, 1234.56]:
+                cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(dt, inventory, withdrawn_volume)
+                self.assertEqual(0, cmdty_consumed_withdraw)
+
+    def test_cmdty_consumed_withdraw_series_init_parameter(self):
+        storage = self._create_storage(cmdty_consumed_withdraw=self._series_cmdty_consumed_withdraw)
+        withdrawn_volume = 12.05
+        for dt in [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 20)]:
+            expected_cmdty_consumed_withdraw = self._series_cmdty_consumed_withdraw[dt] * withdrawn_volume
+            for inventory in [2.54, 500.58, 1234.56]:
+                cmdty_consumed_withdraw = storage.cmdty_consumed_withdraw(dt, inventory, withdrawn_volume)
+                self.assertEqual(expected_cmdty_consumed_withdraw, cmdty_consumed_withdraw)
 
     def test_inventory_pcnt_loss_scalar_init_parameter(self):
         storage = self._create_storage()

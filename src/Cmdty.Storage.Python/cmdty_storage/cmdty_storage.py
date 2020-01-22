@@ -284,7 +284,11 @@ class CmdtyStorage:
         builder = IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
 
         if cmdty_consumed_withdraw is not None:
-            builder.WithFixedPercentCmdtyConsumedOnWithdraw(cmdty_consumed_withdraw)
+            if _is_scalar(cmdty_consumed_withdraw):
+                builder.WithFixedPercentCmdtyConsumedOnWithdraw(cmdty_consumed_withdraw)
+            else:
+                net_series_cmdty_consumed_withdraw = _series_to_double_time_series(cmdty_consumed_withdraw, time_period_type)
+                builder.WithPercentCmdtyConsumedOnWithdrawTimeSeries(net_series_cmdty_consumed_withdraw)
         else:
             builder.WithNoCmdtyConsumedOnWithdraw()
         

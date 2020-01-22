@@ -489,7 +489,7 @@ namespace Cmdty.Storage
                 return this;
             }
 
-            IAddWithdrawalCost<T> IAddCmdtyConsumedOnWithdraw<T>.WithFixedPercentCmdtyConsumedOnWithdrawTimeSeries(
+            IAddWithdrawalCost<T> IAddCmdtyConsumedOnWithdraw<T>.WithPercentCmdtyConsumedOnWithdrawTimeSeries(
                 [NotNull] TimeSeries<T, double> percentCmdtyConsumedSeries)
             {
                 if (percentCmdtyConsumedSeries == null)
@@ -637,7 +637,7 @@ namespace Cmdty.Storage
     {
         IAddCmdtyInventoryLoss<T> WithNoCmdtyConsumedOnWithdraw();
         IAddCmdtyInventoryLoss<T> WithFixedPercentCmdtyConsumedOnWithdraw(double percentCmdtyConsumed);
-        IAddWithdrawalCost<T> WithFixedPercentCmdtyConsumedOnWithdrawTimeSeries(TimeSeries<T, double> percentCmdtyConsumedTimeSeries);
+        IAddWithdrawalCost<T> WithPercentCmdtyConsumedOnWithdrawTimeSeries(TimeSeries<T, double> percentCmdtyConsumedTimeSeries);
         IAddCmdtyInventoryLoss<T> WithCmdtyConsumedOnWithdraw(Func<T, double, double, double> volumeOfCmdtyConsumed);
     }
 
