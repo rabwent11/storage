@@ -103,6 +103,9 @@ def _net_time_series_to_pandas_series(net_time_series, freq):
     return pd.Series(prices, index)
 
 
+def _is_scalar(arg):
+    return isinstance(arg, int) or isinstance(arg, float)
+
 FREQ_TO_PERIOD_TYPE = {
         "15min" : QuarterHour,
         "30min" : HalfHour,
@@ -234,8 +237,8 @@ class CmdtyStorage:
 
             builder = IAddInjectWithdrawConstraints[time_period_type](builder)
             
-            max_injection_rate_is_scalar = isinstance(max_injection_rate, int) or isinstance(max_injection_rate, float)
-            max_withdrawal_rate_is_scalar = isinstance(max_withdrawal_rate, int) or isinstance(max_withdrawal_rate, float)
+            max_injection_rate_is_scalar = _is_scalar(max_injection_rate)
+            max_withdrawal_rate_is_scalar = _is_scalar(max_withdrawal_rate)
             
             if max_injection_rate_is_scalar and max_withdrawal_rate_is_scalar:
                 CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
@@ -291,8 +294,11 @@ class CmdtyStorage:
 
         builder = IAddCmdtyInventoryCost[time_period_type](builder)
         if inventory_cost is not None:
-            # TODO handle if inventory_cost is function
-            builder.WithFixedPerUnitInventoryCost(inventory_cost)
+            if _is_scalar(inventory_cost):
+                builder.WithFixedPerUnitInventoryCost(inventory_cost)
+            else:
+                net_series_inventory_cost = _series_to_double_time_series(inventory_cost, time_period_type)
+                builder.WithPerUnitInventoryCostTimeSeries(net_series_inventory_cost)
         else:
             builder.WithNoInventoryCost()
 
