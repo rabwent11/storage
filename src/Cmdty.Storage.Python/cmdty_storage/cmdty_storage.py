@@ -231,16 +231,11 @@ class CmdtyStorage:
             CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
 
         else:
-            # TODO put the checks below into shared function call
-            if min_inventory is None:
-                raise ValueError("min_inventory parameter should be provided if constraints parameter is not provided.")
-            if max_inventory is None:
-                raise ValueError("max_inventory parameter should be provided if constraints parameter is not provided.")
-            if max_injection_rate is None:
-                raise ValueError("max_injection_rate parameter should be provided if constraints parameter is not provided.")
-            if max_withdrawal_rate is None:
-                raise ValueError("max_withdrawal_rate parameter should be provided if constraints parameter is not provided.")
-
+            _raise_if_none(min_inventory, "min_inventory parameter should be provided if constraints parameter is not provided.")
+            _raise_if_none(max_inventory, "max_inventory parameter should be provided if constraints parameter is not provided.")
+            _raise_if_none(max_injection_rate, "max_injection_rate parameter should be provided if constraints parameter is not provided.")
+            _raise_if_none(max_withdrawal_rate, "max_withdrawal_rate parameter should be provided if constraints parameter is not provided.")
+            
             builder = IAddInjectWithdrawConstraints[time_period_type](builder)
             
             max_injection_rate_is_scalar = _is_scalar(max_injection_rate)
