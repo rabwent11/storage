@@ -167,8 +167,11 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
     net_val_results = IIntrinsicCalculate[time_period_type](intrinsic_calc).Calculate()
 
     net_profile = net_val_results.StorageProfile
-    profile_start = _net_datetime_to_py_datetime(net_profile.Indices[0].Start)
-    index = pd.period_range(start=profile_start, freq=cmdty_storage.freq, periods=net_profile.Count)
+    if net_profile.Count == 0:
+        index = pd.PeriodIndex(data=[], freq=cmdty_storage.freq)
+    else:
+        profile_start = _net_datetime_to_py_datetime(net_profile.Indices[0].Start)
+        index = pd.period_range(start=profile_start, freq=cmdty_storage.freq, periods=net_profile.Count)
 
     inventories = [None] * net_profile.Count
     inject_withdraw_volumes = [None] * net_profile.Count

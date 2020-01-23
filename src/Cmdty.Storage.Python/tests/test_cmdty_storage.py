@@ -461,6 +461,50 @@ class TestIntrinsicValue(unittest.TestCase):
         intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
                         interest_rates=interest_rate_curve, num_inventory_grid_points=100)
         
+    def test_expired_storage_returns_zero_npv_empty_profile(self):
+        storage_start = date(2019, 8, 28)
+        storage_end = date(2019, 9, 25)
+        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, injection_cost=0.1, withdrawal_cost=0.2, min_inventory=0, 
+                                     max_inventory=1000, max_injection_rate=2.5, max_withdrawal_rate=3.6)
+
+        inventory = 0.0
+        val_date = date(2019, 9, 26)
+
+        forward_curve = _create_piecewise_flat_series([58.89, 61.41, 70.89, 70.89], [storage_start, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
+        
+        flat_interest_rate = 0.03
+        interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end, freq='D'))
+        interest_rate_curve[:] = flat_interest_rate
+
+        first_day_rule = lambda period: period.First[Day]()
+        intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
+                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
+        
+        self.assertEqual(0.0, intrinsic_results.npv)
+        self.assertEqual(0, len(intrinsic_results.profile))
+
+    def test_storage_value_date_equals_storage_end_returns_zero_npv_empty_profile(self):
+        storage_start = date(2019, 8, 28)
+        storage_end = date(2019, 9, 25)
+        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, injection_cost=0.1, withdrawal_cost=0.2, min_inventory=0, 
+                                     max_inventory=1000, max_injection_rate=2.5, max_withdrawal_rate=3.6)
+
+        inventory = 0.0
+        val_date = date(2019, 9, 25)
+
+        forward_curve = _create_piecewise_flat_series([58.89, 61.41, 70.89, 70.89], [storage_start, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
+        
+        flat_interest_rate = 0.03
+        interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end, freq='D'))
+        interest_rate_curve[:] = flat_interest_rate
+
+        first_day_rule = lambda period: period.First[Day]()
+        intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
+                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
+
+        self.assertEqual(0.0, intrinsic_results.npv)
+        self.assertEqual(0, len(intrinsic_results.profile))
+
 
 if __name__ == '__main__':
     unittest.main()
