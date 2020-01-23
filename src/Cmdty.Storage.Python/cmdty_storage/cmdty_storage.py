@@ -106,6 +106,17 @@ def _net_time_series_to_pandas_series(net_time_series, freq):
 def _is_scalar(arg):
     return isinstance(arg, int) or isinstance(arg, float)
 
+
+def _raise_if_none(arg, error_message):
+    if arg is None:
+        raise ValueError(error_message)
+
+
+def _raise_if_not_none(arg, error_message):
+    if arg is not None:
+        raise ValueError(error_message)
+
+
 FREQ_TO_PERIOD_TYPE = {
         "15min" : QuarterHour,
         "30min" : HalfHour,
@@ -204,15 +215,10 @@ class CmdtyStorage:
         net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
 
         if constraints is not None:
-            # TODO put the checks below into shared function call
-            if min_inventory is not None:
-                raise ValueError("min_inventory parameter should not be provided if constraints parameter is provided.")
-            if max_inventory is not None:
-                raise ValueError("max_inventory parameter should not be provided if constraints parameter is provided.")
-            if max_injection_rate is not None:
-                raise ValueError("max_injection_rate parameter should not be provided if constraints parameter is provided.")
-            if max_withdrawal_rate is not None:
-                raise ValueError("max_withdrawal_rate parameter should not be provided if constraints parameter is provided.")
+            _raise_if_not_none(min_inventory, "min_inventory parameter should not be provided if constraints parameter is provided.")
+            _raise_if_not_none(max_inventory, "max_inventory parameter should not be provided if constraints parameter is provided.")
+            _raise_if_not_none(max_injection_rate, "max_injection_rate parameter should not be provided if constraints parameter is provided.")
+            _raise_if_not_none(max_withdrawal_rate, "max_withdrawal_rate parameter should not be provided if constraints parameter is provided.")
             
             for period, rates_by_inventory in constraints:
                 net_period = _from_datetime_like(period, time_period_type)

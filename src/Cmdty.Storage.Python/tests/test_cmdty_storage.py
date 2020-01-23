@@ -109,6 +109,19 @@ class TestCmdtyStorage(unittest.TestCase):
                                 terminal_storage_npv=terminal_storage_npv, inventory_loss=inventory_loss, 
                                 inventory_cost=inventory_cost)
 
+    def test_init_constraints_arg_not_none_other_constraint_args_not_none_raises(self):
+        with self.assertRaisesRegexp(ValueError, "min_inventory parameter should not be provided if constraints parameter is provided."):
+            storage = self._create_storage(constraints=self._default_constraints, min_inventory=self._constant_min_inventory)
+        
+        with self.assertRaisesRegexp(ValueError, "max_inventory parameter should not be provided if constraints parameter is provided."):
+            storage = self._create_storage(constraints=self._default_constraints, max_inventory=self._constant_max_inventory)
+        
+        with self.assertRaisesRegexp(ValueError, "max_injection_rate parameter should not be provided if constraints parameter is provided."):
+            storage = self._create_storage(constraints=self._default_constraints, max_injection_rate=self._constant_max_injection_rate)
+        
+        with self.assertRaisesRegexp(ValueError, "max_withdrawal_rate parameter should not be provided if constraints parameter is provided."):
+            storage = self._create_storage(constraints=self._default_constraints, max_withdrawal_rate=self._constant_max_withdrawal_rate)
+
     def test_start_property(self):
         storage = self._create_storage()
         self.assertEqual(pd.Period(self._default_storage_start, freq='D'), storage.start)
