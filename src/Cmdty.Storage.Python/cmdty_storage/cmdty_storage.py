@@ -72,9 +72,11 @@ def _net_time_period_to_pandas_period(net_time_period, freq):
     start_datetime = _net_datetime_to_py_datetime(net_time_period.Start)
     return pd.Period(start_datetime, freq=freq)
 
+
 def _series_to_double_time_series(series, time_period_type):
     """Converts an instance of pandas Series to a Cmdty.TimeSeries.TimeSeries type with Double data type."""
     return _series_to_time_series(series, time_period_type, Double, lambda x: x)
+
 
 def _series_to_time_series(series, time_period_type, net_data_type, data_selector):
     """Converts an instance of pandas Series to a Cmdty.TimeSeries.TimeSeries."""
@@ -137,7 +139,14 @@ The values are the associated .NET time period types used in behind-the-scenes c
 
 def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule, interest_rates, 
                     num_inventory_grid_points=100, numerical_tolerance=1E-12):
-    
+    """
+    Calculates the intrinsic value of cmdty storage.
+
+    Args:
+        settlement_rule (callable): Mapping function from pandas.Period type to the date on which the cmdty delivered in
+            this period is settled. The pandas.Period parameter will have freq equal to the cmdty_storage parameter's freq property.
+    """
+
     if cmdty_storage.freq != forward_curve.index.freqstr:
         raise ValueError("cmdty_storage and forward_curve have different frequencies.")
 
@@ -152,7 +161,16 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlemen
     net_forward_curve = _series_to_double_time_series(forward_curve, time_period_type)
     IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
 
-    net_settlement_rule = Func[time_period_type, Day](settlement_rule)
+    def wrapper_settle_function(py_function, net_time_period, freq):
+        pandas_period = _net_time_period_to_pandas_period(net_time_period, freq)
+        py_function_result = py_function(pandas_period)
+        net_settle_day = _from_datetime_like(py_function_result, Day)
+        return net_settle_day
+
+    def wrapped_function(net_time_period):
+        return wrapper_settle_function(settlement_rule, net_time_period, cmdty_storage.freq)
+
+    net_settlement_rule = Func[time_period_type, Day](wrapped_function)
     IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
     
     interest_rate_time_series = _series_to_double_time_series(interest_rates, FREQ_TO_PERIOD_TYPE['D'])

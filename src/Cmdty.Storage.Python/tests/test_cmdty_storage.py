@@ -26,11 +26,6 @@ from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, Inje
 from datetime import date
 import pandas as pd
 
-import clr
-from pathlib import Path
-clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
-from Cmdty.TimePeriodValueTypes import Day
-
 def _create_piecewise_flat_series(data, dt_index, freq):
     period_index = pd.PeriodIndex([pd.Period(dt, freq=freq) for dt in dt_index])
     return pd.Series(data, period_index).resample(freq).fillna('pad')
@@ -457,7 +452,7 @@ class TestIntrinsicValue(unittest.TestCase):
         interest_rate_curve[:] = flat_interest_rate
 
         # TODO more realistic settlement rule
-        first_day_rule = lambda period: period.First[Day]()
+        first_day_rule = lambda period: period
         intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
                         interest_rates=interest_rate_curve, num_inventory_grid_points=100)
         
@@ -476,7 +471,7 @@ class TestIntrinsicValue(unittest.TestCase):
         interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end, freq='D'))
         interest_rate_curve[:] = flat_interest_rate
 
-        first_day_rule = lambda period: period.First[Day]()
+        first_day_rule = lambda period: period
         intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
                         interest_rates=interest_rate_curve, num_inventory_grid_points=100)
         
@@ -498,7 +493,7 @@ class TestIntrinsicValue(unittest.TestCase):
         interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end, freq='D'))
         interest_rate_curve[:] = flat_interest_rate
 
-        first_day_rule = lambda period: period.First[Day]()
+        first_day_rule = lambda period: period
         intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
                         interest_rates=interest_rate_curve, num_inventory_grid_points=100)
 
