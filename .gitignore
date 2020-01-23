@@ -347,6 +347,7 @@ src/Cmdty.Storage.Python/cmdty_storage/__version__.py
 
 # Virtual Environment
 src/Cmdty.Storage.Python/storage-venv/*
+venvs/*
 
 # Generated for Python test
 junit/

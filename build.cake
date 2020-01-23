@@ -206,8 +206,26 @@ var publishNuGetTask = Task("Publish-NuGet")
     });
 });
 
+var publishTestPyPiTask = Task("Publish-TestPyPI")
+    .Does(() =>
+{
+    string testPyPiPassword = GetEnvironmentVariable("TEST_PYPI_PASSWORD");
+    StartProcessThrowOnError("python", "-m twine upload --repository-url https://test.pypi.org/legacy/ src/Cmdty.Storage.Python/dist/*",
+                                        "--username fowja", "--password " + testPyPiPassword);
+});
+
+var publishPyPiTask = Task("Publish-PyPI")
+    .Does(() =>
+{
+    string pyPiPassword = GetEnvironmentVariable("PYPI_PASSWORD");
+    StartProcessThrowOnError("python", "-m twine upload src/Cmdty.Storage.Python/dist/*",
+                                        "--username cmdty", "--password " + pyPiPassword);
+});
+
 if (!publishWithoutBuild)
 {
+    publishTestPyPiTask.IsDependentOn("Pack-Python");
+    publishPyPiTask.IsDependentOn("Pack-Python");
     publishNuGetTask.IsDependentOn("Pack-NuGet");
 }
 else
