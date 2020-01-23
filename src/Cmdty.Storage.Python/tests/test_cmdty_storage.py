@@ -449,12 +449,7 @@ class TestIntrinsicValue(unittest.TestCase):
         inventory = 650.0
         val_date = date(2019, 9, 2)
 
-        # TODO helper function for created piecewise flat curve (done in a better way than below)
-        forward_curve = pd.Series(data={
-            pd.Period(val_date, freq='D') : 58.89,
-            pd.Period(date(2019, 9, 12), freq='D') : 61.41, 
-            pd.Period(date(2019, 9, 18), freq='D') : 59.89, 
-            pd.Period(storage_end, freq='D') : 59.89, }).resample('D').fillna('pad')
+        forward_curve = _create_piecewise_flat_series([58.89, 61.41, 59.89, 59.89], [val_date, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
         
         # TODO test with proper interest rate curve
         flat_interest_rate = 0.03
@@ -465,8 +460,7 @@ class TestIntrinsicValue(unittest.TestCase):
         first_day_rule = lambda period: period.First[Day]()
         intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=first_day_rule, 
                         interest_rates=interest_rate_curve, num_inventory_grid_points=100)
-
-
+        
 
 if __name__ == '__main__':
     unittest.main()
