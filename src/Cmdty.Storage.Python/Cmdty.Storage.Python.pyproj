@@ -31,6 +31,12 @@
     <Compile Include="cmdty_storage\cmdty_storage.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="cmdty_storage\intrinsic.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="cmdty_storage\utils.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="cmdty_storage\__init__.py">
       <SubType>Code</SubType>
     </Compile>

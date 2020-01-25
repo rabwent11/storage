@@ -26,6 +26,7 @@ from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, Inje
 from datetime import date, timedelta
 import pandas as pd
 
+
 def _create_piecewise_flat_series(data, dt_index, freq):
     period_index = pd.PeriodIndex([pd.Period(dt, freq=freq) for dt in dt_index])
     return pd.Series(data, period_index).resample(freq).fillna('pad')
