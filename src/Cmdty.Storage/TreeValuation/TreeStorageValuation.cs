@@ -240,6 +240,9 @@ namespace Cmdty.Storage
                 var storageNpvsByPriceLevelAndInventory = new double[thisStepTreeNodes.Count][];
                 var decisionVolumesByPriceLevelAndInventory = new double[thisStepTreeNodes.Count][];
 
+                Day cmdtySettlementDate = settleDateRule(periodLoop);
+                double discountFactorFromCmdtySettlement = DiscountToCurrentDay(cmdtySettlementDate);
+                
                 for (var priceLevelIndex = 0; priceLevelIndex < thisStepTreeNodes.Count; priceLevelIndex++)
                 {
                     TreeNode treeNode = thisStepTreeNodes[priceLevelIndex];
@@ -252,7 +255,7 @@ namespace Cmdty.Storage
                         (storageValuesGrid[i], decisionVolumesGrid[i], _, _) = 
                                         OptimalDecisionAndValue(storage, periodLoop, inventory,
                                         nextStepInventorySpaceMin, nextStepInventorySpaceMax, treeNode,
-                                        continuationValueByInventory, settleDateRule, DiscountToCurrentDay, numericalTolerance);
+                                        continuationValueByInventory, discountFactorFromCmdtySettlement, DiscountToCurrentDay, numericalTolerance);
                     }
 
                     storageValueByInventory[backCounter][priceLevelIndex] =
@@ -294,7 +297,7 @@ namespace Cmdty.Storage
         private static (double StorageNpv, double OptimalInjectWithdraw, double CmdtyConsumedOnAction, double ImmediateNpv) 
             OptimalDecisionAndValue(ICmdtyStorage<T> storage, T period, double inventory,
                     double nextStepInventorySpaceMin, double nextStepInventorySpaceMax, TreeNode treeNode,
-                    IReadOnlyList<Func<double, double>> continuationValueByInventories, Func<T, Day> settleDateRule, 
+                    IReadOnlyList<Func<double, double>> continuationValueByInventories, double discountFactorFromCmdtySettlement, 
                     Func<Day, double> discountFactors, double numericalTolerance)
         {
             InjectWithdrawRange injectWithdrawRange = storage.GetInjectWithdrawRange(period, inventory);
@@ -313,7 +316,7 @@ namespace Cmdty.Storage
             {
                 double decisionInjectWithdraw = decisionSet[j];
                 (double immediateNpv, double cmdtyConsumed) = StorageHelper.StorageImmediateNpvForDecision(storage, period, inventory,
-                                                decisionInjectWithdraw, treeNode.Value, settleDateRule, discountFactors);
+                                                decisionInjectWithdraw, treeNode.Value, discountFactorFromCmdtySettlement, discountFactors);
                 immediateNpv -= inventoryCostNpv;
                 // Expected continuation value
                 double inventoryAfterDecision = inventory + decisionInjectWithdraw - inventoryLoss;
@@ -376,6 +379,8 @@ namespace Cmdty.Storage
                     }
                     else
                     {
+                        Day cmdtySettlementDate = _settleDateRule(period);
+                        double discountFactorFromCmdtySettlement = DiscountToCurrentDay(cmdtySettlementDate);
 
                         T nextPeriod = period.Offset(1);
                         IReadOnlyList<Func<double, double>> continuationValueByInventory =
@@ -386,7 +391,7 @@ namespace Cmdty.Storage
                         double thisStepImmediateNpv;
                         (_, decisions[i], cmdtyVolumeConsumedArray[i], thisStepImmediateNpv) =
                             OptimalDecisionAndValue(_storage, period, inventory, nextStepInventorySpaceMin,
-                                nextStepInventorySpaceMax, treeNode, continuationValueByInventory, _settleDateRule,
+                                nextStepInventorySpaceMax, treeNode, continuationValueByInventory, discountFactorFromCmdtySettlement,
                                 DiscountToCurrentDay, _numericalTolerance);
 
                         double inventoryLoss = _storage.CmdtyInventoryPercentLoss(period) * inventory;

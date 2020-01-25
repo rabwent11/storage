@@ -201,11 +201,9 @@ namespace Cmdty.Storage
         // TODO use this in IntrinsicStorageValuation
         public static (double ImmediateNpv, double CmdtyConsumed) 
             StorageImmediateNpvForDecision<T>(ICmdtyStorage<T> storage, T period, double inventory,
-                double injectWithdrawVolume, double cmdtyPrice, Func<T, Day> settleDateRule, Func<Day, double> discountFactors)
+                double injectWithdrawVolume, double cmdtyPrice, double discountFactorFromCmdtySettlement, Func<Day, double> discountFactors)
             where T : ITimePeriod<T>
         {
-            Day cmdtySettlementDate = settleDateRule(period);
-            double discountFactorFromCmdtySettlement = discountFactors(cmdtySettlementDate);
 
             double injectWithdrawNpv = -injectWithdrawVolume * cmdtyPrice * discountFactorFromCmdtySettlement;
 
