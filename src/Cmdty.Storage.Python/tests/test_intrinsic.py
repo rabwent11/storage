@@ -27,6 +27,7 @@ from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, Inje
 from datetime import date, timedelta
 from tests import utils
 
+
 class TestIntrinsicValue(unittest.TestCase):
 
     def test_intrinsic_value_runs(self):

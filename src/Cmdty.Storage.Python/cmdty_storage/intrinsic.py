@@ -23,7 +23,7 @@
 
 import pandas as pd
 import clr
-from System import Func
+import System as dotnet
 from cmdty_storage import utils
 from collections import namedtuple
 from pathlib import Path
@@ -33,7 +33,7 @@ from Cmdty.Storage import IntrinsicStorageValuation, IIntrinsicAddStartingInvent
     IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, \
     IIntrinsicAddNumericalTolerance, IIntrinsicCalculate, IntrinsicStorageValuationExtensions
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
-from Cmdty.TimePeriodValueTypes import Day
+import Cmdty.TimePeriodValueTypes as tp
 
 
 IntrinsicValuationResults = namedtuple('IntrinsicValuationResults', 'npv, profile')
@@ -65,13 +65,13 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, interest_
     def wrapper_settle_function(py_function, net_time_period, freq):
         pandas_period = utils.net_time_period_to_pandas_period(net_time_period, freq)
         py_function_result = py_function(pandas_period)
-        net_settle_day = utils.from_datetime_like(py_function_result, Day)
+        net_settle_day = utils.from_datetime_like(py_function_result, tp.Day)
         return net_settle_day
 
     def wrapped_function(net_time_period):
         return wrapper_settle_function(settlement_rule, net_time_period, cmdty_storage.freq)
 
-    net_settlement_rule = Func[time_period_type, Day](wrapped_function)
+    net_settlement_rule = dotnet.Func[time_period_type, tp.Day](wrapped_function)
     IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
     
     interest_rate_time_series = utils.series_to_double_time_series(interest_rates, utils.FREQ_TO_PERIOD_TYPE['D'])

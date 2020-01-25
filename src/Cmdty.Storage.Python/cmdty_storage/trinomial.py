@@ -22,10 +22,11 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import clr
-from System import Func
+import System as dotnet
 from cmdty_storage import utils
 from pathlib import Path
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
+
 
 def trinomial_value(cmdty_storage, val_date, inventory, forward_curve, 
                     spot_volatility, mean_reversion,

@@ -22,8 +22,8 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import clr
-from System import DateTime, Func, Double, Array
-from System.Collections.Generic import List
+import System as dotnet
+import System.Collections.Generic as dotnet_cols_gen
 from pathlib import Path
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
@@ -40,6 +40,7 @@ from collections import namedtuple
 from datetime import datetime
 import pandas as pd
 from cmdty_storage import utils
+
 
 InjectWithdrawByInventory = namedtuple('InjectWithdrawByInventory', 'inventory, min_rate, max_rate')
 InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod', 'period, rates_by_inventory')
@@ -68,7 +69,7 @@ class CmdtyStorage:
     
         builder = builder.WithActiveTimePeriod(start_period, end_period)
 
-        net_constraints = List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
+        net_constraints = dotnet_cols_gen.List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
 
         if constraints is not None:
             utils.raise_if_not_none(min_inventory, "min_inventory parameter should not be provided if constraints parameter is provided.")
@@ -78,7 +79,7 @@ class CmdtyStorage:
             
             for period, rates_by_inventory in constraints:
                 net_period = utils.from_datetime_like(period, time_period_type)
-                net_rates_by_inventory = List[InjectWithdrawRangeByInventory]()
+                net_rates_by_inventory = dotnet_cols_gen.List[InjectWithdrawRangeByInventory]()
                 for inventory, min_rate, max_rate in rates_by_inventory:
                     net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, NetInjectWithdrawRange(min_rate, max_rate)))
                 net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
@@ -185,7 +186,7 @@ class CmdtyStorage:
         if terminal_storage_npv is None:
             builder.MustBeEmptyAtEnd()
         else:
-            builder.WithTerminalInventoryNpv(Func[Double, Double, Double](terminal_storage_npv))
+            builder.WithTerminalInventoryNpv(dotnet.Func[dotnet.Double, dotnet.Double, dotnet.Double](terminal_storage_npv))
 
         self._net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
         self._freq = freq

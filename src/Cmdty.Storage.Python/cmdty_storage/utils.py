@@ -24,12 +24,12 @@
 import pandas as pd
 from datetime import datetime
 import clr
-from System import DateTime, Array, Double
+import System as dotnet
 from pathlib import Path
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
-from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
+import Cmdty.TimePeriodValueTypes as tp
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.TimeSeries')))
-from Cmdty.TimeSeries import TimeSeries
+import Cmdty.TimeSeries as ts
 
 
 def from_datetime_like(datetime_like, time_period_type):
@@ -39,8 +39,8 @@ def from_datetime_like(datetime_like, time_period_type):
     else:
         time_args = (0, 0, 0)
 
-    date_time = DateTime(datetime_like.year, datetime_like.month, datetime_like.day, *time_args)
-    return TimePeriodFactory.FromDateTime[time_period_type](date_time)
+    date_time = dotnet.DateTime(datetime_like.year, datetime_like.month, datetime_like.day, *time_args)
+    return tp.TimePeriodFactory.FromDateTime[time_period_type](date_time)
 
 
 def net_datetime_to_py_datetime(net_datetime):
@@ -54,20 +54,20 @@ def net_time_period_to_pandas_period(net_time_period, freq):
 
 def series_to_double_time_series(series, time_period_type):
     """Converts an instance of pandas Series to a Cmdty.TimeSeries.TimeSeries type with Double data type."""
-    return series_to_time_series(series, time_period_type, Double, lambda x: x)
+    return series_to_time_series(series, time_period_type, dotnet.Double, lambda x: x)
 
 
 def series_to_time_series(series, time_period_type, net_data_type, data_selector):
     """Converts an instance of pandas Series to a Cmdty.TimeSeries.TimeSeries."""
     series_len = len(series)
-    net_indices = Array.CreateInstance(time_period_type, series_len)
-    net_values = Array.CreateInstance(net_data_type, series_len)
+    net_indices = dotnet.Array.CreateInstance(time_period_type, series_len)
+    net_values = dotnet.Array.CreateInstance(net_data_type, series_len)
 
     for i in range(series_len):
         net_indices[i] = from_datetime_like(series.index[i], time_period_type)
         net_values[i] = data_selector(series.values[i])
 
-    return TimeSeries[time_period_type, net_data_type](net_indices, net_values)
+    return ts.TimeSeries[time_period_type, net_data_type](net_indices, net_values)
 
 
 def net_time_series_to_pandas_series(net_time_series, freq):
@@ -94,12 +94,12 @@ def raise_if_not_none(arg, error_message):
 
 
 FREQ_TO_PERIOD_TYPE = {
-        "15min" : QuarterHour,
-        "30min" : HalfHour,
-        "H" : Hour,
-        "D" : Day,
-        "M" : Month,
-        "Q" : Quarter
+        "15min" : tp.QuarterHour,
+        "30min" : tp.HalfHour,
+        "H" : tp.Hour,
+        "D" : tp.Day,
+        "M" : tp.Month,
+        "Q" : tp.Quarter
     }
 """ dict of str: .NET time period type.
 Each item describes an allowable granularity of curves constructed, as specified by the 
