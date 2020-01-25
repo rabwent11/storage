@@ -110,3 +110,16 @@ The keys represent the pandas Offset Alias which describe the granularity, and w
 The values are the associated .NET time period types used in behind-the-scenes calculations.
 """
 
+def wrap_settle_for_dotnet(py_settle_func, freq):
+
+    def wrapper_settle_function(py_function, net_time_period, freq):
+        pandas_period = net_time_period_to_pandas_period(net_time_period, freq)
+        py_function_result = py_function(pandas_period)
+        net_settle_day = from_datetime_like(py_function_result, tp.Day)
+        return net_settle_day
+
+    def wrapped_function(net_time_period):
+        return wrapper_settle_function(py_settle_func, net_time_period, freq)
+
+    time_period_type = FREQ_TO_PERIOD_TYPE[freq]
+    return dotnet.Func[time_period_type, tp.Day](wrapped_function)

@@ -151,5 +151,27 @@ namespace Cmdty.Storage
 
             return addDiscountFactorFunc.WithDiscountFactorFunc(DiscountFactor);
         }
+
+        public static ITreeAddInventoryGridCalculation<T> WithAct365ContinuouslyCompoundedInterestRateCurve<T>(
+            [NotNull] this ITreeAddDiscountFactorFunc<T> addDiscountFactorFunc, TimeSeries<Day, double> act365ContCompInterestRates)
+            where T : ITimePeriod<T>
+        {
+            if (addDiscountFactorFunc == null) throw new ArgumentNullException(nameof(addDiscountFactorFunc));
+
+            double DiscountFactor(Day presentDay, Day cashFlowDay)
+            {
+                if (cashFlowDay <= presentDay)
+                    return 1.0;
+                if (!act365ContCompInterestRates.ContainsKey(cashFlowDay))
+                    throw new ArgumentException("Interest rate curves does not contain point for date " + cashFlowDay);
+
+                double interestRate = act365ContCompInterestRates[cashFlowDay];
+                return Math.Exp(-cashFlowDay.OffsetFrom(presentDay) / 365.0 * interestRate);
+            }
+
+            return addDiscountFactorFunc.WithDiscountFactorFunc(DiscountFactor);
+        }
+
+
     }
 }

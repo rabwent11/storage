@@ -59,16 +59,7 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, interest_
     net_forward_curve = utils.series_to_double_time_series(forward_curve, time_period_type)
     net_cs.IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
 
-    def wrapper_settle_function(py_function, net_time_period, freq):
-        pandas_period = utils.net_time_period_to_pandas_period(net_time_period, freq)
-        py_function_result = py_function(pandas_period)
-        net_settle_day = utils.from_datetime_like(py_function_result, tp.Day)
-        return net_settle_day
-
-    def wrapped_function(net_time_period):
-        return wrapper_settle_function(settlement_rule, net_time_period, cmdty_storage.freq)
-
-    net_settlement_rule = dotnet.Func[time_period_type, tp.Day](wrapped_function)
+    net_settlement_rule = utils.wrap_settle_for_dotnet(settlement_rule, cmdty_storage.freq)
     net_cs.IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
     
     interest_rate_time_series = utils.series_to_double_time_series(interest_rates, utils.FREQ_TO_PERIOD_TYPE['D'])
