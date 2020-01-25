@@ -28,10 +28,7 @@ from cmdty_storage import utils
 from collections import namedtuple
 from pathlib import Path
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
-from Cmdty.Storage import IntrinsicStorageValuation, IIntrinsicAddStartingInventory, \
-    IIntrinsicAddCurrentPeriod, IIntrinsicAddForwardCurve, \
-    IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, \
-    IIntrinsicAddNumericalTolerance, IIntrinsicCalculate, IntrinsicStorageValuationExtensions
+import Cmdty.Storage as net_cs
 clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 import Cmdty.TimePeriodValueTypes as tp
 
@@ -52,15 +49,15 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, interest_
         raise ValueError("cmdty_storage and forward_curve have different frequencies.")
     time_period_type = utils.FREQ_TO_PERIOD_TYPE[cmdty_storage.freq]
 
-    intrinsic_calc = IntrinsicStorageValuation[time_period_type].ForStorage(cmdty_storage.net_storage)
+    intrinsic_calc = net_cs.IntrinsicStorageValuation[time_period_type].ForStorage(cmdty_storage.net_storage)
 
-    IIntrinsicAddStartingInventory[time_period_type](intrinsic_calc).WithStartingInventory(inventory)
+    net_cs.IIntrinsicAddStartingInventory[time_period_type](intrinsic_calc).WithStartingInventory(inventory)
 
     current_period = utils.from_datetime_like(val_date, time_period_type)
-    IIntrinsicAddCurrentPeriod[time_period_type](intrinsic_calc).ForCurrentPeriod(current_period)
+    net_cs.IIntrinsicAddCurrentPeriod[time_period_type](intrinsic_calc).ForCurrentPeriod(current_period)
 
     net_forward_curve = utils.series_to_double_time_series(forward_curve, time_period_type)
-    IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
+    net_cs.IIntrinsicAddForwardCurve[time_period_type](intrinsic_calc).WithForwardCurve(net_forward_curve)
 
     def wrapper_settle_function(py_function, net_time_period, freq):
         pandas_period = utils.net_time_period_to_pandas_period(net_time_period, freq)
@@ -72,18 +69,18 @@ def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, interest_
         return wrapper_settle_function(settlement_rule, net_time_period, cmdty_storage.freq)
 
     net_settlement_rule = dotnet.Func[time_period_type, tp.Day](wrapped_function)
-    IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
+    net_cs.IIntrinsicAddCmdtySettlementRule[time_period_type](intrinsic_calc).WithCmdtySettlementRule(net_settlement_rule)
     
     interest_rate_time_series = utils.series_to_double_time_series(interest_rates, utils.FREQ_TO_PERIOD_TYPE['D'])
-    IntrinsicStorageValuationExtensions.WithAct365ContinuouslyCompoundedInterestRateCurve[time_period_type](intrinsic_calc, interest_rate_time_series)
+    net_cs.IntrinsicStorageValuationExtensions.WithAct365ContinuouslyCompoundedInterestRateCurve[time_period_type](intrinsic_calc, interest_rate_time_series)
 
-    IntrinsicStorageValuationExtensions.WithFixedNumberOfPointsOnGlobalInventoryRange[time_period_type](intrinsic_calc, num_inventory_grid_points)
+    net_cs.IntrinsicStorageValuationExtensions.WithFixedNumberOfPointsOnGlobalInventoryRange[time_period_type](intrinsic_calc, num_inventory_grid_points)
 
-    IntrinsicStorageValuationExtensions.WithLinearInventorySpaceInterpolation[time_period_type](intrinsic_calc)
+    net_cs.IntrinsicStorageValuationExtensions.WithLinearInventorySpaceInterpolation[time_period_type](intrinsic_calc)
 
-    IIntrinsicAddNumericalTolerance[time_period_type](intrinsic_calc).WithNumericalTolerance(numerical_tolerance)
+    net_cs.IIntrinsicAddNumericalTolerance[time_period_type](intrinsic_calc).WithNumericalTolerance(numerical_tolerance)
 
-    net_val_results = IIntrinsicCalculate[time_period_type](intrinsic_calc).Calculate()
+    net_val_results = net_cs.IIntrinsicCalculate[time_period_type](intrinsic_calc).Calculate()
 
     net_profile = net_val_results.StorageProfile
     if net_profile.Count == 0:

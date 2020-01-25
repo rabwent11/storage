@@ -25,16 +25,9 @@ import clr
 import System as dotnet
 import System.Collections.Generic as dotnet_cols_gen
 from pathlib import Path
-clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
-from Cmdty.TimePeriodValueTypes import QuarterHour, HalfHour, Hour, Day, Month, Quarter, TimePeriodFactory
 
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
-from Cmdty.Storage import IBuilder, IAddInjectWithdrawConstraints, InjectWithdrawRangeByInventoryAndPeriod, InjectWithdrawRangeByInventory, \
-    CmdtyStorageBuilderExtensions, IAddInjectionCost, IAddCmdtyConsumedOnInject, IAddWithdrawalCost, IAddCmdtyConsumedOnWithdraw, \
-    IAddMinInventory, IAddMaxInventory, \
-    IAddCmdtyInventoryLoss, IAddCmdtyInventoryCost, IAddTerminalStorageState, IBuildCmdtyStorage
-from Cmdty.Storage import CmdtyStorage as NetCmdtyStorage
-from Cmdty.Storage import InjectWithdrawRange as NetInjectWithdrawRange
+import Cmdty.Storage as net_cs
 
 from collections import namedtuple
 from datetime import datetime
@@ -65,11 +58,11 @@ class CmdtyStorage:
         start_period = utils.from_datetime_like(storage_start, time_period_type)
         end_period = utils.from_datetime_like(storage_end, time_period_type)
 
-        builder = IBuilder[time_period_type](NetCmdtyStorage[time_period_type].Builder)
+        builder = net_cs.IBuilder[time_period_type](net_cs.CmdtyStorage[time_period_type].Builder)
     
         builder = builder.WithActiveTimePeriod(start_period, end_period)
 
-        net_constraints = dotnet_cols_gen.List[InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
+        net_constraints = dotnet_cols_gen.List[net_cs.InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
 
         if constraints is not None:
             utils.raise_if_not_none(min_inventory, "min_inventory parameter should not be provided if constraints parameter is provided.")
@@ -79,13 +72,13 @@ class CmdtyStorage:
             
             for period, rates_by_inventory in constraints:
                 net_period = utils.from_datetime_like(period, time_period_type)
-                net_rates_by_inventory = dotnet_cols_gen.List[InjectWithdrawRangeByInventory]()
+                net_rates_by_inventory = dotnet_cols_gen.List[net_cs.InjectWithdrawRangeByInventory]()
                 for inventory, min_rate, max_rate in rates_by_inventory:
-                    net_rates_by_inventory.Add(InjectWithdrawRangeByInventory(inventory, NetInjectWithdrawRange(min_rate, max_rate)))
-                net_constraints.Add(InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
+                    net_rates_by_inventory.Add(net_cs.InjectWithdrawRangeByInventory(inventory, net_cs.InjectWithdrawRange(min_rate, max_rate)))
+                net_constraints.Add(net_cs.InjectWithdrawRangeByInventoryAndPeriod[time_period_type](net_period, net_rates_by_inventory))
 
-            builder = IAddInjectWithdrawConstraints[time_period_type](builder)
-            CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
+            builder = net_cs.IAddInjectWithdrawConstraints[time_period_type](builder)
+            net_cs.CmdtyStorageBuilderExtensions.WithTimeAndInventoryVaryingInjectWithdrawRatesPiecewiseLinear[time_period_type](builder, net_constraints)
 
         else:
             utils.raise_if_none(min_inventory, "min_inventory parameter should be provided if constraints parameter is not provided.")
@@ -93,13 +86,13 @@ class CmdtyStorage:
             utils.raise_if_none(max_injection_rate, "max_injection_rate parameter should be provided if constraints parameter is not provided.")
             utils.raise_if_none(max_withdrawal_rate, "max_withdrawal_rate parameter should be provided if constraints parameter is not provided.")
             
-            builder = IAddInjectWithdrawConstraints[time_period_type](builder)
+            builder = net_cs.IAddInjectWithdrawConstraints[time_period_type](builder)
             
             max_injection_rateis_scalar = utils.is_scalar(max_injection_rate)
             max_withdrawal_rateis_scalar = utils.is_scalar(max_withdrawal_rate)
             
             if max_injection_rateis_scalar and max_withdrawal_rateis_scalar:
-                CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
+                net_cs.CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
             else:
                 if max_injection_rateis_scalar:
                     max_injection_rate = pd.Series(data=[max_injection_rate] * len(max_withdrawal_rate), index=max_withdrawal_rate.index)
@@ -107,24 +100,24 @@ class CmdtyStorage:
                     max_withdrawal_rate = pd.Series(data=[max_withdrawal_rate] * len(max_injection_rate), index=max_injection_rate.index)
 
                 inject_withdraw_series = max_injection_rate.combine(max_withdrawal_rate, lambda inj_rate, with_rate: (-with_rate, inj_rate)).dropna()
-                net_inj_with_series = utils.series_to_time_series(inject_withdraw_series, time_period_type, NetInjectWithdrawRange, lambda tup: NetInjectWithdrawRange(tup[0], tup[1]))
+                net_inj_with_series = utils.series_to_time_series(inject_withdraw_series, time_period_type, net_cs.InjectWithdrawRange, lambda tup: net_cs.InjectWithdrawRange(tup[0], tup[1]))
                 builder.WithInjectWithdrawRangeSeries(net_inj_with_series)
 
-            builder = IAddMinInventory[time_period_type](builder)
+            builder = net_cs.IAddMinInventory[time_period_type](builder)
             if isinstance(min_inventory, pd.Series):
                 net_series_min_inventory = utils.series_to_double_time_series(min_inventory, time_period_type)
                 builder.WithMinInventoryTimeSeries(net_series_min_inventory)
             else: # Assume min_inventory is a constaint number
                 builder.WithConstantMinInventory(min_inventory)
 
-            builder = IAddMaxInventory[time_period_type](builder)
+            builder = net_cs.IAddMaxInventory[time_period_type](builder)
             if isinstance(max_inventory, pd.Series):
                 net_series_max_inventory = utils.series_to_double_time_series(max_inventory, time_period_type)
                 builder.WithMaxInventoryTimeSeries(net_series_max_inventory)
             else: # Assume max_inventory is a constaint number
                 builder.WithConstantMaxInventory(max_inventory)
 
-        builder = IAddInjectionCost[time_period_type](builder)
+        builder = net_cs.IAddInjectionCost[time_period_type](builder)
 
         if utils.is_scalar(injection_cost):
             builder.WithPerUnitInjectionCost(injection_cost)
@@ -132,7 +125,7 @@ class CmdtyStorage:
             net_series_injection_cost = utils.series_to_double_time_series(injection_cost, time_period_type)
             builder.WithPerUnitInjectionCostTimeSeries(net_series_injection_cost)
     
-        builder = IAddCmdtyConsumedOnInject[time_period_type](builder)
+        builder = net_cs.IAddCmdtyConsumedOnInject[time_period_type](builder)
 
         if cmdty_consumed_inject is not None:
             if utils.is_scalar(cmdty_consumed_inject):
@@ -143,14 +136,14 @@ class CmdtyStorage:
         else:
             builder.WithNoCmdtyConsumedOnInject()
         
-        builder = IAddWithdrawalCost[time_period_type](builder)
+        builder = net_cs.IAddWithdrawalCost[time_period_type](builder)
         if utils.is_scalar(withdrawal_cost):
             builder.WithPerUnitWithdrawalCost(withdrawal_cost)
         else:
             net_series_withdrawal_cost = utils.series_to_double_time_series(withdrawal_cost, time_period_type)
             builder.WithPerUnitWithdrawalCostTimeSeries(net_series_withdrawal_cost)
 
-        builder = IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
+        builder = net_cs.IAddCmdtyConsumedOnWithdraw[time_period_type](builder)
 
         if cmdty_consumed_withdraw is not None:
             if utils.is_scalar(cmdty_consumed_withdraw):
@@ -161,7 +154,7 @@ class CmdtyStorage:
         else:
             builder.WithNoCmdtyConsumedOnWithdraw()
         
-        builder = IAddCmdtyInventoryLoss[time_period_type](builder)
+        builder = net_cs.IAddCmdtyInventoryLoss[time_period_type](builder)
         if inventory_loss is not None:
             if utils.is_scalar(inventory_loss):
                 builder.WithFixedPercentCmdtyInventoryLoss(inventory_loss)
@@ -171,7 +164,7 @@ class CmdtyStorage:
         else:
             builder.WithNoCmdtyInventoryLoss()
 
-        builder = IAddCmdtyInventoryCost[time_period_type](builder)
+        builder = net_cs.IAddCmdtyInventoryCost[time_period_type](builder)
         if inventory_cost is not None:
             if utils.is_scalar(inventory_cost):
                 builder.WithFixedPerUnitInventoryCost(inventory_cost)
@@ -181,14 +174,14 @@ class CmdtyStorage:
         else:
             builder.WithNoInventoryCost()
 
-        builder = IAddTerminalStorageState[time_period_type](builder)
+        builder = net_cs.IAddTerminalStorageState[time_period_type](builder)
         
         if terminal_storage_npv is None:
             builder.MustBeEmptyAtEnd()
         else:
             builder.WithTerminalInventoryNpv(dotnet.Func[dotnet.Double, dotnet.Double, dotnet.Double](terminal_storage_npv))
 
-        self._net_storage = IBuildCmdtyStorage[time_period_type](builder).Build()
+        self._net_storage = net_cs.IBuildCmdtyStorage[time_period_type](builder).Build()
         self._freq = freq
 
     def _net_time_period(self, period):
