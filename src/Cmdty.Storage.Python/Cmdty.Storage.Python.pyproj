@@ -47,6 +47,12 @@
     <Compile Include="tests\test_cmdty_storage.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tests\test_intrinsic.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\utils.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="LICENSE.md" />

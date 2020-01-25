@@ -22,14 +22,10 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import unittest
-from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory, intrinsic_value
-from datetime import date, timedelta
+from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
+from datetime import date
 import pandas as pd
-
-
-def _create_piecewise_flat_series(data, dt_index, freq):
-    period_index = pd.PeriodIndex([pd.Period(dt, freq=freq) for dt in dt_index])
-    return pd.Series(data, period_index).resample(freq).fillna('pad')
+from tests import utils
 
 
 class TestCmdtyStorage(unittest.TestCase):
@@ -54,13 +50,13 @@ class TestCmdtyStorage(unittest.TestCase):
     _constant_max_injection_rate = 65.64
     _constant_max_withdrawal_rate = 107.07
 
-    _series_min_inventory = _create_piecewise_flat_series([2.4, 1.2, 0.0, 0.0], 
+    _series_min_inventory = utils.create_piecewise_flat_series([2.4, 1.2, 0.0, 0.0], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_max_inventory = _create_piecewise_flat_series([1250.5, 1358.5, 54.5, 54.5], 
+    _series_max_inventory = utils.create_piecewise_flat_series([1250.5, 1358.5, 54.5, 54.5], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_max_injection_rate = _create_piecewise_flat_series([125.5, 100, 120.66, 120.66], 
+    _series_max_injection_rate = utils.create_piecewise_flat_series([125.5, 100, 120.66, 120.66], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_max_withdrawal_rate = _create_piecewise_flat_series([211.52, 200, 220.66, 220.66], 
+    _series_max_withdrawal_rate = utils.create_piecewise_flat_series([211.52, 200, 220.66, 220.66], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
 
     _default_storage_start = date(2019, 8, 28)
@@ -73,17 +69,17 @@ class TestCmdtyStorage(unittest.TestCase):
     _constant_inventory_loss = 0.001;
     _constant_inventory_cost = 0.002;
 
-    _series_injection_cost = _create_piecewise_flat_series([1.41384, 2.284, 0.75, 0.75], 
+    _series_injection_cost = utils.create_piecewise_flat_series([1.41384, 2.284, 0.75, 0.75], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_cmdty_consumed_inject = _create_piecewise_flat_series([0.438, 0.413, 4.434, 4.434], 
+    _series_cmdty_consumed_inject = utils.create_piecewise_flat_series([0.438, 0.413, 4.434, 4.434], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_withdrawal_cost = _create_piecewise_flat_series([0.143, 0.248, 5, 5], 
+    _series_withdrawal_cost = utils.create_piecewise_flat_series([0.143, 0.248, 5, 5], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_cmdty_consumed_withdraw = _create_piecewise_flat_series([0.045, 0.0415, 2, 2], 
+    _series_cmdty_consumed_withdraw = utils.create_piecewise_flat_series([0.045, 0.0415, 2, 2], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_inventory_loss = _create_piecewise_flat_series([0.003, 0.0015, 0.0017, 0.0017], 
+    _series_inventory_loss = utils.create_piecewise_flat_series([0.003, 0.0015, 0.0017, 0.0017], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_inventory_cost = _create_piecewise_flat_series([0.04, 0.02, 0.055, 0.055], 
+    _series_inventory_cost = utils.create_piecewise_flat_series([0.04, 0.02, 0.055, 0.055], 
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
 
     _default_terminal_npv_calc = lambda price, inventory: price * inventory - 15.4 # Some arbitrary calculation
@@ -406,99 +402,6 @@ class TestCmdtyStorage(unittest.TestCase):
             for inventory in [0, 500.58, 1234.56, 1800]:
                 inventory_cost = storage.inventory_cost(dt, inventory)
                 self.assertEqual(expected_inventory_cost * inventory, inventory_cost)
-
-class TestIntrinsicValue(unittest.TestCase):
-
-    def test_intrinsic_value_runs(self):
-
-        constraints =   [
-                            InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
-                                        [
-                                            InjectWithdrawByInventory(0.0, -150.0, 255.2),
-                                            InjectWithdrawByInventory(2000.0, -200.0, 175.0),
-                                        ]),
-                            (date(2019, 9, 10), 
-                                     [
-                                         (0.0, -170.5, 235.8),
-                                         (700.0, -180.2, 200.77),
-                                         (1800.0, -190.5, 174.45),
-                                    ])
-                ]
-
-        storage_start = date(2019, 8, 28)
-        storage_end = date(2019, 9, 25)
-        constant_injection_cost = 0.015
-        constant_pcnt_consumed_inject = 0.0001
-        constant_withdrawal_cost = 0.02
-        constant_pcnt_consumed_withdraw = 0.000088
-        constant_pcnt_inventory_loss = 0.001;
-        constant_pcnt_inventory_cost = 0.002;
-
-        def terminal_npv_calc(price, inventory):
-            return price * inventory - 15.4 # Some arbitrary calculation
-
-        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constant_injection_cost, constant_withdrawal_cost, constraints, 
-                                cmdty_consumed_inject=constant_pcnt_consumed_inject, cmdty_consumed_withdraw=constant_pcnt_consumed_withdraw,
-                                terminal_storage_npv=terminal_npv_calc,
-                                inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
-
-        inventory = 650.0
-        val_date = date(2019, 9, 2)
-
-        forward_curve = _create_piecewise_flat_series([58.89, 61.41, 59.89, 59.89], [val_date, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
-        
-        # TODO test with proper interest rate curve
-        flat_interest_rate = 0.03
-        interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end + timedelta(days=60), freq='D'))
-        interest_rate_curve[:] = flat_interest_rate
-
-        twentieth_of_next_month = lambda period: period.asfreq('M').asfreq('D', 'end') + 20
-        intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=twentieth_of_next_month, 
-                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
-        
-    def test_expired_storage_returns_zero_npv_empty_profile(self):
-        storage_start = date(2019, 8, 28)
-        storage_end = date(2019, 9, 25)
-        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, injection_cost=0.1, withdrawal_cost=0.2, min_inventory=0, 
-                                     max_inventory=1000, max_injection_rate=2.5, max_withdrawal_rate=3.6)
-
-        inventory = 0.0
-        val_date = date(2019, 9, 26)
-
-        forward_curve = _create_piecewise_flat_series([58.89, 61.41, 70.89, 70.89], [storage_start, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
-        
-        flat_interest_rate = 0.03
-        interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end + timedelta(days=60), freq='D'))
-        interest_rate_curve[:] = flat_interest_rate
-
-        twentieth_of_next_month = lambda period: period.asfreq('M').asfreq('D', 'end') + 20
-        intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=twentieth_of_next_month, 
-                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
-        
-        self.assertEqual(0.0, intrinsic_results.npv)
-        self.assertEqual(0, len(intrinsic_results.profile))
-
-    def test_storage_value_date_equals_storage_end_returns_zero_npv_empty_profile(self):
-        storage_start = date(2019, 8, 28)
-        storage_end = date(2019, 9, 25)
-        cmdty_storage = CmdtyStorage('D', storage_start, storage_end, injection_cost=0.1, withdrawal_cost=0.2, min_inventory=0, 
-                                     max_inventory=1000, max_injection_rate=2.5, max_withdrawal_rate=3.6)
-
-        inventory = 0.0
-        val_date = date(2019, 9, 25)
-
-        forward_curve = _create_piecewise_flat_series([58.89, 61.41, 70.89, 70.89], [storage_start, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
-        
-        flat_interest_rate = 0.03
-        interest_rate_curve = pd.Series(index = pd.period_range(val_date, storage_end + timedelta(days=60), freq='D'))
-        interest_rate_curve[:] = flat_interest_rate
-
-        twentieth_of_next_month = lambda period: period.asfreq('M').asfreq('D', 'end') + 20
-        intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule=twentieth_of_next_month, 
-                        interest_rates=interest_rate_curve, num_inventory_grid_points=100)
-
-        self.assertEqual(0.0, intrinsic_results.npv)
-        self.assertEqual(0, len(intrinsic_results.profile))
 
 
 if __name__ == '__main__':

@@ -32,7 +32,7 @@ from datetime import date, timedelta
 import pandas as pd
 from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory, intrinsic_value
 
-def _create_piecewise_flat_series(data, dt_index, freq):
+def create_piecewise_flat_series(data, dt_index, freq):
     period_index = pd.PeriodIndex([pd.Period(dt, freq=freq) for dt in dt_index])
     return pd.Series(data, period_index).resample(freq).fillna('pad')
 
@@ -66,7 +66,7 @@ cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constant_injection
 inventory = 650.0
 val_date = date(2019, 9, 2)
 
-forward_curve = _create_piecewise_flat_series([58.89, 61.41, 59.89, 59.89], 
+forward_curve = create_piecewise_flat_series([58.89, 61.41, 59.89, 59.89], 
                           [val_date, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
 
 flat_interest_rate = 0.03
