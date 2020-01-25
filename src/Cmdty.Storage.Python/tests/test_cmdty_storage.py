@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import unittest
-from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
+import cmdty_storage as cs
 from datetime import date
 import pandas as pd
 from tests import utils
@@ -32,12 +32,12 @@ class TestCmdtyStorage(unittest.TestCase):
 
     _default_freq='D'
     _default_constraints =   [
-                            InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
+                            cs.InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28),
                                         [
-                                            InjectWithdrawByInventory(0.0, -150.0, 255.2),
-                                            InjectWithdrawByInventory(2000.0, -200.0, 175.0),
+                                            cs.InjectWithdrawByInventory(0.0, -150.0, 255.2),
+                                            cs.InjectWithdrawByInventory(2000.0, -200.0, 175.0),
                                         ]),
-                            (date(2019, 9, 10), 
+                            (date(2019, 9, 10),
                                      [
                                          (0.0, -170.5, 235.8),
                                          (700.0, -180.2, 200.77),
@@ -50,13 +50,13 @@ class TestCmdtyStorage(unittest.TestCase):
     _constant_max_injection_rate = 65.64
     _constant_max_withdrawal_rate = 107.07
 
-    _series_min_inventory = utils.create_piecewise_flat_series([2.4, 1.2, 0.0, 0.0], 
+    _series_min_inventory = utils.create_piecewise_flat_series([2.4, 1.2, 0.0, 0.0],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_max_inventory = utils.create_piecewise_flat_series([1250.5, 1358.5, 54.5, 54.5], 
+    _series_max_inventory = utils.create_piecewise_flat_series([1250.5, 1358.5, 54.5, 54.5],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_max_injection_rate = utils.create_piecewise_flat_series([125.5, 100, 120.66, 120.66], 
+    _series_max_injection_rate = utils.create_piecewise_flat_series([125.5, 100, 120.66, 120.66],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_max_withdrawal_rate = utils.create_piecewise_flat_series([211.52, 200, 220.66, 220.66], 
+    _series_max_withdrawal_rate = utils.create_piecewise_flat_series([211.52, 200, 220.66, 220.66],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
 
     _default_storage_start = date(2019, 8, 28)
@@ -69,17 +69,17 @@ class TestCmdtyStorage(unittest.TestCase):
     _constant_inventory_loss = 0.001;
     _constant_inventory_cost = 0.002;
 
-    _series_injection_cost = utils.create_piecewise_flat_series([1.41384, 2.284, 0.75, 0.75], 
+    _series_injection_cost = utils.create_piecewise_flat_series([1.41384, 2.284, 0.75, 0.75],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_cmdty_consumed_inject = utils.create_piecewise_flat_series([0.438, 0.413, 4.434, 4.434], 
+    _series_cmdty_consumed_inject = utils.create_piecewise_flat_series([0.438, 0.413, 4.434, 4.434],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_withdrawal_cost = utils.create_piecewise_flat_series([0.143, 0.248, 5, 5], 
+    _series_withdrawal_cost = utils.create_piecewise_flat_series([0.143, 0.248, 5, 5],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_cmdty_consumed_withdraw = utils.create_piecewise_flat_series([0.045, 0.0415, 2, 2], 
+    _series_cmdty_consumed_withdraw = utils.create_piecewise_flat_series([0.045, 0.0415, 2, 2],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_inventory_loss = utils.create_piecewise_flat_series([0.003, 0.0015, 0.0017, 0.0017], 
+    _series_inventory_loss = utils.create_piecewise_flat_series([0.003, 0.0015, 0.0017, 0.0017],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
-    _series_inventory_cost = utils.create_piecewise_flat_series([0.04, 0.02, 0.055, 0.055], 
+    _series_inventory_cost = utils.create_piecewise_flat_series([0.04, 0.02, 0.055, 0.055],
                             [date(2019, 8, 28), date(2019, 9, 1), date(2019, 9, 10), date(2019, 9, 25)], 'D')
 
     _default_terminal_npv_calc = lambda price, inventory: price * inventory - 15.4 # Some arbitrary calculation
@@ -92,7 +92,7 @@ class TestCmdtyStorage(unittest.TestCase):
                    cmdty_consumed_withdraw=_constant_cmdty_consumed_withdraw, terminal_storage_npv=_default_terminal_npv_calc,
                    inventory_loss=_constant_inventory_loss, inventory_cost=_constant_inventory_cost):
 
-        return CmdtyStorage(freq, storage_start, storage_end, injection_cost,
+        return cs.CmdtyStorage(freq, storage_start, storage_end, injection_cost,
                                 withdrawal_cost, constraints=constraints, 
                                 min_inventory=min_inventory, max_inventory=max_inventory, 
                                 max_injection_rate=max_injection_rate, max_withdrawal_rate=max_withdrawal_rate,
