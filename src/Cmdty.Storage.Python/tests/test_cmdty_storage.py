@@ -102,35 +102,35 @@ class TestCmdtyStorage(unittest.TestCase):
                                 inventory_cost=inventory_cost)
 
     def test_init_constraints_arg_not_none_other_constraint_args_not_none_raises(self):
-        with self.assertRaisesRegexp(ValueError, "min_inventory parameter should not be provided if constraints parameter is provided."):
+        with self.assertRaisesRegex(ValueError, "min_inventory parameter should not be provided if constraints parameter is provided."):
             storage = self._create_storage(constraints=self._default_constraints, min_inventory=self._constant_min_inventory)
         
-        with self.assertRaisesRegexp(ValueError, "max_inventory parameter should not be provided if constraints parameter is provided."):
+        with self.assertRaisesRegex(ValueError, "max_inventory parameter should not be provided if constraints parameter is provided."):
             storage = self._create_storage(constraints=self._default_constraints, max_inventory=self._constant_max_inventory)
         
-        with self.assertRaisesRegexp(ValueError, "max_injection_rate parameter should not be provided if constraints parameter is provided."):
+        with self.assertRaisesRegex(ValueError, "max_injection_rate parameter should not be provided if constraints parameter is provided."):
             storage = self._create_storage(constraints=self._default_constraints, max_injection_rate=self._constant_max_injection_rate)
         
-        with self.assertRaisesRegexp(ValueError, "max_withdrawal_rate parameter should not be provided if constraints parameter is provided."):
+        with self.assertRaisesRegex(ValueError, "max_withdrawal_rate parameter should not be provided if constraints parameter is provided."):
             storage = self._create_storage(constraints=self._default_constraints, max_withdrawal_rate=self._constant_max_withdrawal_rate)
 
     def test_init_constraints_arg_none_other_constraint_args_none_raises(self):
-        with self.assertRaisesRegexp(ValueError, "min_inventory parameter should be provided if constraints parameter is not provided."):
+        with self.assertRaisesRegex(ValueError, "min_inventory parameter should be provided if constraints parameter is not provided."):
             storage = self._create_storage(constraints=None, min_inventory=None,
                         max_inventory=self._constant_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
                         max_withdrawal_rate=self._constant_max_withdrawal_rate)
         
-        with self.assertRaisesRegexp(ValueError, "max_inventory parameter should be provided if constraints parameter is not provided."):
+        with self.assertRaisesRegex(ValueError, "max_inventory parameter should be provided if constraints parameter is not provided."):
             storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
                         max_inventory=None, max_injection_rate=self._constant_max_injection_rate, 
                         max_withdrawal_rate=self._constant_max_withdrawal_rate)
         
-        with self.assertRaisesRegexp(ValueError, "max_injection_rate parameter should be provided if constraints parameter is not provided."):
+        with self.assertRaisesRegex(ValueError, "max_injection_rate parameter should be provided if constraints parameter is not provided."):
             storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
                         max_inventory=self._constant_max_inventory, max_injection_rate=None, 
                         max_withdrawal_rate=self._constant_max_withdrawal_rate)
         
-        with self.assertRaisesRegexp(ValueError, "max_withdrawal_rate parameter should be provided if constraints parameter is not provided."):
+        with self.assertRaisesRegex(ValueError, "max_withdrawal_rate parameter should be provided if constraints parameter is not provided."):
             storage = self._create_storage(constraints=None, min_inventory=self._constant_min_inventory,
                         max_inventory=self._constant_max_inventory, max_injection_rate=self._constant_max_injection_rate, 
                         max_withdrawal_rate=None)

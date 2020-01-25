@@ -27,6 +27,7 @@ from System import Func
 from cmdty_storage import utils
 from collections import namedtuple
 from pathlib import Path
+clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 from Cmdty.Storage import IntrinsicStorageValuation, IIntrinsicAddStartingInventory, \
     IIntrinsicAddCurrentPeriod, IIntrinsicAddForwardCurve, \
     IIntrinsicAddCmdtySettlementRule, IIntrinsicAddDiscountFactorFunc, \
@@ -38,10 +39,10 @@ from Cmdty.TimePeriodValueTypes import Day
 IntrinsicValuationResults = namedtuple('IntrinsicValuationResults', 'npv, profile')
 
 
-def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, settlement_rule, interest_rates, 
+def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, interest_rates, settlement_rule, 
                     num_inventory_grid_points=100, numerical_tolerance=1E-12):
     """
-    Calculates the intrinsic value of cmdty storage.
+    Calculates the intrinsic value of commodity storage.
 
     Args:
         settlement_rule (callable): Mapping function from pandas.Period type to the date on which the cmdty delivered in
