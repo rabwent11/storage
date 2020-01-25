@@ -70,4 +70,4 @@ def trinomial_value(cmdty_storage: CmdtyStorage, val_date, inventory, forward_cu
     net_cs.TreeStorageValuationExtensions.WithLinearInventorySpaceInterpolation[time_period_type](trinomial_calc)
     net_cs.ITreeAddNumericalTolerance[time_period_type](trinomial_calc).WithNumericalTolerance(numerical_tolerance)
     npv = net_cs.ITreeCalculate[time_period_type](trinomial_calc).Calculate()
-    return npv
+    return npv.NetPresentValue

@@ -88,3 +88,4 @@ class TestIntrinsicValue(unittest.TestCase):
                         spot_volatility, mean_reversion, time_step,
                          settlement_rule=twentieth_of_next_month,
                         interest_rates=interest_rate_curve, num_inventory_grid_points=100)
+        self.assertTrue(isinstance(trinomial_value, float))

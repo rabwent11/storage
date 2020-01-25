@@ -23,9 +23,13 @@ Implemenations using the following techniques are planned in the near future:
 * Least-Squares Monte Carlo with a multi-factor price process.
 * Rolling Intrinsic.
 
-## Example
-The following example shows how to calculate the intrinsic value and decision profile for a
-storage facility.
+## Examples
+### Creating the Storage Object
+The first step is to create an instance of the class CmdtyStorage which
+represents the storage facility. Many of the parameters of the CmdtyStorage
+initializer in the example below are optional and can also be of type
+pandas.Series in order to be time dependent. Better documentation on this
+is to follow.
 
 ```python
 from datetime import date, timedelta
@@ -62,7 +66,15 @@ constant_pcnt_inventory_cost = 0.002;
 cmdty_storage = CmdtyStorage('D', storage_start, storage_end, constant_injection_cost, constant_withdrawal_cost, constraints, 
                         cmdty_consumed_inject=constant_pcnt_consumed_inject, cmdty_consumed_withdraw=constant_pcnt_consumed_withdraw,
                         inventory_loss=constant_pcnt_inventory_loss, inventory_cost=constant_pcnt_inventory_cost)
+```
 
+
+### Calculation of Intrinsic NPV
+The following example shows how to calculate the intrinsic NPV, the 
+value assuming that the commodity forward curve is static.
+
+
+```python
 inventory = 650.0
 val_date = date(2019, 9, 2)
 
@@ -78,26 +90,17 @@ intrinsic_results = intrinsic_value(cmdty_storage, val_date, inventory, forward_
                 settlement_rule=twentieth_of_next_month, interest_rates=interest_rate_curve, 
                                     num_inventory_grid_points=100)
 
-```
-
-#### Getting the NPV
-```python
 print("Storage NPV")
 print("{:,.2f}".format(intrinsic_results.npv) )
+print()
+print(intrinsic_results.profile.applymap("{0:.2f}".format))
 ```
+
 Prints the following:
 ```
 Storage NPV
 40,419.45
-```
 
-#### Getting the Decision and Inventory Profile
-```python
-print(intrinsic_results.profile.applymap("{0:.2f}".format))
-```
-Prints the following:
-
-```
            inventory inject_withdraw_volume cmdty_consumed inventory_loss net_position
 2019-09-02    483.10                -166.25           0.01           0.65       166.24
 2019-09-03    320.54                -162.08           0.01           0.48       162.06
@@ -122,4 +125,34 @@ Prints the following:
 2019-09-22      0.00                   0.00           0.00           0.00        -0.00
 2019-09-23      0.00                   0.00           0.00           0.00        -0.00
 2019-09-24      0.00                   0.00           0.00           0.00        -0.00
+```
+
+### Calculation of NPV With One-Factor Trinomial Tree Model
+The following example shows how to calculate the storage NPV using a 
+trinomial tree model. This assumes that the commodity spot price follows
+a one-factor mean-reverting process and the result includes the extrinsic
+option value of the storage.
+
+```python
+from cmdty_storage import trinomial_value
+
+# Trinomial Tree parameters
+mean_reversion = 14.5
+spot_volatility = create_piecewise_flat_series([1.35, 1.13, 1.24, 1.24],
+                           [val_date, date(2019, 9, 12), date(2019, 9, 18), storage_end], freq='D')
+time_step = 1.0/365.0
+
+trinomial_value = trinomial_value(cmdty_storage, val_date, inventory, forward_curve,
+                spot_volatility, mean_reversion, time_step,
+                 settlement_rule=twentieth_of_next_month,
+                interest_rates=interest_rate_curve, num_inventory_grid_points=100)
+
+print("Storage Trinomial Tree Model NPV")
+print("{:,.2f}".format(trinomial_value) )
+```
+
+Which prints the following:
+```python
+Storage Trinomial Tree NPV
+42,844.28
 ```
