@@ -13,6 +13,7 @@ Valuation and optimisation of commodity storage.
     * [Planned Implementations](#planned-implementations)
 * [Getting Started](#getting-started)
     * [Installing C# API](#installing-c-api)
+    * [Installing Python Package](#installing-python-package)
     * [Installing Excel Add-In](#installing-excel-add-in)
 * [Using the C# API](#using-the-c-api)
     * [Creating the Storage Object](#creating-the-storage-object)
@@ -64,6 +65,12 @@ Implemenations using the following techniques are planned in the near future:
 For use from C# install the NuGet package Cmdty.Storage.
 ```
 PM> Install-Package Cmdty.Storage -Version 0.1.0-beta2
+```
+
+### Installing Python Package
+
+```
+> pip install cmdty-storage
 ```
 
 ### Installing Excel Add-In
