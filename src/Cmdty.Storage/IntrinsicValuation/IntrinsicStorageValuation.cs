@@ -167,7 +167,7 @@ namespace Cmdty.Storage
             Day dayToDiscountTo = currentPeriod.First<Day>(); // TODO IMPORTANT, this needs to change
             
             // Memoize the discount factor
-            var discountFactorCache = new Dictionary<Day, double>(); // TODO do this in more elegant way
+            var discountFactorCache = new Dictionary<Day, double>(); // TODO do this in more elegant way and share with Tree calc
             double DiscountToCurrentDay(Day cashFlowDate)
             {
                 if (!discountFactorCache.TryGetValue(cashFlowDate, out double discountFactor))

@@ -197,7 +197,18 @@ namespace Cmdty.Storage
 
             // Calculate discount factor function
             Day dayToDiscountTo = currentPeriod.First<Day>(); // TODO IMPORTANT, this needs to change
-            double DiscountToCurrentDay(Day day) => discountFactors(dayToDiscountTo, day);
+
+            // Memoize the discount factor
+            var discountFactorCache = new Dictionary<Day, double>(); // TODO do this in more elegant way and share with intrinsic calc
+            double DiscountToCurrentDay(Day cashFlowDate)
+            {
+                if (!discountFactorCache.TryGetValue(cashFlowDate, out double discountFactor))
+                {
+                    discountFactor = discountFactors(dayToDiscountTo, cashFlowDate);
+                    discountFactorCache[cashFlowDate] = discountFactor;
+                }
+                return discountFactor;
+            }
 
             // Loop back through other periods
             T startActiveStorage = inventorySpace.Start.Offset(-1);
