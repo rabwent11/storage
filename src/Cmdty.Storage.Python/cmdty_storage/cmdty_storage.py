@@ -30,7 +30,7 @@ clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 import Cmdty.Storage as net_cs
 
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, date
 import pandas as pd
 from cmdty_storage import utils
 
@@ -42,13 +42,14 @@ InjectWithdrawRange = namedtuple('InjectWithdrawRange', 'min_inject_withdraw_rat
 
 class CmdtyStorage:
 
-    def __init__(self, freq, storage_start, storage_end, 
-                   injection_cost, withdrawal_cost, 
-                   constraints=None,
-                   min_inventory=None, max_inventory=None, max_injection_rate=None, max_withdrawal_rate=None,
-                   cmdty_consumed_inject=None, cmdty_consumed_withdraw=None,
-                   terminal_storage_npv=None,
-                   inventory_loss=None, inventory_cost=None):
+    def __init__(self, freq: str, storage_start: (datetime, date, pd.Period),
+                 storage_end: (datetime, date, pd.Period),
+                 injection_cost, withdrawal_cost,
+                 constraints=None,
+                 min_inventory=None, max_inventory=None, max_injection_rate=None, max_withdrawal_rate=None,
+                 cmdty_consumed_inject=None, cmdty_consumed_withdraw=None,
+                 terminal_storage_npv=None,
+                 inventory_loss=None, inventory_cost=None):
                  
         if freq not in utils.FREQ_TO_PERIOD_TYPE:
             raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
