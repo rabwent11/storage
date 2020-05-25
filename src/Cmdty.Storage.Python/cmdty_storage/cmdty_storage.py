@@ -29,7 +29,7 @@ from pathlib import Path
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 import Cmdty.Storage as net_cs
 
-from typing import Union
+from typing import Union, Callable
 from collections import namedtuple
 from datetime import datetime, date
 import pandas as pd
@@ -48,10 +48,13 @@ class CmdtyStorage:
                  injection_cost: Union[float, pd.Series],
                  withdrawal_cost: Union[float, pd.Series],
                  constraints=None,
-                 min_inventory=None, max_inventory=None, max_injection_rate=None, max_withdrawal_rate=None,
+                 min_inventory: Union[None, float, int, pd.Series] = None,
+                 max_inventory: Union[None, float, int, pd.Series] = None,
+                 max_injection_rate: Union[None, float, int, pd.Series] = None,
+                 max_withdrawal_rate: Union[None, float, int, pd.Series] = None,
                  cmdty_consumed_inject: Union[None, float, int, pd.Series] = None,
                  cmdty_consumed_withdraw: Union[None, float, int, pd.Series] = None,
-                 terminal_storage_npv=None,
+                 terminal_storage_npv: Union[None, Callable[[float, float], float]] = None,
                  inventory_loss: Union[None, float, int, pd.Series] = None,
                  inventory_cost: Union[None, float, int, pd.Series] = None):
 
@@ -93,15 +96,15 @@ class CmdtyStorage:
 
             builder = net_cs.IAddInjectWithdrawConstraints[time_period_type](builder)
 
-            max_injection_rateis_scalar = utils.is_scalar(max_injection_rate)
-            max_withdrawal_rateis_scalar = utils.is_scalar(max_withdrawal_rate)
+            max_injection_rate_is_scalar = utils.is_scalar(max_injection_rate)
+            max_withdrawal_rate_is_scalar = utils.is_scalar(max_withdrawal_rate)
 
-            if max_injection_rateis_scalar and max_withdrawal_rateis_scalar:
+            if max_injection_rate_is_scalar and max_withdrawal_rate_is_scalar:
                 net_cs.CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
             else:
-                if max_injection_rateis_scalar:
+                if max_injection_rate_is_scalar:
                     max_injection_rate = pd.Series(data=[max_injection_rate] * len(max_withdrawal_rate), index=max_withdrawal_rate.index)
-                elif max_withdrawal_rateis_scalar:
+                elif max_withdrawal_rate_is_scalar:
                     max_withdrawal_rate = pd.Series(data=[max_withdrawal_rate] * len(max_injection_rate), index=max_injection_rate.index)
 
                 inject_withdraw_series = max_injection_rate.combine(max_withdrawal_rate, lambda inj_rate, with_rate: (-with_rate, inj_rate)).dropna()
