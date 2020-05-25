@@ -45,13 +45,16 @@ class CmdtyStorage:
 
     def __init__(self, freq: str, storage_start: Union[datetime, date, pd.Period],
                  storage_end: Union[datetime, date, pd.Period],
-                 injection_cost, withdrawal_cost,
+                 injection_cost: Union[float, pd.Series],
+                 withdrawal_cost: Union[float, pd.Series],
                  constraints=None,
                  min_inventory=None, max_inventory=None, max_injection_rate=None, max_withdrawal_rate=None,
-                 cmdty_consumed_inject=None, cmdty_consumed_withdraw=None,
+                 cmdty_consumed_inject: Union[None, float, int, pd.Series] = None,
+                 cmdty_consumed_withdraw: Union[None, float, int, pd.Series] = None,
                  terminal_storage_npv=None,
-                 inventory_loss=None, inventory_cost=None):
-                 
+                 inventory_loss: Union[None, float, int, pd.Series] = None,
+                 inventory_cost: Union[None, float, int, pd.Series] = None):
+
         if freq not in utils.FREQ_TO_PERIOD_TYPE:
             raise ValueError("freq parameter value of '{}' not supported. The allowable values can be found in the keys of the dict curves.FREQ_TO_PERIOD_TYPE.".format(freq))
 
@@ -61,7 +64,7 @@ class CmdtyStorage:
         end_period = utils.from_datetime_like(storage_end, time_period_type)
 
         builder = net_cs.IBuilder[time_period_type](net_cs.CmdtyStorage[time_period_type].Builder)
-    
+
         builder = builder.WithActiveTimePeriod(start_period, end_period)
 
         net_constraints = dotnet_cols_gen.List[net_cs.InjectWithdrawRangeByInventoryAndPeriod[time_period_type]]()
@@ -71,7 +74,7 @@ class CmdtyStorage:
             utils.raise_if_not_none(max_inventory, "max_inventory parameter should not be provided if constraints parameter is provided.")
             utils.raise_if_not_none(max_injection_rate, "max_injection_rate parameter should not be provided if constraints parameter is provided.")
             utils.raise_if_not_none(max_withdrawal_rate, "max_withdrawal_rate parameter should not be provided if constraints parameter is provided.")
-            
+
             for period, rates_by_inventory in constraints:
                 net_period = utils.from_datetime_like(period, time_period_type)
                 net_rates_by_inventory = dotnet_cols_gen.List[net_cs.InjectWithdrawRangeByInventory]()
@@ -87,12 +90,12 @@ class CmdtyStorage:
             utils.raise_if_none(max_inventory, "max_inventory parameter should be provided if constraints parameter is not provided.")
             utils.raise_if_none(max_injection_rate, "max_injection_rate parameter should be provided if constraints parameter is not provided.")
             utils.raise_if_none(max_withdrawal_rate, "max_withdrawal_rate parameter should be provided if constraints parameter is not provided.")
-            
+
             builder = net_cs.IAddInjectWithdrawConstraints[time_period_type](builder)
-            
+
             max_injection_rateis_scalar = utils.is_scalar(max_injection_rate)
             max_withdrawal_rateis_scalar = utils.is_scalar(max_withdrawal_rate)
-            
+
             if max_injection_rateis_scalar and max_withdrawal_rateis_scalar:
                 net_cs.CmdtyStorageBuilderExtensions.WithConstantInjectWithdrawRange[time_period_type](builder, -max_withdrawal_rate, max_injection_rate)
             else:
@@ -126,7 +129,7 @@ class CmdtyStorage:
         else:
             net_series_injection_cost = utils.series_to_double_time_series(injection_cost, time_period_type)
             builder.WithPerUnitInjectionCostTimeSeries(net_series_injection_cost)
-    
+
         builder = net_cs.IAddCmdtyConsumedOnInject[time_period_type](builder)
 
         if cmdty_consumed_inject is not None:
@@ -137,7 +140,7 @@ class CmdtyStorage:
                 builder.WithPercentCmdtyConsumedOnInjectTimeSeries(net_series_cmdty_consumed_inject)
         else:
             builder.WithNoCmdtyConsumedOnInject()
-        
+
         builder = net_cs.IAddWithdrawalCost[time_period_type](builder)
         if utils.is_scalar(withdrawal_cost):
             builder.WithPerUnitWithdrawalCost(withdrawal_cost)
@@ -155,7 +158,7 @@ class CmdtyStorage:
                 builder.WithPercentCmdtyConsumedOnWithdrawTimeSeries(net_series_cmdty_consumed_withdraw)
         else:
             builder.WithNoCmdtyConsumedOnWithdraw()
-        
+
         builder = net_cs.IAddCmdtyInventoryLoss[time_period_type](builder)
         if inventory_loss is not None:
             if utils.is_scalar(inventory_loss):
@@ -177,7 +180,7 @@ class CmdtyStorage:
             builder.WithNoInventoryCost()
 
         builder = net_cs.IAddTerminalStorageState[time_period_type](builder)
-        
+
         if terminal_storage_npv is None:
             builder.MustBeEmptyAtEnd()
         else:
@@ -189,7 +192,7 @@ class CmdtyStorage:
     def _net_time_period(self, period):
         time_period_type = utils.FREQ_TO_PERIOD_TYPE[self._freq]
         return utils.from_datetime_like(period, time_period_type)
-    
+
     @property
     def net_storage(self) -> net_cs.CmdtyStorage:
         return self._net_storage
@@ -201,7 +204,7 @@ class CmdtyStorage:
     @property
     def empty_at_end(self) -> bool:
         return self._net_storage.MustBeEmptyAtEnd
-    
+
     @property
     def start(self) -> pd.Period:
         return utils.net_time_period_to_pandas_period(self._net_storage.StartPeriod, self._freq)
@@ -214,7 +217,7 @@ class CmdtyStorage:
 
         net_time_period = self._net_time_period(period)
         net_inject_withdraw = self._net_storage.GetInjectWithdrawRange(net_time_period, inventory)
-        
+
         return InjectWithdrawRange(net_inject_withdraw.MinInjectWithdrawRate, net_inject_withdraw.MaxInjectWithdrawRate)
 
     def min_inventory(self, period) -> float:
@@ -235,7 +238,7 @@ class CmdtyStorage:
     def cmdty_consumed_inject(self, period, inventory, injected_volume) -> float:
         net_time_period = self._net_time_period(period)
         return self._net_storage.CmdtyVolumeConsumedOnInject(net_time_period, inventory, injected_volume)
-    
+
     def withdrawal_cost(self, period, inventory, withdrawn_volume) -> float:
         net_time_period = self._net_time_period(period)
         net_withdrawal_costs = self._net_storage.WithdrawalCost(net_time_period, inventory, withdrawn_volume)
