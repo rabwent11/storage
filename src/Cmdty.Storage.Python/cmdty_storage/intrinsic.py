@@ -25,7 +25,7 @@ import pandas as pd
 import clr
 import System as dotnet
 from cmdty_storage import utils
-from collections import namedtuple
+from typing import NamedTuple
 from pathlib import Path
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 import Cmdty.Storage as net_cs
@@ -33,11 +33,11 @@ clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 import Cmdty.TimePeriodValueTypes as tp
 
 
-IntrinsicValuationResults = namedtuple('IntrinsicValuationResults', 'npv, profile')
+IntrinsicValuationResults = NamedTuple('IntrinsicValuationResults', [('npv', float), ('profile', pd.DataFrame)])
 
 
 def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, interest_rates, settlement_rule, 
-                    num_inventory_grid_points=100, numerical_tolerance=1E-12):
+                    num_inventory_grid_points=100, numerical_tolerance=1E-12) -> IntrinsicValuationResults:
     """
     Calculates the intrinsic value of commodity storage.
 

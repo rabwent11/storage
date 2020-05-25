@@ -190,11 +190,11 @@ class CmdtyStorage:
         return utils.from_datetime_like(period, time_period_type)
     
     @property
-    def net_storage(self):
+    def net_storage(self) -> net_cs.CmdtyStorage:
         return self._net_storage
 
     @property
-    def freq(self):
+    def freq(self) -> str:
         return self._freq
 
     @property

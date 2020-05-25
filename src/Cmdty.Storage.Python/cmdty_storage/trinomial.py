@@ -31,7 +31,7 @@ import Cmdty.Storage as net_cs
 
 def trinomial_value(cmdty_storage: CmdtyStorage, val_date, inventory, forward_curve,
                     spot_volatility, mean_reversion, time_step, interest_rates, settlement_rule,
-                    num_inventory_grid_points=100, numerical_tolerance=1E-12):
+                    num_inventory_grid_points=100, numerical_tolerance=1E-12) -> float:
     """
     Calculates the value of commodity storage using a one-factor trinomial tree.
 
