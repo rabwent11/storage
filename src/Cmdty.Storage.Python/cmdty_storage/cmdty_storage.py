@@ -198,62 +198,62 @@ class CmdtyStorage:
         return self._freq
 
     @property
-    def empty_at_end(self):
+    def empty_at_end(self) -> bool:
         return self._net_storage.MustBeEmptyAtEnd
     
     @property
-    def start(self):
+    def start(self) -> pd.Period:
         return utils.net_time_period_to_pandas_period(self._net_storage.StartPeriod, self._freq)
 
     @property
-    def end(self):
+    def end(self) -> pd.Period:
         return utils.net_time_period_to_pandas_period(self._net_storage.EndPeriod, self._freq)
 
-    def inject_withdraw_range(self, period, inventory):
+    def inject_withdraw_range(self, period, inventory) -> InjectWithdrawRange:
 
         net_time_period = self._net_time_period(period)
         net_inject_withdraw = self._net_storage.GetInjectWithdrawRange(net_time_period, inventory)
         
         return InjectWithdrawRange(net_inject_withdraw.MinInjectWithdrawRate, net_inject_withdraw.MaxInjectWithdrawRate)
 
-    def min_inventory(self, period):
+    def min_inventory(self, period) -> float:
         net_time_period = self._net_time_period(period)
         return self._net_storage.MinInventory(net_time_period)
 
-    def max_inventory(self, period):
+    def max_inventory(self, period) -> float:
         net_time_period = self._net_time_period(period)
         return self._net_storage.MaxInventory(net_time_period)
 
-    def injection_cost(self, period, inventory, injected_volume):
+    def injection_cost(self, period, inventory, injected_volume) -> float:
         net_time_period = self._net_time_period(period)
         net_inject_costs = self._net_storage.InjectionCost(net_time_period, inventory, injected_volume)
         if net_inject_costs.Length > 0:
             return net_inject_costs[0].Amount
         return 0.0
 
-    def cmdty_consumed_inject(self, period, inventory, injected_volume):
+    def cmdty_consumed_inject(self, period, inventory, injected_volume) -> float:
         net_time_period = self._net_time_period(period)
         return self._net_storage.CmdtyVolumeConsumedOnInject(net_time_period, inventory, injected_volume)
     
-    def withdrawal_cost(self, period, inventory, withdrawn_volume):
+    def withdrawal_cost(self, period, inventory, withdrawn_volume) -> float:
         net_time_period = self._net_time_period(period)
         net_withdrawal_costs = self._net_storage.WithdrawalCost(net_time_period, inventory, withdrawn_volume)
         if net_withdrawal_costs.Length > 0:
             return net_withdrawal_costs[0].Amount
         return 0.0
 
-    def cmdty_consumed_withdraw(self, period, inventory, withdrawn_volume):
+    def cmdty_consumed_withdraw(self, period, inventory, withdrawn_volume) -> float:
         net_time_period = self._net_time_period(period)
         return self._net_storage.CmdtyVolumeConsumedOnWithdraw(net_time_period, inventory, withdrawn_volume)
 
-    def terminal_storage_npv(self, cmdty_price, terminal_inventory):
+    def terminal_storage_npv(self, cmdty_price, terminal_inventory) -> float:
         return self._net_storage.TerminalStorageNpv(cmdty_price, terminal_inventory)
 
-    def inventory_pcnt_loss(self, period):
+    def inventory_pcnt_loss(self, period) -> float:
         net_time_period = self._net_time_period(period)
         return self._net_storage.CmdtyInventoryPercentLoss(net_time_period)
 
-    def inventory_cost(self, period, inventory):
+    def inventory_cost(self, period, inventory) -> float:
         net_time_period = self._net_time_period(period)
         net_inventory_cost = self._net_storage.CmdtyInventoryCost(net_time_period, inventory)
         if len(net_inventory_cost) > 0:
