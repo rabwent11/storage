@@ -25,13 +25,24 @@ import clr
 import System as dotnet
 from cmdty_storage import utils, CmdtyStorage
 from pathlib import Path
+from typing import Union, Callable
+from datetime import date
+import pandas as pd
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 import Cmdty.Storage as net_cs
 
 
-def trinomial_value(cmdty_storage: CmdtyStorage, val_date, inventory, forward_curve,
-                    spot_volatility, mean_reversion, time_step, interest_rates, settlement_rule,
-                    num_inventory_grid_points=100, numerical_tolerance=1E-12) -> float:
+def trinomial_value(cmdty_storage: CmdtyStorage,
+                    val_date: utils.TimePeriodSpecType,
+                    inventory: float,
+                    forward_curve: pd.Series,
+                    spot_volatility: pd.Series,
+                    mean_reversion: float,
+                    time_step: float,
+                    interest_rates: pd.Series,
+                    settlement_rule: Callable[[pd.Period], date],
+                    num_inventory_grid_points: int = 100,
+                    numerical_tolerance: float = 1E-12) -> float:
     """
     Calculates the value of commodity storage using a one-factor trinomial tree.
 
