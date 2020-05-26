@@ -33,7 +33,9 @@ clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 import Cmdty.TimePeriodValueTypes as tp
 
 
-IntrinsicValuationResults = NamedTuple('IntrinsicValuationResults', [('npv', float), ('profile', pd.DataFrame)])
+class IntrinsicValuationResults(NamedTuple):
+    npv: float
+    profile: pd.DataFrame
 
 
 def intrinsic_value(cmdty_storage, val_date, inventory, forward_curve, interest_rates, settlement_rule, 
