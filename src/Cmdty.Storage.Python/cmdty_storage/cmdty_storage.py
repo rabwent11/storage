@@ -30,7 +30,6 @@ clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 import Cmdty.Storage as net_cs
 
 from typing import Union, Callable, Iterable, Tuple, NamedTuple
-from collections import namedtuple
 from datetime import datetime, date
 import pandas as pd
 from cmdty_storage import utils
@@ -48,8 +47,10 @@ ConstraintsType = Union[Iterable[Tuple[date, Tuple[float, float, float]]],
 
 class CmdtyStorage:
 
-    def __init__(self, freq: str, storage_start: Union[datetime, date, pd.Period],
-                 storage_end: Union[datetime, date, pd.Period],
+    def __init__(self,
+                 freq: str,
+                 storage_start: utils.TimePeriodSpecType,
+                 storage_end: utils.TimePeriodSpecType,
                  injection_cost: Union[float, pd.Series],
                  withdrawal_cost: Union[float, pd.Series],
                  constraints: ConstraintsType = None,

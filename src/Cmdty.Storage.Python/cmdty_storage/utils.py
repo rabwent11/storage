@@ -30,6 +30,8 @@ clr.AddReference(str(Path("cmdty_storage/lib/Cmdty.TimePeriodValueTypes")))
 import Cmdty.TimePeriodValueTypes as tp
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.TimeSeries')))
 import Cmdty.TimeSeries as ts
+from typing import Union
+from datetime import date
 
 
 def from_datetime_like(datetime_like, time_period_type):
@@ -123,3 +125,6 @@ def wrap_settle_for_dotnet(py_settle_func, freq):
 
     time_period_type = FREQ_TO_PERIOD_TYPE[freq]
     return dotnet.Func[time_period_type, tp.Day](wrapped_function)
+
+
+TimePeriodSpecType = Union[datetime, date, pd.Period]
