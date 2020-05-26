@@ -34,17 +34,17 @@ is to follow.
 ```python
 from datetime import date, timedelta
 import pandas as pd
-from cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory, intrinsic_value
+from cmdty_storage import CmdtyStorage, intrinsic_value
 
 def create_piecewise_flat_series(data, dt_index, freq):
     period_index = pd.PeriodIndex([pd.Period(dt, freq=freq) for dt in dt_index])
     return pd.Series(data, period_index).resample(freq).fillna('pad')
 
 constraints =   [
-                    InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28), 
+                    (date(2019, 8, 28), 
                                 [
-                                    InjectWithdrawByInventory(0.0, -150.0, 255.2),
-                                    InjectWithdrawByInventory(2000.0, -200.0, 175.0),
+                                    (0.0, -150.0, 255.2),
+                                    (2000.0, -200.0, 175.0),
                                 ]),
                     (date(2019, 9, 10), 
                              [
