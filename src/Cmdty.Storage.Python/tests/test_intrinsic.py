@@ -33,10 +33,10 @@ class TestIntrinsicValue(unittest.TestCase):
     def test_intrinsic_value_runs(self):
 
         constraints =   [
-                            cs.InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28),
+                            (date(2019, 8, 28),
                                         [
-                                            cs.InjectWithdrawByInventory(0.0, -150.0, 255.2),
-                                            cs.InjectWithdrawByInventory(2000.0, -200.0, 175.0),
+                                            (0.0, -150.0, 255.2),
+                                            (2000.0, -200.0, 175.0),
                                         ]),
                             (date(2019, 9, 10), 
                                      [

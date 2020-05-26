@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 from cmdty_storage.__version__ import __version__
-from cmdty_storage.cmdty_storage import CmdtyStorage, InjectWithdrawByInventoryAndPeriod, InjectWithdrawByInventory
+from cmdty_storage.cmdty_storage import CmdtyStorage
 from cmdty_storage.intrinsic import intrinsic_value
 from cmdty_storage.trinomial import trinomial_value
 from cmdty_storage.utils import FREQ_TO_PERIOD_TYPE

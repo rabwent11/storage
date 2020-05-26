@@ -30,12 +30,12 @@ from tests import utils
 
 class TestCmdtyStorage(unittest.TestCase):
 
-    _default_freq='D'
-    _default_constraints =   [
-                            cs.InjectWithdrawByInventoryAndPeriod(date(2019, 8, 28),
+    _default_freq = 'D'
+    _default_constraints = [
+                                    (date(2019, 8, 28),
                                         [
-                                            cs.InjectWithdrawByInventory(0.0, -150.0, 255.2),
-                                            cs.InjectWithdrawByInventory(2000.0, -200.0, 175.0),
+                                            (0.0, -150.0, 255.2),
+                                            (2000.0, -200.0, 175.0),
                                         ]),
                             (date(2019, 9, 10),
                                      [
