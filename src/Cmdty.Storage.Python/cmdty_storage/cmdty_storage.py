@@ -29,14 +29,16 @@ from pathlib import Path
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 import Cmdty.Storage as net_cs
 
-from typing import Union, Callable, Optional, Iterable, Tuple
+from typing import Union, Callable, Iterable, Tuple, NamedTuple
 from collections import namedtuple
 from datetime import datetime, date
 import pandas as pd
 from cmdty_storage import utils
 
 
-InjectWithdrawRange = namedtuple('InjectWithdrawRange', 'min_inject_withdraw_rate, max_inject_withdraw_rate')
+class InjectWithdrawRange(NamedTuple):
+    min_inject_withdraw_rate: float
+    max_inject_withdraw_rate: float
 
 
 ConstraintsType = Union[Iterable[Tuple[date, Tuple[float, float, float]]],
