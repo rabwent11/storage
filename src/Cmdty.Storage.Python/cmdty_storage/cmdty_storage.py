@@ -29,7 +29,7 @@ from pathlib import Path
 clr.AddReference(str(Path('cmdty_storage/lib/Cmdty.Storage')))
 import Cmdty.Storage as net_cs
 
-from typing import Union, Callable
+from typing import Union, Callable, Optional, Iterable, Tuple
 from collections import namedtuple
 from datetime import datetime, date
 import pandas as pd
@@ -41,13 +41,18 @@ InjectWithdrawByInventoryAndPeriod = namedtuple('InjectWithdrawByInventoryPeriod
 InjectWithdrawRange = namedtuple('InjectWithdrawRange', 'min_inject_withdraw_rate, max_inject_withdraw_rate')
 
 
+ConstraintsType = Union[Iterable[Tuple[date, Tuple[float, float, float]]],
+                        Iterable[Tuple[datetime, Tuple[float, float, float]]],
+                        Iterable[Tuple[pd.Period, Tuple[float, float, float]]]]
+
+
 class CmdtyStorage:
 
     def __init__(self, freq: str, storage_start: Union[datetime, date, pd.Period],
                  storage_end: Union[datetime, date, pd.Period],
                  injection_cost: Union[float, pd.Series],
                  withdrawal_cost: Union[float, pd.Series],
-                 constraints=None,
+                 constraints: ConstraintsType = None,
                  min_inventory: Union[None, float, int, pd.Series] = None,
                  max_inventory: Union[None, float, int, pd.Series] = None,
                  max_injection_rate: Union[None, float, int, pd.Series] = None,
